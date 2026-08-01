@@ -72,49 +72,13 @@ export default function LoginSlug() {
       {/* Outer White Card Container */}
       <div className="w-full max-w-4xl bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_32px_128px_rgba(0,0,0,0.5)] grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         
-        {/* Left Side: Dark Hero Banner (With User's Custom El Massa Login Image) */}
-        <div className="md:col-span-5 relative bg-[#09090b] rounded-[24px] overflow-hidden p-8 sm:p-10 flex flex-col justify-between min-h-[340px] md:min-h-[460px] text-white">
-          
-          {/* Custom El Massa Login Background Image */}
+        {/* Left Side: Custom El Massa Login Image (Clean Display, No Overlay) */}
+        <div className="md:col-span-5 relative rounded-[24px] overflow-hidden min-h-[340px] md:min-h-[460px] bg-stone-100 flex items-center justify-center">
           <img
             src={loginBg}
             alt="El Massa Login Hero"
-            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+            className="w-full h-full object-cover"
           />
-
-          {/* Dark Overlay for Text Legibility */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/40 pointer-events-none" />
-
-          {/* Top Content: Logo & Travel Name */}
-          <div className="relative z-10 space-y-3">
-            {tenant.logo_url ? (
-              <img src={tenant.logo_url} alt={tenant.nama_travel} className="h-10 w-auto object-contain drop-shadow" />
-            ) : (
-              <p className="font-arab text-amber-200/90 text-xl tracking-wide">
-                لَبَّيْكَ اللّٰهُمَّ لَبَّيْكَ
-              </p>
-            )}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] font-bold uppercase tracking-widest text-amber-100">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-              {tenant.nama_travel}
-            </div>
-          </div>
-
-          {/* Main Headline */}
-          <div className="relative z-10 space-y-3 my-auto">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-[1.25] text-white">
-              Convert your pilgrimage into a blessed journey.
-            </h1>
-            <p className="text-xs text-stone-300 font-medium leading-relaxed">
-              Portal Aplikasi Jamaah {tenant.nama_travel}.
-            </p>
-          </div>
-
-          {/* Bottom Footer note */}
-          <div className="relative z-10 pt-4 border-t border-white/10 text-[11px] text-stone-400 flex items-center justify-between">
-            <span>Verified Travel Partner</span>
-            <span className="text-amber-400 font-semibold">2026 Edition</span>
-          </div>
         </div>
 
         {/* Right Side: Clean Form Container */}
