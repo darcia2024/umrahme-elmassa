@@ -1,0 +1,251 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Amiri:wght@400;700&family=Libre+Caslon+Condensed:ital,wght@0,400;1,400&family=Roboto:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --color-primary: #0ea5e9;
+    --color-primary-deep: #0284c7;
+  }
+
+  html {
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: #f9f7f3;
+    color: #202020;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-display {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif !important;
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: rgba(14, 165, 233, 0.14);
+    color: #202020;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgba(14, 165, 233, 0.6);
+    outline-offset: 2px;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+  }
+}
+
+/* Cegah iOS auto-zoom saat fokus input: font-size minimal 16px di mobile */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Fine dot grid pattern for hero panels */
+  .bg-dot-gold {
+    background-image: radial-gradient(circle, rgba(212, 162, 78, 0.35) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* Denser dot pattern for dark hero */
+  .bg-dot-gold-dense {
+    background-image: radial-gradient(circle, rgba(212, 162, 78, 0.22) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+
+  /* Glassmorphism blur for bottom nav */
+  .backdrop-blur-nav {
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    backdrop-filter: blur(24px) saturate(1.6);
+  }
+
+  /* Glassmorphism for cards over dark bg */
+  .glass-card {
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    backdrop-filter: blur(20px) saturate(1.4);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  /* Hero dark background — deep espresso + warm amber glow */
+  .bg-hero-dark {
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 100%, rgba(212, 162, 78, 0.22) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 80% 20%, rgba(14, 165, 233, 0.10) 0%, transparent 60%),
+      linear-gradient(160deg, #1a1208 0%, #2d1e0a 40%, #1c1005 100%);
+  }
+
+  /* Shimmer sweep animation */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(212, 162, 78, 0.18) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 2.4s ease-in-out infinite;
+  }
+
+  /* Gold text glow */
+  .text-glow-gold {
+    text-shadow:
+      0 0 20px rgba(212, 162, 78, 0.55),
+      0 0 40px rgba(212, 162, 78, 0.30),
+      0 2px 4px rgba(0,0,0,0.40);
+  }
+
+  /* Gradient border card */
+  .card-gradient-border {
+    position: relative;
+    background-clip: padding-box;
+  }
+
+  /* Card gradient fill */
+  .card-warm {
+    background: linear-gradient(135deg, #fffdf8 0%, #faf6ed 100%);
+  }
+
+  .card-gold-tint {
+    background: linear-gradient(135deg, #fffcf0 0%, #fdf5e0 100%);
+  }
+
+  .card-primary-tint {
+    background: linear-gradient(135deg, #f3fbfe 0%, #e7f6fd 100%);
+  }
+}
+
+@layer components {
+  /* Animated fade-up entry for list stagger */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.10s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.20s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.30s; }
+}
+
+/* Keyframe definitions */
+@keyframes shimmer-sweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+
+@keyframes fade-up {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slide-up-sheet {
+  0%   { opacity: 0; transform: translateY(32px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  0%   { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.04); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes gold-breath {
+  0%, 100% { text-shadow: 0 0 16px rgba(212,162,78,0.40), 0 2px 4px rgba(0,0,0,0.35); }
+  50%       { text-shadow: 0 0 32px rgba(212,162,78,0.70), 0 0 60px rgba(212,162,78,0.35), 0 2px 4px rgba(0,0,0,0.40); }
+}
+
+.animate-float-slow  { animation: float-slow 4s ease-in-out infinite; }
+.animate-pulse-glow  { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-spin-slow   { animation: spin-slow 12s linear infinite; }
+.animate-gold-breath { animation: gold-breath 3s ease-in-out infinite; }
+
+.animate-fade-up     { animation: fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-fade-in     { animation: fade-in 0.5s ease both; }
+.animate-slide-up-sheet { animation: slide-up-sheet 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+.animate-scale-in    { animation: scale-in 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* Print Only Digital ID Card */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  body * {
+    visibility: hidden !important;
+  }
+  #digital-id-card, #digital-id-card * {
+    visibility: visible !important;
+  }
+  #digital-id-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: 1px solid #e7e5e4 !important;
+  }
+}
