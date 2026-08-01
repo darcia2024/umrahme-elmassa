@@ -1,0 +1,299 @@
+# PROMPT — Revert ke Supabase Client (Hapus Custom API Server)
+
+> Masalah: Replit Agent sebelumnya mengganti arsitektur dari Supabase client langsung ke custom REST API server (`/api`) + Drizzle ORM + Replit PostgreSQL. Ini tidak diinginkan — project ini menggunakan Supabase sebagai backend, bukan custom server. Tugas ini: kembalikan semua file ke arsitektur Supabase client.
+
+## 1. Ganti `src/lib/supabase.ts`
+
+Tulis ulang file ini dengan konten berikut PERSIS:
+
+```ts
+import { createClient } from '@supabase/supabase-js';
+
+declare const __SUPABASE_URL__: string;
+declare const __SUPABASE_ANON_KEY__: string;
+
+const supabaseUrl = __SUPABASE_URL__;
+const supabaseAnonKey = __SUPABASE_ANON_KEY__;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+export type TenantRow = {
+  id: string;
+  activation_code: string;
+  nama_travel: string;
+  primary_color: string;
+  primary_deep_color: string;
+  logo_url: string | null;
+  page_title: string;
+  tanggal_keberangkatan: string | null;
+  tanggal_kepulangan: string | null;
+  created_at: string;
+  hotel_makkah: string | null;
+  hotel_madinah: string | null;
+  meeting_point: string | null;
+  guide_name: string | null;
+  guide_whatsapp: string | null;
+  tour_leader_name: string | null;
+  tour_leader_whatsapp: string | null;
+  emergency_note: string | null;
+};
+
+export type AgendaItemRow = {
+  id: string;
+  tenant_id: string;
+  tanggal: string;
+  jam_mulai: string | null;
+  judul: string;
+  deskripsi: string | null;
+  lokasi: string | null;
+  urutan: number;
+  created_at: string;
+};
+
+export type TravelAnnouncementRow = {
+  id: string;
+  tenant_id: string;
+  label: string;
+  title: string;
+  content: string;
+  important: boolean;
+  published_at: string;
+};
+
+export type JamaahAccountRow = {
+  id: string;
+  tenant_id: string;
+  nama: string;
+  nomor_jamaah: string;
+  rombongan: string | null;
+  nomor_bus: string | null;
+  nomor_kamar: string | null;
+  fase: 'persiapan' | 'tanah-suci' | 'selesai';
+  created_at: string;
+};
+
+export type TenantUserRow = {
+  id: string;
+  user_id: string;
+  tenant_id: string;
+  created_at: string;
+};
+```
+
+## 2. Ganti `src/data/jamaah.ts`
+
+Tulis ulang file ini PERSIS:
+
+```ts
+import type { Jamaah } from '../types';
+import { supabase } from '../lib/supabase';
+import type { TenantRow } from '../lib/supabase';
+
+export const KODE_DEMO = 'DEMO01';
+
+export interface HasilValidasi {
+  ok: boolean;
+  jamaah?: Jamaah;
+  tenant?: TenantRow;
+  error?: string;
+}
+
+export async function validasiKode(kode: string, nama: string): Promise<HasilValidasi> {
+  const k = kode.trim().toUpperCase();
+  const n = nama.trim();
+
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+  if (!k) return { ok: false, error: 'Kode aktivasi wajib diisi.' };
+
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('activation_code', k)
+    .maybeSingle();
+
+  if (tenantErr || !tenant) {
+    return { ok: false, error: 'Kode tidak ditemukan, hubungi travel Anda.' };
+  }
+
+  const { data: akun, error: akunErr } = await supabase
+    .from('jamaah_accounts')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .ilike('nama', n)
+    .maybeSingle();
+
+  if (akunErr || !akun) {
+    return { ok: false, error: 'Nama tidak ditemukan. Pastikan nama sesuai yang didaftarkan travel Anda.' };
+  }
+
+  const jamaah: Jamaah = {
+    nama: akun.nama,
+    nomorJamaah: akun.nomor_jamaah,
+    travel: tenant.nama_travel,
+    kodeAktivasi: k,
+    fase: akun.fase,
+    rombongan: akun.rombongan ?? undefined,
+    nomorBus: akun.nomor_bus ?? undefined,
+    nomorKamar: akun.nomor_kamar ?? undefined,
+    hotelMakkah: tenant.hotel_makkah ?? undefined,
+    hotelMadinah: tenant.hotel_madinah ?? undefined,
+    pembimbingNama: tenant.guide_name ?? undefined,
+    pembimbingWhatsapp: tenant.guide_whatsapp ?? undefined,
+  };
+
+  return { ok: true, jamaah, tenant };
+}
+
+export const urutanFase: { id: Jamaah['fase']; label: string }[] = [
+  { id: 'persiapan', label: 'Persiapan' },
+  { id: 'tanah-suci', label: 'Di Tanah Suci' },
+  { id: 'selesai', label: 'Selesai' },
+];
+```
+
+## 3. Ganti `src/context/AdminAuthContext.tsx`
+
+Tulis ulang PERSIS:
+
+```tsx
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+
+interface AdminAuthValue {
+  session: Session | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+}
+
+const AdminAuthContext = createContext<AdminAuthValue | undefined>(undefined);
+
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  return (
+    <AdminAuthContext.Provider value={{ session, loading, signOut }}>
+      {children}
+    </AdminAuthContext.Provider>
+  );
+}
+
+export function useAdminAuth(): AdminAuthValue {
+  const ctx = useContext(AdminAuthContext);
+  if (!ctx) throw new Error('useAdminAuth harus dipakai di dalam <AdminAuthProvider>');
+  return ctx;
+}
+```
+
+## 4. Ganti `src/context/TravelAuthContext.tsx`
+
+Tulis ulang PERSIS:
+
+```tsx
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase, type TenantRow } from '../lib/supabase';
+
+interface TravelAuthValue {
+  session: Session | null;
+  tenant: TenantRow | null;
+  loading: boolean;
+  signOut: () => Promise<void>;
+}
+
+const TravelAuthContext = createContext<TravelAuthValue | undefined>(undefined);
+
+export function TravelAuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session | null>(null);
+  const [tenant, setTenant] = useState<TenantRow | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  async function fetchTenant(userId: string) {
+    const { data: mapping } = await supabase
+      .from('tenant_users')
+      .select('tenant_id')
+      .eq('user_id', userId)
+      .single();
+
+    if (!mapping?.tenant_id) { setTenant(null); return; }
+
+    const { data: tenantData } = await supabase
+      .from('tenants')
+      .select('*')
+      .eq('id', mapping.tenant_id)
+      .single();
+
+    setTenant((tenantData as TenantRow) ?? null);
+  }
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      const s = data.session;
+      setSession(s);
+      if (s?.user.id) await fetchTenant(s.user.id);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
+      setSession(s);
+      if (s?.user.id) await fetchTenant(s.user.id);
+      else setTenant(null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setTenant(null);
+  };
+
+  return (
+    <TravelAuthContext.Provider value={{ session, tenant, loading, signOut }}>
+      {children}
+    </TravelAuthContext.Provider>
+  );
+}
+
+export function useTravelAuth(): TravelAuthValue {
+  const ctx = useContext(TravelAuthContext);
+  if (!ctx) throw new Error('useTravelAuth harus dipakai di dalam <TravelAuthProvider>');
+  return ctx;
+}
+```
+
+## 5. Hapus `src/lib/api.ts`
+
+File ini adalah sisa custom API server yang tidak dipakai. Hapus file ini.
+
+## 6. Cari dan ganti semua import dari `../lib/api` atau `./api`
+
+Setelah file `api.ts` dihapus, cari seluruh file di `src/` yang masih import dari `'../lib/api'` atau `'./api'` dan ganti menjadi import dari `'../lib/supabase'` atau `'./supabase'`. Pastikan semua tipe yang diimport (`TenantRow`, `AgendaItemRow`, dll) tersedia di `supabase.ts` yang baru (sudah ada di poin 1).
+
+## 7. Jangan sentuh `server/` folder
+
+Folder `server/` biarkan apa adanya — tidak perlu dihapus, tapi juga tidak dipakai oleh frontend. Frontend hanya berkomunikasi dengan Supabase, bukan server ini.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Konfirmasi: tidak ada lagi import dari `'../lib/api'` di seluruh `src/`.

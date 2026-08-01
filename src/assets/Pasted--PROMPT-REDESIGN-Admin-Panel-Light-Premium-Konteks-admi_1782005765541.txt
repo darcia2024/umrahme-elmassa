@@ -1,0 +1,49 @@
+# PROMPT REDESIGN — Admin Panel, Light Premium
+
+> Konteks: admin panel Umrahme (`AdminLogin.tsx`, `AdminLayout.tsx`, `AdminTenantList.tsx`, `AdminTenantForm.tsx`, `AdminProtectedRoute.tsx`) saat ini fungsional tapi visualnya generik — Tailwind default abu-abu/biru polos, tanpa identitas desain. Redesign ke arah **light premium**: tetap latar terang, tapi dengan typography, spacing, dan micro-detail yang terasa dirancang, bukan default framework. Admin panel ini HANYA dipakai oleh satu admin (pemilik produk), JADI prioritaskan kejelasan & efisiensi kerja di atas ornamen — bukan diberi elemen dekoratif Islamic (mihrab, kaligrafi) yang dipakai di app jamaah, karena ini alat kerja internal yang beda fungsi.
+
+## PRINSIP DESAIN
+
+- **Sistem warna sendiri, terpisah dari tenant.** Admin panel TIDAK memakai `var(--color-primary)` milik app jamaah (itu warna brand tenant yang berubah-ubah). Definisikan satu accent warna tetap khusus admin panel — gunakan **indigo gelap/slate** (`#4338ca` sebagai accent utama, `#3730a3` untuk hover/active) sebagai pengganti `blue-600`/`blue-700` Tailwind default yang dipakai sekarang di semua file.
+- **Typography bertingkat jelas.** Gunakan `font-mono` (`'JetBrains Mono', ui-monospace, monospace` — sudah didefinisikan di `tailwind.config.ts` project ini sebagai `font-mono`) untuk label uppercase kecil, kode aktivasi, dan metadata (tanggal, email) — selaras dengan identitas teknis yang dipakai app jamaah. Gunakan font sans biasa untuk judul & body text, tapi dengan hierarki ukuran yang lebih jelas (judul halaman lebih besar dan tebal dari yang sekarang).
+- **Spacing lebih bernapas.** Konten saat ini terasa padat di beberapa tempat (form fields rapat). Tambahkan ruang vertikal antar elemen, terutama di form.
+- **Shadow & border halus, bukan flat.** Ganti border datar (`border-gray-200`) dengan kombinasi border tipis + shadow lembut pada kartu/panel (pola: `shadow-[0_1px_3px_rgba(0,0,0,0.04),0_1px_2px_rgba(0,0,0,0.06)]` atau serupa) supaya elemen terasa "terangkat" dari background, bukan menyatu datar.
+- **Transisi pada interaksi.** Pastikan semua state hover/focus/active (tombol, input, baris tabel) punya transisi halus (`transition-all duration-150` atau serupa) — beberapa elemen saat ini sudah punya `transition-colors`, perluas konsisten ke semua elemen interaktif.
+
+## PER HALAMAN
+
+### `AdminLayout.tsx`
+- Header: pertahankan struktur (logo+judul kiri, nav tengah, email+keluar kanan), tapi naikkan kualitas visual — judul "Admin Panel" dengan font lebih tegas, ikon gear diganti dengan ikon SVG custom yang konsisten stroke-width dengan ikon lain di project (cek `components/icons.tsx` untuk pola ikon yang sudah ada), bukan emoji ⚙️.
+- Background utama: ganti `bg-gray-50` flat dengan warna latar yang sedikit lebih hangat/halus (mis. `#fafaf9` atau gradient sangat subtle), supaya kontras dengan kartu putih di atasnya tapi tidak terasa "abu-abu kantor".
+
+### `AdminLogin.tsx`
+- Kartu login: pertahankan layout terpusat, tapi tingkatkan detail — radius lebih besar, shadow lebih dalam dan halus, mungkin tambahkan aksen garis tipis warna accent di bagian atas kartu sebagai detail visual.
+- Input field: naikkan padding sedikit, border lebih halus saat idle, ring accent warna baru (bukan `ring-blue-500`) saat focus.
+- Tombol submit: gradient halus dari accent utama ke variannya yang lebih gelap, bukan flat `bg-blue-600`.
+
+### `AdminTenantList.tsx`
+- Judul "Daftar Tenant" + tombol "+ Tenant Baru": tombol dengan style lebih premium (gradient/shadow), bukan flat `bg-blue-600`.
+- Tabel: header kolom dengan tracking huruf lebih lebar (sudah ada `tracking-wider`, pertahankan), tapi tambahkan sedikit background berbeda yang lebih jelas dari body tabel. Baris tabel dengan hover state yang lebih halus (transisi + sedikit shadow saat hover, bukan cuma `bg-gray-50`).
+- Badge kode aktivasi (saat ini `font-mono text-xs bg-gray-100 px-2 py-1 rounded`): naikkan jadi terlihat seperti "chip" yang lebih jelas — border tipis + background sedikit lebih kontras.
+- Swatch warna: pertahankan lingkaran warna + kode hex, tapi rapikan alignment dan ukuran agar lebih konsisten.
+
+### `AdminTenantForm.tsx`
+- Form fields: tambah jarak vertikal antar field (saat ini `space-y-5`, naikkan jika perlu untuk kesan lebih lega).
+- Label field: naikkan dari `text-xs font-semibold text-gray-700` ke styling yang sedikit lebih distingtif (tracking lebih lebar, warna lebih gelap untuk kontras).
+- Color picker section (primary & primary-deep): kelompokkan secara visual lebih jelas sebagai satu unit (mis. dengan background sedikit berbeda atau border yang membungkus keduanya), karena saat ini terasa seperti dua field terpisah biasa padahal berelasi erat.
+- Logo upload area: kotak preview saat ini polos (`bg-gray-50` kotak persegi) — beri border dashed atau treatment yang lebih jelas menandakan "area upload", dengan hover state saat area diklik.
+- Tombol "Buat Tenant"/"Simpan Perubahan": gradient/shadow premium sama seperti tombol di halaman list, konsisten satu sistem.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Seluruh logic (fetch data, submit form, upload logo, generate kode, validasi unik) — TIDAK diubah, ini murni redesign visual lewat className dan struktur JSX presentasional.
+- Routing dan struktur komponen (`AdminProtectedRoute`, `AdminAuthContext`) — tidak disentuh.
+- Field-field form dan urutannya — tidak ditambah/dikurangi, hanya ditata ulang visualnya.
+- Bahasa Indonesia di semua label/pesan — dipertahankan persis seperti sekarang.
+- App jamaah (Beranda, Login jamaah, dll) — TIDAK disentuh sama sekali, ini murni redesign admin panel.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan preview keempat halaman (Login admin, Daftar Tenant, Form Tambah Tenant, Form Edit Tenant) untuk verifikasi bahwa redesign konsisten di semua halaman — satu sistem warna/typography/spacing yang sama dipakai di semuanya, bukan tiap halaman terasa beda gaya.

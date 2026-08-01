@@ -1,0 +1,73 @@
+# PROMPT FITUR BARU — Live Ritual Navigator
+
+> Konteks: project Umrahme sudah punya Counter Tawaf dan (jika sudah dibangun dari prompt sebelumnya) Counter Sa'i yang berfungsi independen. Ini fitur BARU yang berbeda tujuan: bukan penghitung putaran, tapi panduan langkah-demi-langkah seluruh rangkaian umrah (dari Miqat sampai Tahallul) yang dipakai REAL-TIME saat jamaah sedang menjalankan ibadah di hari-H — semacam "GPS" tapi berbentuk wizard manual (jamaah sendiri yang menekan "lanjut" di tiap tahap, BUKAN GPS/geolocation sungguhan).
+
+Ini berbeda dari fitur "Manasik Interaktif" yang akan dibuat terpisah (itu untuk belajar SEBELUM berangkat, dalam bentuk game/simulasi). Ritual Navigator ini murni alat bantu PRAKTIS saat hari-H, bukan media belajar.
+
+## APA INI
+
+Satu halaman wizard/stepper yang menuntun jamaah melalui seluruh rangkaian umrah secara berurutan, satu tahap dalam satu waktu, dengan tombol "Lanjut ke tahap berikutnya" yang ditekan manual oleh jamaah saat mereka sudah menyelesaikan tahap itu. Berbeda dari halaman "Tata Cara Umrah" yang sudah ada (itu bersifat referensi/bacaan, bisa dibuka dari awal sampai akhir secara bebas) — Ritual Navigator ini bersifat LINEAR dan STATEFUL: jamaah ada di SATU tahap tertentu pada satu waktu, progress-nya tersimpan, dan tahap-tahap lain terkunci/redup sampai tahap sebelumnya selesai.
+
+## STRUKTUR DATA
+
+```
+interface RitualStep {
+  id: string;
+  urutan: number;
+  judul: string;             // mis. "Berihram dari Miqat"
+  deskripsiSingkat: string;  // 1-2 kalimat, apa yang harus dilakukan
+  doaTerkaitId?: string;     // opsional, id dari src/data/doa.ts jika ada doa yang relevan langsung ditampilkan
+  linkKeFitur?: string;       // opsional, route ke fitur lain yang relevan (mis. '/ibadah/tawaf' untuk tahap tawaf)
+  catatanPenting?: string;    // opsional, satu poin pengingat krusial (mis. "Pastikan dalam keadaan suci sebelum tawaf")
+}
+```
+
+Isi data tahapan di `src/data/ritualSteps.ts`, urutan lengkap rangkaian umrah:
+1. Niat Ihram dari Miqat (doaTerkaitId mengarah ke entri niat ihram yang sudah ada)
+2. Memakai Pakaian Ihram & Membaca Talbiyah (doaTerkaitId ke Talbiyah)
+3. Perjalanan Menuju Makkah (Memperbanyak Talbiyah)
+4. Memasuki Masjidil Haram (doaTerkaitId ke doa masuk Masjidil Haram)
+5. Melihat Ka'bah (doaTerkaitId ke doa melihat Ka'bah)
+6. Tawaf 7 Putaran (linkKeFitur ke `/ibadah/tawaf`, catatanPenting tentang Hajar Aswad & posisi Ka'bah di kiri)
+7. Shalat Sunnah di Maqam Ibrahim
+8. Minum Air Zamzam
+9. Sa'i 7 Lintasan (linkKeFitur ke `/ibadah/sai` jika sudah ada, catatanPenting tentang dimulai dari Shafa)
+10. Tahallul (Mencukur/Memotong Rambut)
+
+(Sesuaikan/lengkapi urutan ini jika ada tahap yang lebih akurat berdasarkan halaman "Tata Cara Umrah" yang sudah ada di codebase — gunakan urutan dan istilah yang SAMA dengan yang sudah ada di sana, agar tidak ada dua sumber kebenaran yang berbeda untuk urutan manasik.)
+
+## HALAMAN
+
+Buat `RitualNavigator.tsx` di `src/pages/`, diakses dari halaman hub "Ibadah" (tambahkan kartu akses baru di `Ibadah.tsx`, setara dengan Counter Tawaf dan Counter Sa'i secara visual) dan rute `/ibadah/navigator`.
+
+### Tampilan tahap aktif (state utama)
+- HANYA tampilkan SATU tahap dalam satu waktu, mengisi sebagian besar layar — prinsip "satu layar satu tugas" dari Mode B tetap berlaku penuh di sini.
+- Urutan elemen dari atas: indikator progress kecil (mis. "Tahap 6 dari 10"), judul tahap (besar, jelas), deskripsi singkat, doa terkait jika ada (ditampilkan inline, ringkas — Arab + Latin + tombol untuk buka detail penuh jika ingin baca arti/dalil), catatan penting jika ada (diberi penekanan visual, mis. ikon kecil + border gold), tombol "Buka [fitur terkait]" jika ada `linkKeFitur` (mis. tombol besar ke Counter Tawaf saat di tahap Tawaf).
+- Tombol "Tahap Selanjutnya" besar di bagian bawah (≥64px tinggi, mengikuti standar tombol Mode B yang sudah ada), dengan tombol kecil "Kembali ke tahap sebelumnya" di dekatnya (lebih kecil, tidak bersaing visual dengan tombol utama).
+- Progress keseluruhan disimpan (localStorage, mengikuti pola yang sudah ada di `CounterTawaf.tsx`) agar jika jamaah menutup app dan buka lagi, mereka kembali ke tahap terakhir yang sedang dijalani, bukan mulai dari awal.
+
+### Ringkasan/peta keseluruhan (sekunder, opsional dibuka)
+- Sediakan cara melihat semua 10 tahap sekaligus (misal tombol kecil "Lihat semua tahap" di pojok, membuka overlay/bottom-sheet) — tahap yang sudah selesai ditandai centang, tahap aktif ditandai jelas, tahap berikutnya yang belum dimulai tampak redup/terkunci. Ini untuk orientasi ("saya sudah sampai mana, masih berapa lagi"), bukan untuk navigasi bebas — jamaah TETAP tidak bisa lompat ke tahap manapun secara bebas dari sini (tetap linear), kecuali tahap yang sudah pernah dilewati (boleh kembali untuk lihat ulang, tapi progress tetap mengikuti tahap teraktif/terjauh yang sudah dicapai).
+- Tombol "Reset Navigator" tersedia tapi kecil dan butuh konfirmasi (sama seperti pola reset di Counter Tawaf), untuk kasus jamaah ingin mulai ulang dari awal (misal untuk umrah sunnah kedua).
+
+### State selesai
+- Setelah tahap ke-10 (Tahallul) ditekan "selesai", tampilkan layar penutup yang terasa seperti pencapaian (mirip filosofi state selesai di Counter Tawaf) — ucapan selamat, ringkasan singkat, dan tombol mengarah ke halaman Sertifikat.
+
+## DESAIN
+
+- Filosofi Mode B sepenuhnya: tenang, fokus, kontras tinggi, tombol besar, minim elemen bersaing.
+- Mihrab card untuk kartu tahap aktif.
+- Konsisten dengan tombol-tombol besar yang sudah ada di Counter Tawaf/Sa'i agar jamaah merasakan "bahasa interaksi" yang sama di seluruh fitur Mode B.
+
+## ATURAN
+
+- TIDAK ada GPS/geolocation/sensor lokasi apapun — ini murni wizard manual yang digerakkan oleh tap jamaah sendiri.
+- TIDAK menduplikasi konten penuh dari halaman "Tata Cara Umrah" yang sudah ada — Ritual Navigator ini ringkas dan actionable (untuk dipakai saat itu juga), sedangkan Tata Cara Umrah tetap jadi referensi belajar yang lebih lengkap. Boleh saling me-link satu sama lain (misal dari Tata Cara Umrah ada tombol "Mulai dengan Navigator").
+- Jika `doaTerkaitId` merujuk ke doa yang belum lengkap/masih bertanda `perluVerifikasi` di `src/data/doa.ts`, tampilkan warning yang sama seperti yang sudah ada di halaman Detail Doa (jangan sembunyikan status verifikasi hanya karena ditampilkan inline di Navigator).
+- Hormati `prefers-reduced-motion`.
+
+## OUTPUT
+
+Sebelum membangun, tampilkan rencana singkat: konfirmasi urutan 10 tahap (sesuaikan dengan data Tata Cara Umrah yang sudah ada di codebase jika berbeda dari draft di atas), dan bagaimana state "tahap aktif" akan disimpan & dipulihkan dari localStorage.
+
+Build dimulai dari struktur data `ritualSteps.ts`, lalu halaman utama dengan state machine linear, lalu overlay ringkasan, terakhir state selesai.

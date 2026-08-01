@@ -1,0 +1,163 @@
+# PROMPT FASE 1 — Sistem Akun Jamaah Per-Individu
+
+> Konteks: saat ini jamaah login dengan kode aktivasi travel + nama BEBAS (nama apapun diterima). Sistem tidak memverifikasi siapa jamaahnya — nomor jamaah bahkan di-generate dari counter global (`nomorUrut++`) yang increment setiap kali ada yang login, sehingga bisa berbeda setiap login ulang.
+>
+> Tujuan Fase 1: admin dapat mendaftarkan nama jamaah per-tenant, dan jamaah hanya bisa login jika nama mereka sudah terdaftar di bawah kode aktivasi travel tersebut. Data jamaah (nomor jamaah, rombongan, bus, kamar) berasal dari database, bukan di-generate dummy saat login.
+
+## 1. Tabel baru `jamaah_accounts`
+
+Jalankan SQL ini di Supabase SQL Editor:
+
+```sql
+create table jamaah_accounts (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  nama text not null,
+  nomor_jamaah text not null,
+  rombongan text,
+  nomor_bus text,
+  nomor_kamar text,
+  fase text not null default 'persiapan'
+    check (fase in ('persiapan', 'tanah-suci', 'selesai')),
+  created_at timestamptz not null default now(),
+  unique (tenant_id, nama)
+);
+
+create index idx_jamaah_accounts_tenant on jamaah_accounts (tenant_id);
+create index idx_jamaah_accounts_lookup on jamaah_accounts (tenant_id, nama);
+```
+
+Catatan penting: `unique (tenant_id, nama)` — satu nama hanya boleh muncul sekali per tenant. Matching nama saat login menggunakan `lower(trim(nama))` supaya tidak case-sensitive dan tidak sensitif spasi.
+
+### RLS untuk `jamaah_accounts`
+- AKTIFKAN RLS.
+- Policy READ (`select`): publik (`using (true)`) — diperlukan saat validasi login jamaah yang belum punya sesi apapun.
+- Policy WRITE: TIDAK ada policy publik — hanya lewat admin panel (Supabase Auth admin session).
+
+## 2. Tambah tipe `JamaahAccountRow` di `src/lib/supabase.ts`
+
+```ts
+export type JamaahAccountRow = {
+  id: string;
+  tenant_id: string;
+  nama: string;
+  nomor_jamaah: string;
+  rombongan: string | null;
+  nomor_bus: string | null;
+  nomor_kamar: string | null;
+  fase: 'persiapan' | 'tanah-suci' | 'selesai';
+  created_at: string;
+};
+```
+
+## 3. Ganti `validasiKode()` di `src/data/jamaah.ts`
+
+Ubah logic validasi dari 1 langkah (cek kode) menjadi 2 langkah (cek kode → cek nama):
+
+```ts
+export async function validasiKode(kode: string, nama: string): Promise<HasilValidasi> {
+  const k = kode.trim().toUpperCase();
+  const n = nama.trim();
+
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+  if (!k) return { ok: false, error: 'Kode aktivasi wajib diisi.' };
+
+  // Langkah 1: cek kode aktivasi, ambil data tenant
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('activation_code', k)
+    .maybeSingle();
+
+  if (tenantErr || !tenant) {
+    return { ok: false, error: 'Kode tidak ditemukan, hubungi travel Anda.' };
+  }
+
+  // Langkah 2: cek nama jamaah di bawah tenant ini (case-insensitive)
+  const { data: akun, error: akunErr } = await supabase
+    .from('jamaah_accounts')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .ilike('nama', n)   // ilike = case-insensitive LIKE, tanpa wildcard = exact match case-insensitive
+    .maybeSingle();
+
+  if (akunErr || !akun) {
+    return { ok: false, error: 'Nama tidak ditemukan. Pastikan nama sesuai yang didaftarkan travel Anda.' };
+  }
+
+  // Susun objek Jamaah dari data database (bukan dummy lagi)
+  const jamaah: Jamaah = {
+    nama: akun.nama,                    // gunakan nama dari DB, bukan input user (normalize casing)
+    nomorJamaah: akun.nomor_jamaah,
+    travel: tenant.nama_travel,
+    kodeAktivasi: k,
+    fase: akun.fase,
+    rombongan: akun.rombongan ?? undefined,
+    nomorBus: akun.nomor_bus ?? undefined,
+    nomorKamar: akun.nomor_kamar ?? undefined,
+  };
+
+  return { ok: true, jamaah, tenant };
+}
+```
+
+HAPUS: variabel `nomorUrut` dan `KODE_DEMO` yang lama — keduanya tidak dipakai lagi. Jika `KODE_DEMO` masih direferensikan di `Login.tsx` (untuk tombol autofill demo), ganti dengan kode aktivasi yang sudah ada di database (mis. `'DEMO01'` tetap sebagai konstanta string tapi bukan sebagai bypass validasi).
+
+## 4. Kelola Jamaah di Admin Panel (`src/pages/admin/AdminTenantForm.tsx`)
+
+Tambahkan section baru "Daftar Jamaah" (setelah section "Agenda Perjalanan" yang sudah ada), HANYA muncul saat `!isNew`:
+
+### List jamaah yang sudah terdaftar
+Tabel sederhana, kolom: Nama, Nomor Jamaah, Rombongan, Bus, Kamar, Fase, tombol Hapus.
+Query: `select * from jamaah_accounts where tenant_id = :id order by nama`.
+
+### Form tambah jamaah baru
+Field:
+- **Nama** (text, wajib) — admin isi nama lengkap jamaah sesuai yang akan dipakai saat login
+- **Nomor Jamaah** (text, wajib) — format bebas, mis. `UMR-2026-0001`; JANGAN auto-generate, biar admin yang tentukan sesuai data travel mereka
+- **Rombongan** (text, opsional) — mis. `Rombongan A`
+- **Nomor Bus** (text, opsional) — mis. `Bus 3`
+- **Nomor Kamar** (text, opsional) — mis. `804`
+- **Fase** (select: Persiapan / Di Tanah Suci / Selesai, default Persiapan)
+
+Tombol "+ Tambah Jamaah" → `insert` ke `jamaah_accounts` dengan `tenant_id` tenant yang sedang diedit → refresh list tanpa reload halaman.
+
+### Hapus jamaah
+Tombol hapus per baris → `delete` dari `jamaah_accounts` dengan konfirmasi `window.confirm` → refresh list. Tampilkan pesan peringatan kecil di atas list: "Menghapus jamaah akan mencabut akses login mereka."
+
+### Edit fase jamaah (penting — admin travel bisa update progress)
+Setiap baris jamaah di list punya dropdown fase inline (Persiapan / Di Tanah Suci / Selesai) yang bisa langsung diubah → `update jamaah_accounts set fase = :fase where id = :id`. Ini yang memungkinkan admin travel mengubah status perjalanan jamaah tanpa harus hapus dan buat ulang.
+
+## 5. Seed data demo
+
+Setelah tabel dibuat, tambahkan beberapa baris demo untuk tenant yang sudah ada supaya login demo tetap bisa dipakai:
+
+```sql
+-- Cari UUID tenant DEMO01 dulu, lalu insert:
+insert into jamaah_accounts (tenant_id, nama, nomor_jamaah, rombongan, nomor_bus, nomor_kamar, fase)
+values
+  ('<uuid-tenant-demo01>', 'Daru Hardinsyah', 'UMR-2026-0001', 'Rombongan A', 'Bus 3', '804', 'persiapan'),
+  ('<uuid-tenant-demo01>', 'Ahmad Fauzi', 'UMR-2026-0002', 'Rombongan A', 'Bus 3', '805', 'persiapan'),
+  ('<uuid-tenant-demo01>', 'Siti Rahmah', 'UMR-2026-0003', 'Rombongan B', 'Bus 4', '901', 'persiapan');
+```
+
+Ganti `<uuid-tenant-demo01>` dengan UUID nyata dari tabel `tenants` untuk kode `DEMO01`.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Tipe `Jamaah` di `src/types/index.ts` — field-field yang sudah ada (termasuk yang optional) TIDAK dihapus, hanya diisi dari database bukan dummy.
+- `AuthContext.tsx` — tidak perlu diubah, fungsi `login(jamaah, tenant)` sudah menerima objek `Jamaah` lengkap, yang sekarang datanya dari database.
+- Semua halaman yang membaca `jamaah.rombongan`, `jamaah.nomorBus`, `jamaah.nomorKamar`, dll — tidak perlu diubah, datanya yang berubah (dari dummy ke real), bukan cara membacanya.
+- Admin panel sections lain (Agenda, Pengumuman, Info Operasional) — tidak disentuh, hanya section "Daftar Jamaah" yang ditambahkan.
+- Styling admin panel — ikuti pola "light premium" yang sudah ada.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. **Tunjukkan bukti end-to-end**:
+   - Buka admin panel → edit tenant DEMO01 → section "Daftar Jamaah" terlihat dengan 3 nama yang sudah di-seed
+   - Tambahkan 1 jamaah baru lewat form admin → muncul di list
+   - Buka `/login` → masukkan kode `DEMO01` + nama yang TIDAK terdaftar → harus muncul "Nama tidak ditemukan..."
+   - Masukkan kode `DEMO01` + nama yang terdaftar (misal "Daru Hardinsyah") → berhasil masuk, dashboard menampilkan data dari database (nomor jamaah, rombongan, bus, kamar sesuai yang diisi admin)
+   - Ubah fase jamaah dari admin panel → login ulang sebagai jamaah tersebut → dashboard menampilkan fase yang sudah diubah

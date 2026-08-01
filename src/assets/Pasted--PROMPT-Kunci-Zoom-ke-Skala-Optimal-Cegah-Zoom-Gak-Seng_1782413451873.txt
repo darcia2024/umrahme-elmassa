@@ -1,0 +1,86 @@
+# PROMPT: Kunci Zoom ke Skala Optimal (Cegah Zoom Gak Sengaja)
+
+App kadang ter-zoom in tidak sengaja di HP (pinch / double-tap / fokus input di iOS), bikin tampilan tidak optimal. Kunci skala viewport supaya tetap pas, seperti aplikasi native.
+
+**File terkait:**
+- `artifacts/umrahme/index.html` (meta viewport)
+- `artifacts/umrahme/src/index.css` (atau CSS global — anti auto-zoom input iOS & touch behavior)
+
+---
+
+## BAGIAN 1 — Kunci meta viewport (index.html)
+
+Ganti baris meta viewport yang ada:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+```
+menjadi:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+```
+- `maximum-scale=1.0` + `user-scalable=no` → mencegah pinch-zoom & double-tap zoom.
+- Tetap pertahankan `viewport-fit=cover` (untuk notch/safe-area).
+
+---
+
+## BAGIAN 2 — Cegah auto-zoom saat fokus input di iOS (CSS global)
+
+iOS Safari otomatis zoom-in ketika fokus ke input/textarea/select yang `font-size`-nya < 16px. Cegah dengan memastikan semua field form minimal 16px di mobile.
+
+Tambahkan ke CSS global (`src/index.css` atau setara):
+```css
+/* Cegah iOS auto-zoom saat fokus input: font-size minimal 16px */
+@media (max-width: 768px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* Cegah double-tap-to-zoom & rasa "lengket" pada elemen interaktif */
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Opsional: matikan callout & highlight bawaan iOS yang mengganggu */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+```
+
+> Catatan: `font-size: 16px !important` hanya berlaku di layar ≤768px (mobile), jadi tidak mengganggu desain di desktop. Jika ada input yang memang sengaja kecil, ini tetap aman karena 16px adalah ukuran nyaman untuk diketik di HP.
+
+---
+
+## BAGIAN 3 — (Opsional) Cegah double-tap zoom via JS untuk Safari lama
+
+Sebagian iOS Safari mengabaikan `user-scalable=no`. Sebagai pengaman tambahan, cegah gesture double-tap. Tambahkan di entry point (mis. `main.tsx`) ATAU script kecil di `index.html` sebelum `</body>`:
+```js
+// Cegah double-tap zoom (terutama iOS Safari yang mengabaikan user-scalable=no)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+
+// Cegah pinch-zoom gesture (Safari)
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+```
+> Hati-hati: jangan memblokir scroll. Kode di atas hanya mencegah double-tap & gesture pinch, tidak mengganggu scroll normal. JANGAN tambahkan `preventDefault` pada `touchmove` global karena itu akan mematikan scroll.
+
+---
+
+## CATATAN AKSESIBILITAS
+Mengunci zoom (`user-scalable=no`) mengurangi aksesibilitas bagi pengguna yang butuh memperbesar teks. Karena ini PWA bergaya aplikasi native dengan teks yang sudah cukup besar & responsif, trade-off ini umumnya diterima. Jika nanti ingin lebih ramah aksesibilitas, pertimbangkan hanya memakai Bagian 2 (cegah auto-zoom input) tanpa `user-scalable=no` di Bagian 1.
+
+---
+
+## ATURAN
+- Jangan sampai mematikan scroll halaman — hanya zoom yang dikunci.
+- Tes di HP (terutama iOS): fokus ke input TIDAK lagi zoom-in; double-tap & pinch tidak zoom; scroll tetap normal.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

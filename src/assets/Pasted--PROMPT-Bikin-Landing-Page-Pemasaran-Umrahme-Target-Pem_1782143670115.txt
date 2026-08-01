@@ -1,0 +1,113 @@
+# PROMPT: Bikin Landing Page Pemasaran Umrahme (Target: Pemilik Travel Umrah)
+
+Kamu adalah senior product engineer + UI/UX designer. Buatkan **landing page pemasaran** untuk produk bernama **Umrahme** — sebuah aplikasi pendamping umrah white-label yang dijual ke pemilik/direktur travel umrah.
+
+Buat sebagai halaman baru yang berdiri sendiri (standalone), terpisah dari aplikasi jamaah. Saran lokasi: route `/` publik atau folder terpisah `artifacts/landing/` — pilih yang paling rapi sesuai struktur project. Halaman ini TIDAK perlu auth, TIDAK terhubung ke Supabase, murni statis untuk marketing.
+
+---
+
+## 1. KONTEKS PRODUK (pahami dulu sebelum desain)
+
+**Apa itu Umrahme:** Aplikasi pendamping umrah berbasis web (PWA) yang membantu jamaah selama seluruh perjalanan ibadah — dari persiapan, di tanah suci, hingga pulang. Dijual ke travel umrah dengan model **white-label**: travel bisa pasang nama, logo, dan warna brand mereka sendiri, sehingga jamaah melihatnya seakan-akan aplikasi milik travel tersebut, bukan milik Umrahme.
+
+**Siapa target landing page ini:** Pemilik / direktur travel umrah di Indonesia. Mereka bukan orang teknis — bicara soal manfaat bisnis, bukan jargon teknologi.
+
+**Masalah yang dipecahkan untuk travel:**
+- Buku doa cetak mahal, sering hilang, dan tidak praktis dibawa jamaah.
+- Muthowif (pembimbing) kewalahan menjawab pertanyaan berulang: "jadwal hari ini apa?", "doanya bagaimana?", "hotel kita di mana?".
+- Travel ingin tampil lebih profesional & modern untuk bersaing.
+- Sulit menyampaikan info/pengumuman ke semua jamaah dengan cepat.
+
+**Posisi produk:** Bukan sekadar aplikasi — ini cara travel mendigitalisasi layanan jamaah, menggantikan buku doa cetak, dan meringankan kerja muthowif. Saat muthowif menjelaskan suatu ibadah, jamaah bisa langsung mengikuti panduan & doanya di aplikasi.
+
+---
+
+## 2. TONE & GAYA VISUAL
+
+- **Tone:** Hangat & islami, namun tetap profesional dan meyakinkan untuk audiens bisnis. Bukan norak/berlebihan.
+- **Nuansa:** Perjalanan suci — tenang, terpercaya, elegan.
+- **Palet warna:** Dominan netral hangat (krem/bone, putih bersih) dengan aksen **emas/gold** (#b8860b / #d4a24e family) untuk kesan premium-islami, dan boleh ada aksen biru tua/navy gelap (#1a2744) untuk kontras pada section CTA. Hindari warna mencolok/neon.
+- **Tipografi:** Gunakan font display yang berkarakter untuk heading (mis. serif elegan atau grotesque modern), font sans bersih untuk body. Boleh pakai font Arab (mis. Amiri) untuk sentuhan kaligrafi salam/ayat singkat — tapi jangan berlebihan, cukup 1-2 tempat (pembuka & CTA).
+- **Layout:** Modern, lega, banyak white space. Mobile-first dan fully responsive (banyak owner travel buka dari HP). Section dipisah rapi dengan divider halus.
+- **Animasi:** Halus saja — fade-in saat scroll, hover state pada card & tombol. Jangan berlebihan.
+- **Wajib:** Tidak ada lorem ipsum. Semua copy pakai teks final dari prompt ini (bahasa Indonesia).
+
+---
+
+## 3. STRUKTUR SECTION (urut dari atas ke bawah)
+
+### Section 1 — Hero
+- Sentuhan kaligrafi salam pembuka kecil di atas: "السَّلامُ عَلَيْكُم" (opsional, halus).
+- Badge/label kecil: "Untuk Pemilik Travel Umrah".
+- Headline besar & kuat (gunakan ini): **"Digitalisasi layanan jamaah Anda — tampil dengan nama travel Anda sendiri"**
+- Subheadline: *"Umrahme adalah aplikasi pendamping umrah yang bisa Anda white-label sepenuhnya. Jamaah melihatnya sebagai aplikasi milik travel Anda — bukan kami. Satu pendamping untuk seluruh perjalanan ibadah mereka."*
+- 3 chip/pill kecil sebagai highlight: "White-label penuh", "Ganti buku doa cetak", "Tanpa perlu install".
+- 2 tombol CTA: primer "Minta Demo Gratis", sekunder "Hubungi via WhatsApp".
+- Boleh tambahkan ilustrasi/mockup HP yang menampilkan aplikasi (kalau bisa bikin mockup sederhana via CSS, bagus; kalau tidak, skip — jangan pakai gambar placeholder eksternal).
+
+### Section 2 — Kenapa Travel Butuh Ini (manfaat bisnis)
+Judul: "Nilai tambah nyata untuk bisnis travel Anda". 4 poin manfaat (format list/card dengan ikon):
+1. **Brand travel Anda makin kuat** — Nama, logo, dan warna travel tampil di seluruh aplikasi. Jamaah memegang aplikasi bermerek travel Anda setiap hari selama perjalanan — promosi berjalan sepanjang umrah.
+2. **Pengganti buku doa cetak** — 55+ doa lengkap dengan teks Arab, latin, dan terjemahan dalam genggaman. Hemat biaya cetak, tidak hilang, selalu terbawa. Saat muthowif menjelaskan, jamaah bisa ikuti langsung di aplikasi.
+3. **Beban muthowif & tim lebih ringan** — Pertanyaan berulang seperti "jadwal hari ini apa?", "doanya bagaimana?", "hotel kita di mana?" terjawab sendiri lewat aplikasi. Muthowif fokus membimbing, bukan mengulang informasi.
+4. **Jamaah lebih puas, lebih banyak referral** — Jamaah yang terlayani dengan baik merekomendasikan travel Anda. Pengalaman digital yang rapi jadi pembeda dari travel lain yang masih manual.
+
+### Section 3 — Fitur (yang jamaah dapatkan)
+Judul: "Pendamping lengkap dari persiapan hingga pulang". Subjudul: "Semua fitur sudah jadi dan siap pakai — tinggal aktifkan untuk jamaah Anda."
+Tampilkan sebagai grid card (responsive). Gunakan ikon yang sesuai untuk masing-masing. **Gunakan daftar fitur ini PERSIS (jangan menambah fitur yang tidak ada):**
+1. **Kumpulan doa lengkap** — 55+ doa per tahapan ibadah, dari ihram sampai tawaf wada'. Arab, latin, terjemahan.
+2. **Manasik interaktif** — Modul belajar tata cara umrah lengkap, bisa dipelajari jamaah sebelum berangkat.
+3. **Counter tawaf & sa'i** — Penghitung putaran otomatis dengan doa per putaran. Tidak salah hitung lagi.
+4. **Ritual navigator** — Pemandu langkah demi langkah saat ibadah berlangsung.
+5. **Peta lokasi ziarah** — 10 lokasi bersejarah lengkap dengan sejarah & Google Maps (Masjidil Haram, Nabawi, Quba, Uhud, dll).
+6. **Agenda perjalanan** — Jadwal harian yang diatur travel, tampil otomatis di HP jamaah sesuai fase perjalanan.
+7. **Kartu jamaah digital** — Identitas digital: nama, rombongan, hotel, kontak pembimbing. Berguna saat darurat.
+8. **Jadwal sholat** — Waktu sholat akurat sesuai lokasi jamaah di Makkah & Madinah.
+9. **Sertifikat & jurnal** — Sertifikat umrah digital + jurnal kenangan perjalanan ibadah.
+
+### Section 4 — Cara Kerja / Mudah Dikelola
+Judul: "Travel pegang kendali penuh lewat portal". 3 langkah:
+1. **Atur branding & data lewat portal travel** — Login ke portal, atur nama travel, logo, warna, data hotel, pembimbing, dan agenda keberangkatan. Semua dalam kendali Anda.
+2. **Bagikan kode aktivasi ke jamaah** — Setiap keberangkatan dapat kode unik. Jamaah cukup buka link, masukkan kode & nama — langsung masuk tanpa install dari Play Store.
+3. **Kirim pengumuman kapan saja** — Ada perubahan jadwal atau info penting? Kirim langsung dari portal, muncul di HP semua jamaah. Tidak perlu broadcast WhatsApp satu per satu.
+
+### Section 5 — Harga
+Judul: "Cukup 10 SAR per jamaah. Itu saja."
+- Tampilkan angka **10 SAR** dengan SANGAT menonjol (angka besar), dengan keterangan kecil "per jamaah per keberangkatan".
+- Sub-teks: "Tanpa biaya bulanan, tanpa biaya setup. Bayar hanya untuk jamaah yang berangkat."
+- Tambahkan satu kalimat penguat nilai: "Lebih murah dari biaya cetak buku doa per jamaah — tapi nilai yang jamaah terima jauh lebih besar."
+- **PENTING: JANGAN buat kalkulator atau perhitungan total biaya. Cukup tonjolkan angka 10 SAR per jamaah saja.** Buat section ini bersih, fokus pada satu angka itu.
+
+### Section 6 — Penutup / CTA Akhir
+- Boleh ada kaligrafi/doa singkat: "بَارَكَ اللَّهُ فِيكُم" (semoga Allah memberkahi kalian).
+- Headline: "Jadikan travel Anda yang terdepan dalam pelayanan".
+- Sub-teks: "Coba demo gratis dengan branding travel Anda. Lihat sendiri bagaimana jamaah terbantu sebelum memutuskan."
+- 2 tombol: "Minta Demo Gratis" dan "Hubungi via WhatsApp".
+- Section ini boleh pakai background gelap (navy/biru tua) dengan teks terang & aksen emas agar jadi penutup yang kuat.
+
+### Footer
+- Logo/nama Umrahme, tagline singkat ("Pendamping umrah digital untuk travel modern"), tahun, dan link placeholder (Tentang, Kontak, WhatsApp). Sederhana saja.
+
+---
+
+## 4. ATURAN TEKNIS
+
+- **Stack:** Sesuaikan dengan project (React + TypeScript + Tailwind yang sudah ada). Buat komponen rapi & modular per section bila memungkinkan.
+- **Reuse design tokens** yang sudah ada di project (warna, font, radius, shadow di tailwind.config) bila cocok — tapi landing page boleh punya gaya marketing yang lebih bold dari aplikasi jamaah.
+- **Tombol CTA:** Untuk "Hubungi via WhatsApp", buat link `https://wa.me/` dengan nomor placeholder yang mudah diganti (mis. `6281234567890`) dan pesan prefilled: "Assalamu'alaikum, saya pemilik travel umrah dan tertarik dengan Umrahme. Boleh minta info demo?". Untuk "Minta Demo Gratis" boleh arahkan ke section kontak atau WhatsApp yang sama.
+- **Responsif penuh** — wajib enak dilihat di HP, tablet, dan desktop.
+- **Performa:** Tidak perlu library berat. Animasi pakai CSS atau Framer Motion (kalau sudah ada di project).
+- **Accessibility:** Heading hierarki benar (satu h1, lalu h2 per section), alt text bila ada gambar, kontras warna cukup.
+- **Jangan** pakai gambar dari URL eksternal yang bisa mati. Kalau butuh visual, pakai ilustrasi CSS/SVG sederhana atau ikon.
+- Setelah selesai, jalankan `pnpm run typecheck` dan pastikan nol error, lalu beri tahu route/URL untuk membuka landing page-nya.
+
+---
+
+## 5. PRINSIP KUALITAS (penting!)
+
+- Buat landing page ini terasa **mahal dan terpercaya** — owner travel harus langsung yakin produk ini serius dan profesional.
+- Setiap section harus punya alasan jelas dan mengalir secara naratif: tarik perhatian (hero) → bangun keinginan (manfaat bisnis) → tunjukkan bukti (fitur) → permudah keputusan (cara kerja + harga simpel) → ajak bertindak (CTA).
+- Copy harus persuasif tapi jujur — jangan overclaim fitur yang tidak disebutkan di atas.
+- Detail kecil menentukan: spacing konsisten, alignment rapi, hover state halus, tipografi berhierarki jelas. Buat seolah-olah ini dikerjakan agency desain profesional.
+
+Tunjukkan hasil akhir dan ringkasan file yang dibuat/diubah.

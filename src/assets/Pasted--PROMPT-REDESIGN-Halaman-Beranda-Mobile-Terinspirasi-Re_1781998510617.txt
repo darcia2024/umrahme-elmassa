@@ -1,0 +1,43 @@
+# PROMPT REDESIGN — Halaman Beranda (Mobile), Terinspirasi Referensi "Courts Reservation"
+
+> Konteks: project Umrahme, halaman Beranda mobile (`src/pages/Beranda.tsx`, bagian `<div className="lg:hidden">` saja — desktop tidak disentuh). Saat ini struktur: hero foto masjid full-bleed dengan sapaan nama di bawahnya → baris quick-access icon (Doa/Ihram/Tawaf/Sa'i/Peta/Sholat) → kartu fase perjalanan gelap (gradient coklat-emas) → kartu progress checklist → grid fitur 3 kolom.
+
+Redesign terinspirasi sebuah referensi app reservasi lapangan tenis dengan ciri khas: hero image besar dengan headline besar di tengah, **chip filter horizontal mengambang (floating)** yang setengah menjorok ke atas hero dan setengah ke card putih di bawahnya, lalu card putih solid besar berisi **pilihan-pilihan berbentuk kotak** (bukan paragraf naratif), ditutup CTA pill solid besar di kanan bawah.
+
+## STRUKTUR BARU YANG DIINGINKAN
+
+### 1. Hero (foto masjid) — TETAP seperti sekarang
+Foto masjid full-bleed, scrim gradient atas-bawah, sapaan "Assalamu'alaikum" + nama, kaligrafi Arab pojok kanan atas — TIDAK diubah. Badge fase ("FASE PERSIAPAN") yang sekarang ada di hero **dihapus dari sini**, dipindah jadi bagian dari card kotak-kotak di bawah (lihat poin 3).
+
+### 2. Chip filter mengambang (BARU — elemen utama yang diadaptasi dari referensi)
+Ganti baris quick-access icon (`QuickIcon`, ikon bulat 62×62px) menjadi **baris chip pill horizontal scrollable** yang isinya 6 item yang sama (Doa, Ihram, Tawaf, Sa'i, Peta, Sholat), dengan posisi **mengambang/overlap**: setengah bagian atas chip menimpa bagian bawah hero foto, setengah bagian bawah chip menimpa bagian atas card putih di bawahnya (pakai `margin-top` negatif sekitar setengah tinggi chip, mirip referensi di mana baris chip duduk persis di garis sambung antara foto dan card putih).
+- Setiap chip: pill rounded-full, padding horizontal cukup, isi ikon kecil (h-4 w-4) + label teks (bukan ikon besar tanpa teks seperti sekarang).
+- Chip pertama (default/aktif, bisa "Doa" atau kosongkan logic aktif untuk sekarang) pakai style terisi solid `bg-primary text-on-primary`; chip lainnya `bg-white border border-hairline text-charcoal` dengan shadow `shadow-drop-lifted` agar mengambang jelas dari hero di belakangnya.
+- Tetap horizontal scroll (`overflow-x-auto no-scrollbar`) karena 6 item tidak harus muat semua di layar sempit.
+
+### 3. Card putih besar — pilihan kotak-kotak (BARU, gantikan kartu fase gelap)
+Ganti kartu fase gradient gelap coklat-emas dengan **card putih solid** (`bg-white`, rounded-2xl besar, shadow-drop-lifted), strukturnya:
+- Baris atas: label kecil uppercase "Fase Perjalanan" (font-mono, text-mute) + di sampingnya badge kecil rounded-full menampilkan fase aktif (gunakan label dari `urutanFase[idxFase].label`, styling badge boleh pakai `bg-primary/10 text-primary` bukan lagi dot abu-abu seperti sekarang).
+- Judul besar: nama fase aktif (`faseAktif?.label`), tetap `font-display` besar tapi sekarang **warna gelap `text-ink`** (bukan putih, karena background sekarang putih).
+- 3 KOTAK PILIHAN sejajar horizontal (terinspirasi kotak tanggal "13/14/17/19" pada referensi) — isi dengan 3 fase perjalanan (`persiapan`, `tanah-suci`, `selesai`) dari `urutanFase`, masing-masing kotak: rounded-xl border, isi singkatan/ikon fase + label pendek. Kotak yang sesuai `jamaah.fase` aktif diberi border tebal `border-primary` + background tint `bg-primary/5` (state terpilih, meniru kotak tanggal "13 Mon" yang ter-highlight di referensi). Kotak lain `border-hairline` biasa, non-interaktif untuk MVP ini (boleh tetap sebagai display saja, tidak perlu logic ganti fase).
+- Deskripsi singkat fase aktif tetap ditampilkan (`faseDesc[jamaah.fase]`), posisinya di bawah 3 kotak.
+- CTA di kanan bawah card: ganti dari pill biru rose lebar penuh menjadi **pill solid hitam/ink besar** (`bg-ink text-white`) sejajar kanan, mirip tombol "Book now" hitam di referensi — teksnya tetap `heroCta.label`.
+
+### 4. Card progress checklist — TETAP seperti sekarang
+Tidak ada perubahan pada section progress checklist (ring/persen/progress bar).
+
+### 5. Grid fitur 3 kolom — TETAP seperti sekarang
+Tidak ada perubahan.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Bottom navigation (5 slot + FAB Ibadah) — TIDAK disentuh sama sekali, tetap persis seperti sekarang.
+- Semua route/link tujuan (`to="/doa"`, `to="/ibadah/tawaf"`, dll) — tetap sama, jangan ubah path manapun.
+- Data source: `urutanFase`, `jamaah.fase`, `faseDesc`, `faseLabelMobile`, `heroCta`, `checklistItems` — semua logic dan field yang sudah ada tetap dipakai apa adanya, jangan menciptakan field/data baru yang tidak ada di kode.
+- Section desktop (`hidden lg:block` di file yang sama, jika ada) — TIDAK disentuh, hanya bagian mobile yang diredesign.
+- Token warna: `primary` (biru sky `#0ea5e9`), `gold` (`#d4a24e`), `ink`, `charcoal`, `mute`, `hairline`, `canvas`, `surface-bone` — pakai token yang sudah ada di `tailwind.config.ts`, jangan menambahkan hex baru di luar palet ini kecuali untuk shade/tint yang konsisten dengan token tersebut (mis. `primary/10`, `primary/5`).
+- Section progress checklist dan grid fitur 3 kolom — TIDAK diubah strukturnya (lihat poin 4 & 5 di atas).
+
+## OUTPUT
+
+Build langsung section mobile Beranda dengan struktur baru di atas. Setelah selesai, tunjukkan preview halaman Beranda penuh (dari hero sampai grid fitur) untuk verifikasi: chip filter mengambang terlihat presisi di garis sambung hero-card (tidak terpotong/salah posisi), 3 kotak pilihan fase rapi sejajar dengan state aktif yang jelas berbeda dari yang tidak aktif, CTA hitam di kanan bawah card tidak bertabrakan dengan elemen lain, dan seluruh bagian lain (bottom nav, progress checklist, grid fitur) tidak berubah dari sebelumnya.

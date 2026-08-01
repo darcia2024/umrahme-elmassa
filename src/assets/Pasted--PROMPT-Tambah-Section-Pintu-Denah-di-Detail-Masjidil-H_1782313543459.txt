@@ -1,0 +1,124 @@
+# PROMPT: Tambah Section "Pintu & Denah" di Detail Masjidil Haram & Masjid Nabawi
+
+**File terkait:**
+- `artifacts/umrahme/src/types/index.ts` (tambah field di interface Lokasi)
+- `artifacts/umrahme/src/data/lokasi.ts` (isi data pintu untuk 2 masjid)
+- `artifacts/umrahme/src/pages/LokasiDetail.tsx` (render section baru)
+
+Tambahkan informasi pintu-pintu penting + link ke peta/denah resmi untuk Masjidil Haram dan Masjid Nabawi. Sumber: General Authority for the Care of the Two Holy Mosques (alharamain.gov.sa).
+
+---
+
+## LANGKAH 1 — Tambah field di interface `Lokasi` (types/index.ts)
+
+Tambahkan dua field opsional pada interface `Lokasi`:
+```ts
+export interface PintuMasjid {
+  nama: string;        // mis. "Bab as-Salam (Gate 1)"
+  fungsi: string;      // deskripsi singkat fungsi/keutamaan pintu
+}
+
+export interface Lokasi {
+  // ... field yang sudah ada ...
+  pintu?: PintuMasjid[];      // daftar pintu penting (untuk masjid besar)
+  petaResmiUrl?: string;      // link ke peta/denah resmi
+}
+```
+
+---
+
+## LANGKAH 2 — Isi data untuk Masjidil Haram & Masjid Nabawi (data/lokasi.ts)
+
+### Pada objek `id: 'masjidil-haram'`, tambahkan:
+```ts
+petaResmiUrl: 'https://alharamain.gov.sa/public/?site=en',
+pintu: [
+  { nama: 'Bab Malik Abdul Aziz (Gerbang 1)', fungsi: 'Salah satu gerbang terbesar dan terpopuler, akses langsung ke area Mataf dari sisi selatan.' },
+  { nama: 'Bab Malik Fahd', fungsi: 'Sering dipakai karena dekat dengan area tawaf (Mataf).' },
+  { nama: 'Bab As-Salam', fungsi: 'Pintu bersejarah, dianjurkan masuk dengan mendahulukan kaki kanan dan berdoa.' },
+  { nama: 'Bab Umrah (Gerbang 63)', fungsi: 'Pintu yang menurut riwayat dilalui Nabi \ufdfa saat memasuki Makkah untuk umrah. Akses langsung ke Mataf dari arah barat laut.' },
+  { nama: 'Bab Ajyad', fungsi: 'Gerbang di sisi tenggara, sering dipakai jamaah; tersedia eskalator ke lantai atas.' },
+  { nama: 'Bab Al-Fath', fungsi: 'Dinamai untuk mengenang Fathu Makkah (pembebasan Makkah).' },
+],
+```
+
+### Pada objek `id: 'masjid-nabawi'`, tambahkan:
+```ts
+petaResmiUrl: 'https://alharamain.gov.sa/pdf/masjid-nabawi-map.pdf',
+pintu: [
+  { nama: 'Bab As-Salam', fungsi: 'Pintu utama yang dahulu sering dilalui Nabi \ufdfa. Banyak peziarah pria masuk dari sini menuju arah Raudhah.' },
+  { nama: 'Bab Jibril', fungsi: 'Pintu bersejarah; dinamai Malaikat Jibril yang membawa wahyu.' },
+  { nama: 'Bab Ar-Rahmah', fungsi: 'Salah satu dari tiga pintu asli masjid pada masa Nabi \ufdfa. Dikaitkan dengan rahmat dan ampunan.' },
+  { nama: 'Bab An-Nisa (Gerbang 39)', fungsi: 'Pintu yang ditetapkan Khalifah Umar bin Khattab untuk jamaah wanita.' },
+  { nama: 'Bab Al-Baqi', fungsi: 'Menghadap pemakaman Jannatul Baqi di sisi timur; jalur menuju ziarah Baqi.' },
+  { nama: 'Gerbang 333', fungsi: 'Penanda populer di sisi selatan (dekat food street), sering jadi titik kumpul rombongan.' },
+  { nama: 'Gerbang King Fahd', fungsi: 'Gerbang besar dari perluasan modern, melayani area perluasan masjid.' },
+],
+```
+
+> Catatan akurasi: Masjid Nabawi memiliki 42 pintu masuk utama (total ~85 daun pintu setelah perluasan terakhir). Sisi Qiblah ada di selatan. Akses Raudhah dikontrol & wajib booking via aplikasi Nusuk.
+
+---
+
+## LANGKAH 3 — Render section "Pintu & Denah" di LokasiDetail.tsx
+
+Tambahkan section ini di halaman detail (hanya tampil jika `lokasi.pintu` ada), letakkan setelah section Adab atau sebelum Catatan:
+
+```tsx
+{lokasi.pintu && lokasi.pintu.length > 0 && (
+  <section className="mt-6">
+    <div className="mb-3 flex items-center justify-between">
+      <div>
+        <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Navigasi</p>
+        <h3 className="mt-0.5 text-[15px] font-bold text-ink">Pintu Penting & Denah</h3>
+      </div>
+    </div>
+
+    {/* Daftar pintu */}
+    <div className="space-y-2">
+      {lokasi.pintu.map((p, i) => (
+        <div key={i} className="rounded-xl border border-hairline bg-surface-card p-3">
+          <div className="flex items-start gap-2.5">
+            <div className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-md bg-gold/15">
+              <IconPeta className="h-3.5 w-3.5 text-gold" />
+            </div>
+            <div className="min-w-0">
+              <h4 className="text-[13px] font-bold leading-tight text-ink">{p.nama}</h4>
+              <p className="mt-0.5 text-[12px] leading-snug text-charcoal">{p.fungsi}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Tombol peta resmi */}
+    {lokasi.petaResmiUrl && (
+      <a
+        href={lokasi.petaResmiUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-primary/10"
+      >
+        <IconPeta className="h-4 w-4" />
+        Lihat Denah Resmi (alharamain.gov.sa)
+      </a>
+    )}
+
+    {/* Disclaimer sumber */}
+    <p className="mt-2 text-center font-mono text-[9px] uppercase tracking-wider text-mute">
+      Sumber: General Authority for the Care of the Two Holy Mosques
+    </p>
+  </section>
+)}
+```
+
+Pastikan `IconPeta` sudah di-import di LokasiDetail.tsx.
+
+---
+
+## ATURAN
+- Section hanya muncul untuk lokasi yang punya data `pintu` (yaitu Masjidil Haram & Masjid Nabawi). Lokasi lain tidak terpengaruh.
+- Jangan ubah section detail lain.
+- Catatan: link `alharamain.gov.sa` adalah situs resmi; jika PDF Nabawi tidak terbuka, arahkan ke situs utama `https://alharamain.gov.sa/public/?site=en`.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

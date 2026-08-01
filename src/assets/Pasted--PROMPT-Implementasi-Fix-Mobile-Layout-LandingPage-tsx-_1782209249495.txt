@@ -1,0 +1,299 @@
+# PROMPT: Implementasi Fix Mobile Layout — LandingPage.tsx
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+**Tujuan:** Buat tampilan mobile landing page compact, rapi, dan sempurna.
+**Aturan keras:** JANGAN ubah tampilan desktop, copy/teks, logika React, atau animasi. Hanya tambah `className` ke elemen yang disebutkan dan update CSS di dalam `<style>`.
+
+---
+
+## LANGKAH 1 — Ganti blok `@media (max-width: 760px)` yang kedua
+
+Di dalam `<style>{``...``}</style>`, cari blok ini PERSIS:
+
+```css
+@media (max-width: 760px) {
+  .lp-feat-grid { grid-template-columns: 1fr !important; }
+  .lp-bento { grid-template-columns: 1fr !important; }
+  .lp-pain-grid { grid-template-columns: 1fr !important; }
+  .lp-testi-grid { grid-template-columns: 1fr !important; }
+  .lp-foot-top { grid-template-columns: 1fr !important; }
+  .lp-float-wrap { overflow-x: auto; justify-content: flex-start !important; padding: 0 20px 10px !important; }
+  .lp-hero-padding { padding: 100px 0 0 !important; }
+}
+```
+
+Ganti SELURUHNYA dengan blok baru ini:
+
+```css
+@media (max-width: 760px) {
+  /* ── GLOBAL ── */
+  body, #root { overflow-x: hidden; }
+
+  /* ── GRIDS ── */
+  .lp-feat-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .lp-bento { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .lp-pain-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .lp-testi-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .lp-foot-top { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .lp-steps { gap: 10px !important; }
+  .lp-price-wrap { grid-template-columns: 1fr !important; }
+
+  /* ── HERO ── */
+  .lp-hero-padding { padding-top: 76px !important; }
+
+  /* ── FLOATING CARDS: 2x2 grid ── */
+  .lp-float-wrap {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 0 16px !important;
+    margin-top: 28px !important;
+    margin-bottom: -32px !important;
+    overflow: visible !important;
+    justify-content: unset !important;
+    align-items: stretch !important;
+    min-height: unset !important;
+    perspective: none !important;
+  }
+  .lp-float-wrap > div {
+    width: 100% !important;
+    animation: none !important;
+    flex-shrink: unset !important;
+  }
+  .lp-float-wrap > div > div {
+    width: 100% !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+  }
+  .lp-float-card-mid { display: none !important; }
+
+  /* ── HERO CTA BUTTONS: stack vertikal ── */
+  .lp-hero-btns {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: 320px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    gap: 10px !important;
+  }
+  .lp-hero-btns .lp-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 13px 20px !important;
+    font-size: 14px !important;
+  }
+
+  /* ── HERO SOCIAL PROOF ── */
+  .lp-hero-social {
+    flex-direction: column !important;
+    gap: 4px !important;
+    font-size: 12px !important;
+  }
+
+  /* ── SECTION PADDING ── */
+  .lp-section { padding-top: 48px !important; padding-bottom: 48px !important; }
+  .lp-section-sm { padding-top: 32px !important; padding-bottom: 32px !important; }
+
+  /* ── TYPOGRAPHY ── */
+  .lp-h2 { line-height: 1.18 !important; margin-bottom: 28px !important; }
+
+  /* ── FEAT CARDS ── */
+  .lp-feat-card { padding: 18px !important; border-radius: 16px !important; }
+  .lp-feat-card h3 { font-size: 15px !important; margin-bottom: 5px !important; }
+  .lp-feat-card p { font-size: 12.5px !important; }
+  .lp-feat-card > div:first-child { width: 38px !important; height: 38px !important; font-size: 18px !important; margin-bottom: 10px !important; }
+
+  /* ── BENTO CARDS ── */
+  .lp-bento > div > div { min-height: unset !important; padding: 20px !important; border-radius: 16px !important; }
+  .lp-bento-right { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+
+  /* ── PAIN CARDS ── */
+  .lp-pain-grid > div > div { padding: 18px !important; border-radius: 16px !important; }
+
+  /* ── WHITE-LABEL PHONES ── */
+  .lp-wl { gap: 32px !important; }
+  .lp-wl-phones {
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 0 8px 16px !important;
+    flex-wrap: nowrap !important;
+  }
+  .lp-wl-phones > div {
+    transform: none !important;
+    width: calc(50% - 5px) !important;
+    max-width: 175px !important;
+  }
+  .lp-wl-phones > div > div { height: 320px !important; }
+
+  /* ── PRICING ── */
+  .lp-price-card { padding: 26px 22px !important; border-radius: 20px !important; }
+  .lp-price-num { font-size: 54px !important; line-height: 1 !important; }
+  .lp-calc-hide { display: none !important; }
+
+  /* ── TESTIMONIALS ── */
+  .lp-testi-grid > div > div { padding: 20px !important; border-radius: 16px !important; }
+
+  /* ── STEPS ── */
+  .lp-steps > div > div { padding: 22px 20px !important; border-radius: 16px !important; }
+  .lp-steps > div > div h3 { font-size: 17px !important; }
+
+  /* ── CTA BOX ── */
+  .lp-cta-box { padding: 32px 22px !important; border-radius: 20px !important; }
+  .lp-cta-box h2 { font-size: 24px !important; margin-bottom: 12px !important; }
+  .lp-cta-box p { font-size: 14px !important; margin-bottom: 20px !important; }
+  .lp-cta-btns {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  .lp-cta-btns .lp-btn {
+    width: 100% !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+  }
+
+  /* ── FOOTER ── */
+  .lp-foot-links {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  /* ── MARQUEE ── */
+  .lp-marquee-wrap { padding-top: 52px !important; padding-bottom: 36px !important; }
+
+  /* ── FAQ ── */
+  .lp-faq-q { font-size: 14px !important; padding: 16px 18px !important; }
+  .lp-faq-a { font-size: 13.5px !important; padding: 0 18px 16px !important; }
+
+  /* ── WL CHECKLIST ── */
+  .lp-wl-list li { font-size: 13.5px !important; margin-bottom: 10px !important; }
+  .lp-wl-cta { font-size: 13px !important; padding: 12px 18px !important; }
+
+  /* ── INNER PADDING ── */
+  .lp-inner { padding-left: 18px !important; padding-right: 18px !important; }
+}
+
+@media (max-width: 480px) {
+  .lp-feat-grid { grid-template-columns: 1fr !important; }
+  .lp-pain-grid { grid-template-columns: 1fr !important; }
+  .lp-bento-right { grid-template-columns: 1fr !important; }
+  .lp-float-wrap { grid-template-columns: 1fr 1fr !important; }
+  .lp-wl-phones > div { max-width: 150px !important; }
+  .lp-wl-phones > div > div { height: 280px !important; }
+  .lp-foot-links { grid-template-columns: 1fr 1fr !important; }
+}
+```
+
+---
+
+## LANGKAH 2 — Tambah `className` ke elemen JSX
+
+Tambahkan className berikut ke elemen yang tepat. **Jangan ubah style yang sudah ada**, hanya tambah `className`.
+
+### A. Hero CTA buttons wrapper
+Cari `motion.div` yang punya:
+```
+style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 26 }}
+```
+Tambah: `className="lp-hero-btns"`
+
+### B. Hero social proof wrapper
+Cari `motion.div` yang punya:
+```
+style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 600 }}
+```
+Tambah: `className="lp-hero-social"`
+
+### C. Floating card ke-3 (Panduan Ibadah) — sembunyikan di mobile
+Card ke-3 adalah `motion.div` yang di dalamnya ada `{i === 2 && (`. Tambahkan `className={i === 2 ? 'lp-float-card-mid' : ''}` ke `motion.div` tersebut.
+
+### D. Partners marquee wrapper
+Cari `div` yang punya:
+```
+style={{ padding: '90px 0 50px', borderBottom: ...
+```
+Tambah: `className="lp-marquee-wrap lp-section-sm"`
+
+### E. Bento right column wrapper
+Cari `div` yang punya:
+```
+style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
+```
+*(yang ada di dalam section bento, bukan di tempat lain)*
+Tambah: `className="lp-bento-right"`
+
+### F. White-label phones wrapper
+Cari `div` yang punya:
+```
+style={{ display: 'flex', gap: 18, justifyContent: 'center', flexWrap: 'wrap', overflow: 'hidden', padding: '10px 10px 20px' }}
+```
+Tambah: `className="lp-wl-phones"`
+
+### G. Pricing card gelap
+Cari `div` yang punya:
+```
+style={{ background: C.ink, color: '#fff', borderRadius: 28, padding: 40, position: 'relative', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}
+```
+Tambah: `className="lp-price-card"`
+
+### H. Angka "10" di pricing
+Cari:
+```jsx
+<span style={{ fontSize: 64, fontWeight: 800, lineHeight: 1, color: C.accent }}>10</span>
+```
+Tambah: `className="lp-price-num"`
+
+### I. Kalkulator card (sembunyikan di mobile)
+Cari `<Reveal delay={0.08}>` yang di dalamnya ada teks "Kalkulator Biaya".
+Tambah `className="lp-calc-hide"` ke `Reveal` tersebut:
+```jsx
+<Reveal delay={0.08} className="lp-calc-hide">
+```
+
+### J. CTA box gradient
+Cari `div` yang punya:
+```
+style={{ background: `linear-gradient(165deg, ${C.primary}, ${C.primaryDark})`, color: '#fff', borderRadius: 32, padding: '64px 40px'...
+```
+Tambah: `className="lp-cta-box"`
+
+### K. CTA buttons wrapper di dalam CTA box
+Cari `div` yang punya:
+```
+style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap', position: 'relative' }}
+```
+Tambah: `className="lp-cta-btns"`
+
+### L. Semua section utama
+Tambah `className="lp-section"` ke semua `<section>` dan wrapper `<div>` yang punya `padding: '90px 0'` atau `padding: '90px 0'` sebagai value style-nya. Ini mencakup:
+- Section ABOUT/BENTO
+- Section PAIN POINTS (`style={{ background: C.soft, padding: '90px 0' }}`)
+- Section FEATURES (`id="fitur"`)
+- Section HOW IT WORKS (`id="cara"`)
+- Section WHITE-LABEL
+- Section PRICING (`id="harga"`)
+- Section TESTIMONIALS
+- Section FAQ
+- Section FINAL CTA (`id="kontak"` — ini punya `padding: '90px 24px'`)
+
+### M. Semua inner container (max-width: 1180)
+Cari semua `div` yang punya:
+```
+style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px' }}
+```
+Tambah: `className="lp-inner"` ke semua yang ditemukan.
+
+### N. Footer links wrapper
+Di dalam footer, wrap ketiga div kolom (Produk, Perusahaan, Legal) dengan satu `<div className="lp-foot-links">` baru.
+
+---
+
+## LANGKAH 3 — Verifikasi
+
+Setelah semua perubahan selesai:
+1. Jalankan `pnpm --filter umrahme typecheck` — pastikan nol TypeScript error
+2. Laporkan setiap className yang berhasil ditambahkan dan mana yang tidak ditemukan
+
+**INGAT:** Jangan ubah teks konten, warna, logika, atau struktur desktop apapun.

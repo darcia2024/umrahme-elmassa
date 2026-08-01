@@ -1,0 +1,80 @@
+# PROMPT FIX — Reorder Section Beranda Dashboard
+
+> Konteks: `src/pages/Beranda.tsx` punya section mobile dan desktop yang perlu direorder. TIDAK ADA perubahan logic, data, atau komponen — hanya urutan render JSX yang dipindah.
+
+## Urutan BARU yang diinginkan (mobile `lg:hidden`)
+
+Dari urutan sekarang:
+```
+1. GlobalSearch
+2. Countdown H-X
+3. KartuAgendaHariIni
+4. KartuItinerary
+5. TravelCompanionFlow  ← terlalu bawah
+6. phaseActions (Akses Cepat)
+7. Checklist  ← terlalu bawah
+8. Fitur Lainnya  ← dihapus
+```
+
+Menjadi:
+```
+1. GlobalSearch  ← tetap
+2. Countdown H-X  ← tetap
+3. KartuAgendaHariIni  ← tetap
+4. TravelCompanionFlow  ← naik dari posisi 5
+5. KartuItinerary  ← turun dari posisi 4
+6. Checklist  ← naik dari posisi 7, TETAP hanya muncul saat fase Persiapan
+7. phaseActions (Akses Cepat)  ← turun dari posisi 6
+8. ~~Fitur Lainnya~~  ← DIHAPUS TOTAL
+```
+
+## Perubahan konkret di JSX mobile section
+
+**Pindahkan `<TravelCompanionFlow />`** dari setelah `KartuItinerary` menjadi SEBELUM `KartuItinerary`:
+
+```tsx
+{/* URUTAN BARU */}
+{todayAgenda.length > 0 && (
+  <KartuAgendaHariIni items={todayAgenda.slice(0, 3)} total={todayAgenda.length} />
+)}
+
+{/* Travel Companion naik ke sini */}
+<TravelCompanionFlow />
+
+{/* Itinerary turun ke sini */}
+{tenant?.id && <KartuItinerary tenantId={tenant.id} />}
+
+{/* Checklist naik ke sebelum Akses Cepat */}
+{jamaah.fase === 'persiapan' && (
+  /* ... isi checklist yang sudah ada, tidak diubah ... */
+)}
+
+{/* Akses Cepat per-fase */}
+{phaseActions.map(...)}
+
+{/* Fitur Lainnya — HAPUS SELURUH BLOCK INI termasuk const moreFeatures */}
+```
+
+## Perubahan konkret di JSX desktop section
+
+Lakukan reorder yang sama persis untuk bagian desktop (`hidden lg:block`):
+- `<TravelCompanionFlow desktop />` naik ke sebelum `<KartuItinerary>`
+- Checklist naik ke sebelum phaseActions
+- Hapus seluruh section "Fitur Lainnya" di desktop
+
+## Hapus `const moreFeatures`
+
+Setelah section "Fitur Lainnya" dihapus dari JSX (mobile dan desktop), hapus juga deklarasi `const moreFeatures = [...]` di bagian atas komponen karena sudah tidak dipakai. Pastikan tidak ada import yang jadi unused setelah penghapusan ini.
+
+## YANG TIDAK BOLEH DIUBAH
+
+- Logic kondisi semua section (countdown, agenda hari ini, checklist hanya persiapan) — tidak diubah
+- Isi/styling semua komponen — tidak diubah sama sekali
+- `GlobalSearch` tetap di posisi paling atas — tidak dipindah
+- Komponen `KartuAgendaHariIni`, `KartuItinerary`, `TravelCompanionFlow`, phaseActions, checklist — tidak diubah isinya, hanya urutan render
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error (pastikan tidak ada unused variable setelah `moreFeatures` dihapus)
+2. `pnpm run build` — sukses
+3. Screenshot Beranda mobile yang menunjukkan Travel Companion sudah muncul lebih awal (sebelum Itinerary), dan tidak ada section "Fitur Lainnya" di bagian bawah

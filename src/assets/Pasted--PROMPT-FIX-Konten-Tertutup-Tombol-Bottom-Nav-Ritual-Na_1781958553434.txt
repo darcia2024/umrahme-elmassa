@@ -1,0 +1,35 @@
+# PROMPT FIX — Konten Tertutup Tombol & Bottom Nav (Ritual Navigator)
+
+> Konteks: project Umrahme, halaman Ritual Navigator (panduan tahap ibadah). Teks Arab dan konten di bagian bawah halaman TERTUTUP/tertimpa oleh tombol "Tahap Selanjutnya", tombol "Kembali ke tahap sebelumnya", dan bottom navigation bar (termasuk FAB). Konten utuh, hanya ter-overlap karena halaman tidak punya ruang aman di bawah. Teks Arab TIDAK rusak — hanya tertutup elemen melayang di atasnya.
+
+## MASALAH PERSISNYA (lihat referensi screenshot)
+
+- Kartu "Doa Masuk Masjidil Haram" dengan teks Arabnya terpotong/tertimpa oleh tombol "Tahap Selanjutnya" yang melayang.
+- Di bawah tombol, masih ada kartu doa lain yang teks Arabnya tertimpa/tertutup oleh bottom navigation bar dan FAB.
+- Akibatnya konten di bagian bawah halaman tidak terbaca penuh — terlihat seperti teks Arab "berantakan", padahal sebenarnya hanya ter-overlap.
+
+## AKAR MASALAH
+
+Halaman tidak menyediakan padding-bottom (ruang aman) yang cukup untuk mengakomodasi elemen-elemen yang posisinya fixed/sticky/melayang di bagian bawah viewport: (1) tombol aksi "Tahap Selanjutnya" + "Kembali", dan (2) bottom navigation bar beserta FAB. Konten scroll berakhir tepat di belakang elemen-elemen ini, bukan di atasnya.
+
+## PERBAIKAN
+
+1. **Tambahkan padding-bottom yang cukup pada container konten halaman** sehingga seluruh konten (termasuk kartu doa terakhir) bisa di-scroll sampai SEPENUHNYA terlihat DI ATAS area tombol aksi + bottom nav, tidak ada lagi yang tertimpa. Ukur tinggi gabungan: (tombol "Tahap Selanjutnya" + tombol "Kembali" + bottom nav bar + FAB yang menonjol ke atas) dan beri padding-bottom minimal sebesar itu plus jarak napas tambahan (mis. +24px).
+
+2. **Tinjau penempatan tombol aksi "Tahap Selanjutnya" & "Kembali ke tahap sebelumnya"**: tentukan pola yang konsisten dan tidak menutupi konten:
+   - **Opsi yang disarankan**: jadikan tombol aksi ini sebagai bagian dari aliran konten (bukan fixed melayang) — letakkan SETELAH semua kartu doa, sehingga saat jamaah scroll sampai bawah, mereka membaca semua doa dulu BARU sampai ke tombol. Ini paling aman dari masalah overlap.
+   - **Jika tombol aksi memang harus tetap fixed** (selalu terlihat tanpa scroll), maka WAJIB beri padding-bottom pada konten setinggi tombol fixed itu PLUS tinggi bottom nav, dan pastikan tombol fixed itu sendiri diposisikan di atas bottom nav (bukan saling tumpuk dengan bottom nav/FAB).
+
+3. **Pastikan urutan layering (z-index) dan posisi tidak saling tumpuk**: bottom nav + FAB di paling bawah viewport, tombol aksi (jika fixed) tepat di atasnya dengan jarak, dan konten scroll mengalir di belakang keduanya TAPI dengan padding-bottom cukup sehingga ujung konten bisa naik melewati area tertutup saat di-scroll penuh.
+
+4. **Cek halaman lain dengan pola serupa**: jika ada halaman lain yang juga menggabungkan konten panjang + tombol aksi melayang + bottom nav (mis. Counter Tawaf, Counter Sai, halaman Tahallul, detail Doa panjang), periksa apakah mengalami masalah overlap yang sama dan terapkan perbaikan padding-bottom yang konsisten. Bottom nav + FAB itu fixed di semua halaman, jadi SETIAP halaman yang kontennya bisa panjang HARUS punya padding-bottom yang memberi ruang untuknya.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Desain visual masing-masing elemen (kartu doa, tombol, bottom nav, FAB) — TIDAK berubah, ini murni perbaikan spacing/layout agar tidak saling tumpuk.
+- Teks Arab dan konten doa — tidak disentuh (tidak rusak, hanya tertutup).
+- Fungsi tombol & navigasi — tidak berubah.
+
+## OUTPUT
+
+Build langsung — ini perbaikan layout/spacing. Setelah selesai, verifikasi dengan scroll halaman Ritual Navigator sampai paling bawah: pastikan SEMUA kartu doa (termasuk yang terakhir) bisa terlihat penuh tanpa tertimpa tombol aksi maupun bottom nav/FAB, dan tombol "Tahap Selanjutnya" dapat ditekan tanpa menutupi teks doa yang sedang dibaca.

@@ -1,0 +1,55 @@
+# PROMPT FITUR (BAGIAN 2/2) — Admin Panel Kelola Tenant & Generate Kode Aktivasi
+
+> Prasyarat: Bagian 1 (migrasi tenant ke tabel `tenants` di Supabase) HARUS sudah selesai dan berjalan sebelum mengerjakan ini — admin panel ini membaca dan menulis ke tabel yang sama.
+>
+> Tujuan: halaman admin terpisah (bukan bagian dari app jamaah), HANYA bisa diakses oleh satu admin (pemilik produk), untuk: melihat daftar semua tenant, mengubah nama/warna/logo tenant, dan men-generate kode aktivasi baru untuk tenant baru.
+
+## 1. Auth admin — Supabase Auth, satu akun
+
+- Gunakan Supabase Auth (email + password), BUKAN sistem auth custom baru.
+- Buat SATU akun admin secara manual lewat Supabase dashboard (Authentication → Users → Add user) — bukan lewat form sign-up publik. Jangan buat halaman registrasi admin yang terbuka untuk umum.
+- Buat halaman `/admin/login` — form email + password sederhana, memanggil `supabase.auth.signInWithPassword()`.
+- Buat route guard: semua halaman di bawah `/admin/*` (kecuali `/admin/login`) HARUS redirect ke `/admin/login` jika tidak ada sesi Supabase Auth aktif (cek lewat `supabase.auth.getSession()`).
+- Sediakan tombol "Keluar" yang memanggil `supabase.auth.signOut()`.
+
+## 2. Routing terpisah dari app jamaah
+
+- Admin panel TIDAK BOLEH menggunakan layout/navigasi yang sama dengan app jamaah (`Layout.tsx`, `BottomNav.tsx`, `DesktopSidebar.tsx` yang ada sekarang adalah untuk jamaah, bukan admin).
+- Tambahkan route baru di `App.tsx`: `/admin/login`, `/admin` (dashboard daftar tenant), `/admin/tenants/baru` (form tambah tenant), `/admin/tenants/:id` (form edit tenant) — semua di luar `<ProtectedRoute>` yang ada sekarang (itu khusus jamaah), pakai guard terpisah sesuai poin 1.
+- Buat layout admin sendiri yang sederhana (sidebar minimal atau top bar saja) — TIDAK perlu mengikuti desain mihrab/Islamic premium yang dipakai app jamaah; admin panel boleh polos/fungsional, prioritaskan kejelasan form di atas estetika.
+
+## 3. Halaman daftar tenant (`/admin`)
+
+- Tabel/list semua baris dari tabel `tenants`: kode aktivasi, nama travel, swatch warna primary, tanggal dibuat.
+- Tiap baris ada tombol "Edit" → ke `/admin/tenants/:id`.
+- Tombol "+ Tenant Baru" di bagian atas → ke `/admin/tenants/baru`.
+
+## 4. Form tambah/edit tenant
+
+Field yang bisa diisi/ubah admin:
+- **Nama travel** (text input, wajib).
+- **Warna primary** (color picker HTML native `<input type="color">` ATAU text input hex dengan preview swatch di sampingnya — pilih salah satu yang lebih cepat diimplementasikan).
+- **Warna primary-deep** (sama seperti di atas; opsional — jika dikosongkan, generate otomatis dengan menggelapkan warna primary ~15% lewat fungsi util kecil, supaya admin tidak harus selalu isi manual).
+- **Logo** (file upload — gambar PNG/SVG/JPG, maksimal 1MB. Upload ke Supabase Storage bucket bernama `tenant-logos`, simpan URL publik hasil upload ke kolom `logo_url`). Tampilkan preview logo yang sedang aktif (jika edit) sebelum diganti.
+- **Page title** (text input, default bisa di-generate otomatis dari nama travel: `"{nama_travel} — Pendamping Umrah Anda"`, tapi tetap bisa diedit manual).
+- **Kode aktivasi** — HANYA EDITABLE saat membuat tenant baru. Saat mode edit tenant yang sudah ada, field ini ditampilkan READ-ONLY (tidak boleh diubah setelah dibuat, karena jamaah yang sudah pakai kode lama akan kehilangan akses jika kode berubah).
+
+### Tombol "Generate Kode Aktivasi"
+- Di form tambah tenant baru, sediakan tombol di samping field kode aktivasi yang men-generate kode acak (format: 8 karakter alfanumerik uppercase, mis. `K7XQ2P9M`) dan mengisi field tersebut otomatis. Admin tetap bisa mengetik manual jika mau kode custom (mis. `BARAKAH1` yang sudah ada).
+- Sebelum submit, validasi kode aktivasi belum dipakai tenant lain (query `select` ke tabel `tenants` dengan kode yang sama — tampilkan error inline jika sudah ada).
+
+### Validasi & submit
+- Semua operasi tulis (`insert`/`update` ke tabel `tenants`, `upload` ke Storage) dilakukan menggunakan sesi Supabase Auth admin yang sedang login — pastikan request ini hanya berhasil ketika ada sesi admin aktif (sejalan dengan RLS yang sudah dibuat di Bagian 1 yang melarang write tanpa autentikasi).
+- Setelah submit sukses, redirect kembali ke `/admin` dengan pesan konfirmasi singkat (toast atau banner sederhana).
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Tabel `tenants` dan skema kolomnya dari Bagian 1 — TIDAK diubah strukturnya, hanya diisi/diubah datanya lewat panel ini.
+- App jamaah (Beranda, Doa, Tawaf, dll) dan layout/navigasinya — TIDAK disentuh oleh perubahan ini, admin panel sepenuhnya terpisah secara routing dan layout.
+- RLS policy `select` publik pada tabel `tenants` dari Bagian 1 — tetap publik, tidak diubah jadi butuh auth (karena app jamaah masih perlu membacanya tanpa login).
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan alur lengkap sebagai bukti: login admin di `/admin/login` → buka `/admin` (lihat 3 tenant seed dari Bagian 1 muncul di list) → buat tenant baru lewat `/admin/tenants/baru` dengan klik tombol generate kode, isi nama+warna+upload logo, submit → kembali ke `/admin` dan tenant baru muncul di list → buka app jamaah di tab terpisah, login pakai kode aktivasi yang baru saja dibuat, dan tunjukkan branding (nama, warna, logo) yang baru tampil sesuai data yang diisi admin.

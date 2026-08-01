@@ -1,0 +1,63 @@
+# PROMPT FITUR — Fondasi White-Label Level 1 (Config per-Tenant)
+
+> Konteks: project Umrahme akan dijual ke beberapa travel agency (B2B, ≤5 tenant dalam waktu dekat, masih tahap validasi pasar). Keputusan arsitektur: **Level 1 — config statis per-tenant, 1 build per agency** (lewat environment variable saat build), BUKAN multi-tenant database/runtime routing. Setiap tenant beda nama, warna primary, dan logo — fitur dan struktur data tetap sama persis untuk semua tenant.
+>
+> Dua file fondasi SUDAH ADA di repo, jangan dibuat ulang dari nol — lanjutkan dari sini:
+> - `src/config/tenant.types.ts` — interface `TenantConfig` & `TenantTheme`
+> - `src/config/tenants/default.ts` — tenant default untuk dev/demo (id `'default'`, namaTravel `'Travel Demo'`)
+
+## YANG PERLU DIBANGUN
+
+### 1. Tenant registry & loader
+Buat `src/config/tenants/index.ts` — registry yang memetakan `id` tenant ke modul config-nya (mis. `{ default: ..., 'barakah-mulia': ... }`), dan satu fungsi/konstanta `activeTenant: TenantConfig` yang dipilih berdasarkan environment variable `VITE_TENANT_ID` (baca lewat `import.meta.env.VITE_TENANT_ID`). Jika env var tidak diset atau id tidak ditemukan di registry, fallback ke tenant `'default'` — jangan throw error yang menghentikan build, cukup log warning ke console saat dev.
+
+### 2. Contoh tenant nyata: Barakah Mulia Wisata
+Buat `src/config/tenants/barakah-mulia.ts` mengikuti pola `default.ts`, isi datanya mengacu pada `NAMA_TRAVEL` yang sudah ada di `src/data/jamaah.ts` saat ini (`'Barakah Mulia Wisata'`):
+```ts
+{
+  id: 'barakah-mulia',
+  namaTravel: 'Barakah Mulia Wisata',
+  theme: { primary: '#0ea5e9', primaryDeep: '#0284c7' }, // sama seperti default untuk saat ini, agency bisa minta ganti nanti
+  logoPath: '/logos/barakah-mulia.svg',
+  pageTitle: 'Barakah Mulia Wisata — Pendamping Umrah Anda',
+}
+```
+Daftarkan di registry pada langkah 1.
+
+### 3. Sambungkan `data/jamaah.ts` ke tenant aktif
+Ganti `export const NAMA_TRAVEL = 'Barakah Mulia Wisata';` (hardcoded) menjadi import dari `activeTenant.namaTravel` di registry. JANGAN ubah cara field ini dipakai di tempat lain (`jamaah.travel`) — field itu sudah benar mengalir dari sini ke `Sertifikat.tsx`, `Profil.tsx`, `Beranda.tsx`, `DesktopSidebar.tsx` tanpa perlu disentuh satu-satu.
+
+### 4. Sambungkan warna `primary` ke tema tenant
+Saat ini `primary` & `primary-deep` hardcoded di `tailwind.config.ts` (`#0ea5e9` / `#0284c7`). Karena Tailwind config tidak bisa baca runtime React state, terapkan pendekatan **CSS custom property**:
+- Di `tailwind.config.ts`, ubah `colors.primary` dan `colors['primary-deep']` agar merujuk ke CSS variable: `primary: 'var(--color-primary)'`, `'primary-deep': 'var(--color-primary-deep)'`.
+- Di `src/main.tsx` (entry point), sebelum render React, set CSS variable tersebut ke `document.documentElement.style` berdasarkan `activeTenant.theme.primary` dan `activeTenant.theme.primaryDeep` dari registry tenant.
+- Berikan fallback default di `src/index.css` (`:root { --color-primary: #0ea5e9; --color-primary-deep: #0284c7; }`) supaya warna tidak hilang sebelum JS sempat jalan (flash of unstyled color).
+- JANGAN ubah token warna lain (`gold`, `ink`, `canvas`, dst) — hanya `primary` dan `primary-deep` yang jadi tenant-aware.
+
+### 5. Title tab & favicon dinamis
+- Di `src/main.tsx`, set `document.title = activeTenant.pageTitle` saat startup (menggantikan title statis di `index.html`).
+- `index.html` boleh tetap punya `<title>` default sebagai fallback SEO sebelum JS jalan — tidak perlu dihapus, hanya akan di-override oleh `main.tsx`.
+- Jika `activeTenant.faviconPath` terisi, update juga `<link rel="icon">` secara dinamis di `main.tsx`; jika kosong, biarkan favicon default (`/favicon.svg`) yang sudah ada di `index.html`.
+
+### 6. Sidebar desktop — ganti "Umrahme" hardcoded
+Di `src/components/DesktopSidebar.tsx`, baris yang menampilkan teks "Umrahme" sebagai brand (saat ini `<h1>Umrahme</h1>`) diganti menjadi `activeTenant.namaTravel`. Ini bagian dari keputusan: **full white-label** — nama "Umrahme" sebagai produk TIDAK BOLEH muncul sama sekali di tampilan yang dilihat jamaah, semua titik branding yang terlihat user harus berasal dari tenant aktif.
+
+### 7. Folder logo
+Buat folder `public/logos/` dengan placeholder kosong `default.svg` dan `barakah-mulia.svg` (boleh simple text-based SVG sementara, bukan logo final — ini hanya menyiapkan struktur path supaya tidak 404, logo asli akan di-upload manual nanti per-agency).
+
+### 8. README alur kerja
+Buat `src/config/tenants/README.md` singkat (5-10 baris) menjelaskan langkah menambah tenant baru: duplikat file tenant contoh → isi semua field → daftarkan di `index.ts` → upload logo ke `public/logos/` → set `VITE_TENANT_ID=<id>` di environment variable saat deploy.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Struktur data, fitur, routing, dan komponen di luar yang disebutkan di atas — TIDAK disentuh.
+- Token warna lain selain `primary`/`primary-deep` (`gold`, `ink`, `charcoal`, `mute`, `canvas`, dll) — TETAP statis di `tailwind.config.ts`, tidak ikut jadi CSS variable.
+- `Jamaah` type, `validasiKode()`, `urutanFase`, dan seluruh logic auth dummy — tidak diubah, hanya sumber nilai `NAMA_TRAVEL` yang berubah dari hardcoded menjadi tenant-driven.
+- Ini BUKAN multi-tenant runtime — satu build hanya untuk satu tenant (ditentukan saat build lewat `VITE_TENANT_ID`), jangan tambahkan logic deteksi tenant dari domain/subdomain/URL.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` dengan `VITE_TENANT_ID=barakah-mulia` — pastikan title tab, sidebar, dan semua titik yang menampilkan `jamaah.travel` menunjukkan "Barakah Mulia Wisata", bukan "Umrahme".
+3. Jalankan ulang build dengan `VITE_TENANT_ID` tidak diset (atau diset ke id yang tidak ada di registry) — pastikan fallback ke tenant `default` berjalan tanpa error/crash.
+4. Tunjukkan preview halaman Login dan Beranda untuk kedua kondisi build di atas sebagai verifikasi visual bahwa branding benar-benar berubah sesuai tenant aktif.

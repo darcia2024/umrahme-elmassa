@@ -1,0 +1,247 @@
+# PROMPT SECURITY TAHAP 2 — RLS Hardening & Admin Authorization
+
+> PRASYARAT WAJIB sebelum tembak prompt ini ke Replit Agent:
+> Lo harus kerjakan 3 langkah manual di Supabase dulu, karena Replit Agent tidak bisa akses database lo.
+
+## LANGKAH MANUAL DI SUPABASE (kerjakan SEBELUM tembak ke Agent)
+
+### Manual Step 1 — Buat tabel `admin_users`
+Jalankan di Supabase SQL Editor:
+```sql
+create table if not exists public.admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role text not null default 'super_admin',
+  created_at timestamptz not null default now()
+);
+
+alter table public.admin_users enable row level security;
+
+create policy "admin_users_select_self"
+on public.admin_users
+for select
+to authenticated
+using (user_id = auth.uid());
+```
+
+### Manual Step 2 — Insert lo sebagai super admin
+Cari UUID akun `daru.fahma@gmail.com` di Supabase → Authentication → Users, lalu:
+```sql
+insert into public.admin_users (user_id, role)
+values ('<uuid-daru>', 'super_admin');
+```
+
+### Manual Step 3 — Perketat RLS tabel yang sensitif
+Jalankan SQL ini (sudah include drop policy lama):
+
+```sql
+-- TENANTS: hanya admin & travel user terkait yang bisa baca
+alter table public.tenants enable row level security;
+
+drop policy if exists "allow_public_select" on public.tenants;
+drop policy if exists "admin_select_tenants" on public.tenants;
+drop policy if exists "travel_user_select_own_tenant" on public.tenants;
+
+-- Admin bisa semua
+create policy "admin_full_tenants" on public.tenants
+  for all to authenticated
+  using (exists (select 1 from public.admin_users where admin_users.user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users where admin_users.user_id = auth.uid()));
+
+-- Travel user hanya bisa baca tenant miliknya
+create policy "travel_select_own_tenant" on public.tenants
+  for select to authenticated
+  using (exists (
+    select 1 from public.tenant_users
+    where tenant_users.user_id = auth.uid()
+    and tenant_users.tenant_id = tenants.id
+  ));
+
+-- PENTING: buat RPC untuk login jamaah (lihat bagian kode di bawah)
+-- sebelum hapus public read tenants
+
+-- JAMAAH ACCOUNTS: hapus public read
+drop policy if exists "jamaah_accounts_select" on public.jamaah_accounts;
+drop policy if exists "jamaah_login_lookup" on public.jamaah_accounts;
+
+create policy "admin_full_jamaah" on public.jamaah_accounts
+  for all to authenticated
+  using (exists (select 1 from public.admin_users where admin_users.user_id = auth.uid()))
+  with check (exists (select 1 from public.admin_users where admin_users.user_id = auth.uid()));
+
+create policy "travel_own_jamaah" on public.jamaah_accounts
+  for all to authenticated
+  using (exists (
+    select 1 from public.tenant_users
+    where tenant_users.user_id = auth.uid()
+    and tenant_users.tenant_id = jamaah_accounts.tenant_id
+  ))
+  with check (exists (
+    select 1 from public.tenant_users
+    where tenant_users.user_id = auth.uid()
+    and tenant_users.tenant_id = jamaah_accounts.tenant_id
+  ));
+```
+
+### Manual Step 4 — Buat RPC untuk login jamaah
+Karena public read `tenants` dan `jamaah_accounts` dihapus, login jamaah butuh jalur baru. Buat RPC ini di Supabase SQL Editor:
+
+```sql
+create or replace function public.validate_jamaah_login(
+  p_activation_code text,
+  p_nama text
+)
+returns json
+language plpgsql
+security definer
+as $$
+declare
+  v_tenant record;
+  v_jamaah record;
+begin
+  -- Cari tenant berdasarkan kode aktivasi
+  select * into v_tenant
+  from public.tenants
+  where activation_code = upper(trim(p_activation_code))
+  limit 1;
+
+  if not found then
+    return json_build_object('ok', false, 'error', 'Kode tidak ditemukan, hubungi travel Anda.');
+  end if;
+
+  -- Cari jamaah berdasarkan nama (case-insensitive)
+  select * into v_jamaah
+  from public.jamaah_accounts
+  where tenant_id = v_tenant.id
+  and lower(trim(nama)) = lower(trim(p_nama))
+  limit 1;
+
+  if not found then
+    return json_build_object('ok', false, 'error', 'Nama tidak ditemukan. Pastikan nama sesuai yang didaftarkan travel Anda.');
+  end if;
+
+  -- Return data minimal yang dibutuhkan
+  return json_build_object(
+    'ok', true,
+    'jamaah', json_build_object(
+      'id', v_jamaah.id,
+      'nama', v_jamaah.nama,
+      'nomor_jamaah', v_jamaah.nomor_jamaah,
+      'rombongan', v_jamaah.rombongan,
+      'nomor_bus', v_jamaah.nomor_bus,
+      'nomor_kamar', v_jamaah.nomor_kamar,
+      'fase', v_jamaah.fase
+    ),
+    'tenant', json_build_object(
+      'id', v_tenant.id,
+      'nama_travel', v_tenant.nama_travel,
+      'primary_color', v_tenant.primary_color,
+      'primary_deep_color', v_tenant.primary_deep_color,
+      'logo_url', v_tenant.logo_url,
+      'page_title', v_tenant.page_title,
+      'tanggal_keberangkatan', v_tenant.tanggal_keberangkatan,
+      'tanggal_kepulangan', v_tenant.tanggal_kepulangan,
+      'hotel_makkah', v_tenant.hotel_makkah,
+      'hotel_madinah', v_tenant.hotel_madinah,
+      'guide_name', v_tenant.guide_name,
+      'guide_whatsapp', v_tenant.guide_whatsapp,
+      'tour_leader_name', v_tenant.tour_leader_name,
+      'tour_leader_whatsapp', v_tenant.tour_leader_whatsapp,
+      'activation_code', v_tenant.activation_code
+    )
+  );
+end;
+$$;
+
+-- Izinkan anon (jamaah belum login) memanggil RPC ini
+grant execute on function public.validate_jamaah_login(text, text) to anon;
+grant execute on function public.validate_jamaah_login(text, text) to authenticated;
+```
+
+---
+
+## SETELAH MANUAL STEPS SELESAI — Tembak ke Replit Agent
+
+### 1. Update `AdminProtectedRoute.tsx`
+
+Buat helper baru `src/lib/adminAuth.ts`:
+```ts
+import { supabase } from './supabase';
+
+export async function isCurrentUserAdmin(): Promise<boolean> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return false;
+
+  const { data, error } = await supabase
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', session.user.id)
+    .maybeSingle();
+
+  if (error) return false;
+  return Boolean(data);
+}
+```
+
+Update `src/components/admin/AdminProtectedRoute.tsx` agar:
+- Saat mount, panggil `isCurrentUserAdmin()`
+- Tampilkan loading selama cek
+- Jika bukan admin (meskipun ada session) → redirect ke `/admin/login`
+- Jika admin → render children
+
+### 2. Tambah tipe `AdminUserRow` di `src/lib/supabase.ts`
+```ts
+export type AdminUserRow = {
+  user_id: string;
+  role: string;
+  created_at: string;
+};
+```
+
+### 3. Ganti `validasiKode()` di `src/data/jamaah.ts` untuk pakai RPC
+
+Ganti 2 query Supabase (query `tenants` dan `jamaah_accounts`) menjadi satu panggilan RPC:
+
+```ts
+export async function validasiKode(kode: string, nama: string): Promise<HasilValidasi> {
+  const k = kode.trim().toUpperCase();
+  const n = nama.trim();
+
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+  if (!k) return { ok: false, error: 'Kode aktivasi wajib diisi.' };
+
+  const { data, error } = await supabase.rpc('validate_jamaah_login', {
+    p_activation_code: k,
+    p_nama: n,
+  });
+
+  if (error) return { ok: false, error: 'Tidak dapat terhubung. Periksa koneksi internet Anda.' };
+  if (!data.ok) return { ok: false, error: data.error };
+
+  const jamaah: Jamaah = {
+    nama: data.jamaah.nama,
+    nomorJamaah: data.jamaah.nomor_jamaah,
+    travel: data.tenant.nama_travel,
+    kodeAktivasi: k,
+    fase: data.jamaah.fase,
+    rombongan: data.jamaah.rombongan ?? undefined,
+    nomorBus: data.jamaah.nomor_bus ?? undefined,
+    nomorKamar: data.jamaah.nomor_kamar ?? undefined,
+  };
+
+  return { ok: true, jamaah, tenant: data.tenant as TenantRow };
+}
+```
+
+## YANG TIDAK BOLEH DIUBAH
+
+- UI dashboard jamaah — tidak disentuh
+- Portal travel `/travel` dan `TravelAuthContext` — tidak diubah
+- Komponen lain di luar yang disebutkan di atas
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error
+2. `pnpm run build` — sukses
+3. Test: login jamaah dengan kode + nama yang terdaftar → berhasil
+4. Test: akun travel agency coba buka `/admin` → redirect ke `/admin/login`
+5. Test: super admin (`daru.fahma@gmail.com`) buka `/admin` → berhasil masuk

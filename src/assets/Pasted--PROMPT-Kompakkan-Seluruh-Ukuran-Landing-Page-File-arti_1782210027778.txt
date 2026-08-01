@@ -1,0 +1,383 @@
+# PROMPT: Kompakkan Seluruh Ukuran Landing Page
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Halaman terlalu panjang dan card/object terlalu besar. Tugas: kurangi semua ukuran secara sistematis — padding section, padding card, font size, gap, border radius — supaya halaman lebih compact dan tidak melelahkan di-scroll. Jangan ubah teks konten, warna, logika React, animasi, atau struktur layout.
+
+---
+
+## BAGIAN 1 — Update CSS di dalam `<style>`
+
+### 1A. Kurangi padding `.lp-btn`
+**Cari:**
+```css
+.lp-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 32px;
+  font-weight: 600; font-size: 15px; cursor: pointer;
+  border: none; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+  white-space: nowrap; font-family: ...;
+}
+```
+**Ubah nilai:**
+- `padding: 12px 24px` → `padding: 10px 20px`
+- `font-size: 15px` → `font-size: 14px`
+
+### 1B. Kurangi padding `.lp-feat-card`
+**Cari:**
+```css
+.lp-feat-card {
+  background: #fff; border: 1px solid ...; border-radius: 24px; padding: 28px;
+  ...
+}
+```
+**Ubah:**
+- `border-radius: 24px` → `border-radius: 16px`
+- `padding: 28px` → `padding: 20px`
+
+---
+
+## BAGIAN 2 — Update inline style di JSX
+
+Lakukan string replacement berikut satu per satu. Ganti nilai yang disebutkan, sisanya biarkan.
+
+### 2A. Section padding — semua section dari 90px → 60px
+
+Ganti semua kemunculan berikut:
+
+| Cari | Ganti |
+|------|-------|
+| `padding: '90px 0'` | `padding: '60px 0'` |
+| `padding: '90px 0 50px'` | `padding: '60px 0 36px'` |
+| `padding: '90px 24px'` | `padding: '60px 24px'` |
+
+### 2B. Hero section padding atas
+**Cari:**
+```
+padding: '150px 0 0',
+```
+**Ganti:**
+```
+padding: '120px 0 0',
+```
+
+### 2C. Hero floating cards — kurangi ukuran dan margin
+**Cari:**
+```
+marginTop: 50, marginBottom: -90
+```
+**Ganti:**
+```
+marginTop: 36, marginBottom: -60
+```
+
+**Cari:**
+```
+minHeight: 220
+```
+**Ganti:**
+```
+minHeight: 180
+```
+
+### 2D. Card floating — kurangi padding dan border radius
+
+Ganti semua `borderRadius: 16` di dalam `.lp-float-wrap` → `borderRadius: 12`
+
+Lebih spesifik, cari dan ganti masing-masing card:
+
+**Card tawaf (i===0):**
+```
+width: 150
+```
+→ `width: 130`
+
+**Card doa (i===1):**
+```
+width: 168
+```
+→ `width: 148`
+
+**Card panduan (i===2):**
+```
+width: 150
+```
+→ `width: 130`
+
+**Card pengumuman (i===3):**
+```
+width: 150
+```
+→ `width: 130`
+
+**Card sholat (i===4):**
+```
+width: 140
+```
+→ `width: 124`
+
+### 2E. Partners marquee padding
+**Cari:**
+```
+padding: '90px 0 50px'
+```
+*(sudah diubah di 2A menjadi 60px 0 36px — skip jika sudah)*
+
+### 2F. Bento section — kurangi padding dan ukuran card
+
+**Cari:**
+```
+minHeight: 280
+```
+*(ada 2x di bento)* → ganti keduanya menjadi `minHeight: 200`
+
+**Cari:**
+```
+borderRadius: 20, padding: 26
+```
+*(di card bento)* → `borderRadius: 14, padding: 20`
+
+**Cari angka besar di bento:**
+```
+fontSize: 38, fontWeight: 800
+```
+*(ada 2x — "100%" dan "55+")* → `fontSize: 32, fontWeight: 800`
+
+**Cari:**
+```
+fontSize: 44, fontWeight: 800, margin: '8px 0'
+```
+*(angka "10 SAR" di bento tengah)* → `fontSize: 36, fontWeight: 800, margin: '6px 0'`
+
+**Cari:**
+```
+fontSize: 40, fontWeight: 800, color: C.accent
+```
+*(angka "Rp 0" di bento)* → `fontSize: 32, fontWeight: 800, color: C.accent`
+
+**Heading bento:**
+```
+margin: '0 auto 40px'
+```
+*(di h2 bento)* → `margin: '0 auto 28px'`
+
+### 2G. Pain points section — kompakkan card
+
+**Cari:**
+```
+borderRadius: 20, padding: 26, border
+```
+*(di card pain point)* → `borderRadius: 14, padding: 18, border`
+
+**Ikon di pain card:**
+```
+width: 44, height: 44, borderRadius: 12
+```
+*(di pain card)* → `width: 36, height: 36, borderRadius: 10`
+
+**Font size judul pain card:**
+```
+fontSize: 17, fontWeight: 700, marginBottom: 6
+```
+*(di h3 pain card)* → `fontSize: 15, fontWeight: 700, marginBottom: 4`
+
+### 2H. Features section — kompakkan card
+
+**Ikon di feat card:**
+```
+width: 46, height: 46, borderRadius: 12, background: C.accent
+```
+→ `width: 36, height: 36, borderRadius: 10, background: C.accent`
+
+**Font size "FITUR 01" dst:**
+```
+fontSize: 12, fontWeight: 700, color: C.accentDark, marginBottom: 6
+```
+→ `fontSize: 11, fontWeight: 700, color: C.accentDark, marginBottom: 4`
+
+**Font size judul fitur:**
+```
+fontSize: 18, fontWeight: 700, marginBottom: 8
+```
+→ `fontSize: 15, fontWeight: 700, marginBottom: 5`
+
+**Font size desc fitur:**
+```
+fontSize: 14, color: C.muted
+```
+*(di dalam feat card)* → `fontSize: 13, color: C.muted`
+
+**Gap antar section heading:**
+```
+margin: '0 auto 40px'
+```
+*(di p sub-heading features)* → `margin: '0 auto 24px'`
+
+### 2I. How it works — kompakkan step cards
+
+**Cari:**
+```
+borderRadius: 20, padding: '32px 28px'
+```
+*(di step card)* → `borderRadius: 14, padding: '22px 20px'`
+
+**Ikon nomor step:**
+```
+width: 48, height: 48, borderRadius: 14
+```
+→ `width: 38, height: 38, borderRadius: 10`
+
+**Font size judul step:**
+```
+fontSize: 20, fontWeight: 700, marginBottom: 8
+```
+→ `fontSize: 16, fontWeight: 700, marginBottom: 6`
+
+### 2J. White-label section — kompakkan
+
+**Phone mockup outer:**
+```
+width: 190, borderRadius: 32, padding: 10
+```
+→ `width: 170, borderRadius: 24, padding: 8`
+
+**Phone mockup inner height:**
+```
+height: 380
+```
+→ `height: 320`
+
+**Phone header padding:**
+```
+padding: '18px 16px'
+```
+→ `padding: '14px 14px'`
+
+### 2K. Pricing section — kompakkan
+
+**Pricing card padding:**
+```
+borderRadius: 28, padding: 40
+```
+→ `borderRadius: 20, padding: 28`
+
+**Angka "10" besar:**
+```
+fontSize: 64, fontWeight: 800, lineHeight: 1
+```
+→ `fontSize: 52, fontWeight: 800, lineHeight: 1`
+
+**Margin angka:**
+```
+margin: '18px 0 6px'
+```
+→ `margin: '12px 0 4px'`
+
+**Card kalkulator:**
+```
+borderRadius: 28, padding: 36
+```
+→ `borderRadius: 20, padding: 24`
+
+**Row kalkulator:**
+```
+padding: '14px 0', borderBottom
+```
+→ `padding: '10px 0', borderBottom`
+
+**Total kalkulator:**
+```
+padding: '18px 0 0', fontSize: 22
+```
+→ `padding: '12px 0 0', fontSize: 18`
+
+### 2L. Testimonials — kompakkan
+
+**Card testi:**
+```
+borderRadius: 20, padding: 28
+```
+→ `borderRadius: 14, padding: 20`
+
+**Font size quote:**
+```
+fontSize: 15, color: C.ink, marginBottom: 20
+```
+→ `fontSize: 13.5, color: C.ink, marginBottom: 14`
+
+**Avatar:**
+```
+width: 44, height: 44, borderRadius: '50%'
+```
+*(di testi)* → `width: 36, height: 36, borderRadius: '50%'`
+
+### 2M. FAQ — kompakkan
+
+**FAQ button padding:**
+```
+padding: '20px 22px', fontSize: 16
+```
+→ `padding: '16px 20px', fontSize: 14`
+
+**FAQ answer:**
+```
+padding: '0 22px 20px', color: C.muted, fontSize: 15
+```
+→ `padding: '0 20px 16px', color: C.muted, fontSize: 13.5`
+
+### 2N. CTA section akhir — kompakkan
+
+**CTA box:**
+```
+borderRadius: 32, padding: '64px 40px'
+```
+→ `borderRadius: 20, padding: '44px 32px'`
+
+**Gap tombol CTA:**
+```
+gap: 14, justifyContent: 'center', flexWrap: 'wrap', position: 'relative'
+```
+→ `gap: 10, justifyContent: 'center', flexWrap: 'wrap', position: 'relative'`
+
+### 2O. Footer — kompakkan
+
+**Footer padding:**
+```
+padding: '70px 0 36px'
+```
+→ `padding: '48px 0 28px'`
+
+**Footer grid gap:**
+```
+gap: 40, marginBottom: 46
+```
+→ `gap: 28, marginBottom: 32`
+
+**Footer border top:**
+```
+paddingTop: 26, borderTop
+```
+→ `paddingTop: 18, borderTop`
+
+---
+
+## BAGIAN 3 — Update heading margin di semua section
+
+Cari semua kemunculan ini di heading section dan kurangi margin bawah:
+
+| Cari | Ganti |
+|------|-------|
+| `margin: '0 auto 40px'` | `margin: '0 auto 24px'` |
+| `margin: '0 auto 16px'` | `margin: '0 auto 10px'` |
+| `marginBottom: 40` | `marginBottom: 24` |
+| `marginBottom: 26` | `marginBottom: 16` |
+
+---
+
+## ATURAN PENTING
+
+1. Kerjakan satu per satu secara berurutan.
+2. Kalau string tidak ditemukan persis karena ada perbedaan spasi/newline kecil, cari manual lalu ganti nilai yang disebutkan.
+3. Jangan ubah: teks konten, warna, logika React, animasi, struktur layout, className yang sudah ada.
+4. Setelah semua selesai, jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+5. Laporkan berapa perubahan berhasil dan mana yang tidak ditemukan.

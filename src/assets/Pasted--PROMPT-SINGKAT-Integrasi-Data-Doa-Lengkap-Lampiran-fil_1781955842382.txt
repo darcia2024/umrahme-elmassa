@@ -1,0 +1,25 @@
+# PROMPT SINGKAT — Integrasi Data Doa Lengkap
+
+> Lampiran: file `doaLengkap.ts` (45 doa, sumber utama PDF manasik Tunas Tours + sebagian himpunan daring). Tugas: integrasikan ke project Umrahme menggantikan/melengkapi data doa yang lama.
+
+## LANGKAH
+
+1. **Letakkan file** `doaLengkap.ts` di `src/data/`. Jika sudah ada `src/data/doa.ts` lama, GANTI isinya dengan file baru ini (atau rename file baru jadi `doa.ts` dan sesuaikan import di seluruh project). Pastikan semua komponen yang sebelumnya meng-import dari `doa.ts` (DoaDetail, Kumpulan Doa, CounterTawaf, CounterSai, dll) tetap berfungsi.
+
+2. **Sesuaikan tipe kategori**: file baru memakai 9 kategori (`persiapan`, `madinah`, `ihram`, `makkah`, `tawaf`, `sai`, `tahallul`, `wada`, `harian`) dengan `KATEGORI_LABEL` dan helper `kategoriTersedia()`. Update halaman Kumpulan Doa agar menampilkan kategori-kategori ini (pakai `kategoriTersedia()` untuk render daftar kategori beserta jumlah doanya). JANGAN hardcode daftar kategori lama.
+
+3. **Helper functions** yang tersedia dan harus dipakai (jangan bikin ulang): `doaById(id)`, `doaByKategori(kategori)`, `cariDoa(query)`, `kategoriTersedia()`. Komponen pencarian doa di Beranda/halaman Doa pakai `cariDoa()`. Counter Tawaf/Sai yang menampilkan doa per putaran pakai `doaById('tawaf-putaran-N')` / `doaById('sai-putaran-N')`.
+
+4. **Field `perluVerifikasi`**: 3 doa ditandai `true` (doa melihat Ka'bah, minum zamzam, doa Multazam). Pastikan UI DoaDetail menampilkan peringatan untuk entri ini (mengikuti pola peringatan verifikasi yang SUDAH ADA di project sebelumnya — jika sudah ada komponen badge "perlu verifikasi ulama", reuse itu). JANGAN hapus flag ini.
+
+5. **Field opsional** (`arti`, `dalil`, `cara`, `waktu`): semua entri sudah mengisinya. Tampilkan di DoaDetail dalam accordion/section terpisah di bawah Arab→Latin→Terjemahan (mengikuti urutan tampilan yang sudah ditetapkan di desain sebelumnya: bacaan dulu, detail tambahan opt-in di bawah).
+
+## ATURAN
+
+- JANGAN mengubah teks Arab, latin, atau terjemahan di dalam file — itu sudah disusun dari sumber dan tidak boleh diedit otomatis. Jika ada karakter Arab yang terlihat aneh saat render, laporkan ke user, JANGAN perbaiki sendiri (risiko mengubah lafaz).
+- JANGAN menghapus komentar header/sumber di dalam file — itu jejak rujukan yang penting untuk konten ibadah.
+- Counter Tawaf & Counter Sai TIDAK berubah desainnya — hanya pastikan `doaById` mereka mengarah ke id yang benar (`tawaf-putaran-1`..`7`, `sai-putaran-1`..`7`).
+
+## OUTPUT
+
+Build langsung. Setelah integrasi, tampilkan halaman Kumpulan Doa untuk verifikasi: 9 kategori muncul dengan jumlah doa masing-masing, dan satu contoh DoaDetail (mis. doa Talbiyah) menampilkan Arab→Latin→Terjemahan→detail dengan benar.

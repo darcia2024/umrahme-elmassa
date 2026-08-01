@@ -1,0 +1,110 @@
+# PROMPT: Tambah Halaman "Glosarium Istilah" (Kamus Ibadah Umrah)
+
+**File terkait:**
+- `artifacts/umrahme/src/data/glosarium.ts` (BARU)
+- `artifacts/umrahme/src/pages/Glosarium.tsx` (BARU)
+- `artifacts/umrahme/src/pages/Panduan.tsx` (tambah entri menu)
+- `artifacts/umrahme/src/App.tsx` (tambah route `/panduan/glosarium`)
+- `artifacts/umrahme/src/data/searchIndex.ts` (tambah ke index global)
+
+Buat halaman kamus istilah umrah/haji agar jamaah pemula paham istilah-istilah Arab (ihram, tahallul, raml, idhtiba', multazam, dll). Tampilan: search bar + filter kategori + daftar istilah berkartu. Pakai design tokens & gaya visual baru (tile ikon gradient, kartu berdepth, palet maroon-gold).
+
+---
+
+## LANGKAH 1 — Buat `data/glosarium.ts`
+Gunakan isi lengkap dari file `glosarium.ts` yang disediakan (berisi interface `IstilahGlosarium` + array `daftarIstilah` ~38 istilah dengan kategori: ihram, tawaf, sai, tempat, umum, waktu). Pakai escape unicode untuk teks Arab seperti pola data lain.
+
+---
+
+## LANGKAH 2 — Buat halaman `pages/Glosarium.tsx`
+
+Struktur:
+1. **PageHeader** — judul "Glosarium" + subjudul "Kamus istilah ibadah umrah & haji".
+2. **Search bar** (pill, gaya sama seperti halaman Doa) — filter istilah secara realtime berdasarkan `istilah` atau `arti`.
+3. **Filter kategori** (chip/tab) — Semua, Ihram, Tawaf, Sa'i, Tempat, Waktu, Umum. Klik untuk memfilter.
+4. **Daftar istilah** — kartu berisi: istilah (bold) + teks Arab (gold, rtl) di kanan + arti (charcoal). Dikelompokkan urut abjad ATAU per kategori (pilih yang rapi).
+
+Contoh kartu istilah:
+```tsx
+<div className="rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft">
+  <div className="flex items-start justify-between gap-3">
+    <h3 className="font-display text-[15px] font-bold text-ink">{it.istilah}</h3>
+    {it.arab && <span className="font-arab text-[16px] text-gold" dir="rtl">{it.arab}</span>}
+  </div>
+  <p className="mt-1.5 text-[13px] leading-relaxed text-charcoal">{it.arti}</p>
+  <span className="mt-2 inline-block rounded-full bg-surface-bone px-2 py-0.5 font-mono text-[9px] uppercase tracking-wider text-mute">
+    {labelKategori(it.kategori)}
+  </span>
+</div>
+```
+
+State sederhana:
+```tsx
+const [q, setQ] = useState('');
+const [kat, setKat] = useState<'semua' | IstilahGlosarium['kategori']>('semua');
+
+const hasil = daftarIstilah
+  .filter((it) => kat === 'semua' || it.kategori === kat)
+  .filter((it) => {
+    const s = q.trim().toLowerCase();
+    if (!s) return true;
+    return it.istilah.toLowerCase().includes(s) || it.arti.toLowerCase().includes(s) || (it.arab ?? '').includes(s);
+  })
+  .sort((a, b) => a.istilah.localeCompare(b.istilah)); // urut abjad
+```
+Tampilkan jumlah hasil + empty state ("Istilah tidak ditemukan") bila kosong.
+
+Helper label kategori:
+```tsx
+const KAT_LABEL: Record<string, string> = {
+  ihram: 'Ihram', tawaf: 'Tawaf', sai: "Sa'i", tempat: 'Tempat', umum: 'Umum', waktu: 'Waktu',
+};
+```
+
+---
+
+## LANGKAH 3 — Tambah entri di `Panduan.tsx`
+```tsx
+{
+  to: '/panduan/glosarium',
+  label: 'Glosarium Istilah',
+  desc: 'Kamus istilah umrah: ihram, tahallul, raml, dll',
+  Icon: IconPanduan,
+  accent: 'blue',
+},
+```
+
+## LANGKAH 4 — Tambah route di `App.tsx`
+```tsx
+import Glosarium from './pages/Glosarium';
+<Route path="/panduan/glosarium" element={<Glosarium />} />
+```
+
+## LANGKAH 5 — Tambah ke search global (`data/searchIndex.ts`)
+Agar tiap istilah bisa dicari dari search utama:
+```ts
+import { daftarIstilah } from './glosarium';
+
+// tambah tipe (jika belum):  | 'istilah'
+// TYPE_META:  istilah: { label: 'Istilah', emoji: '📘' },
+
+// di dalam buildIndex(), sebelum return:
+daftarIstilah.forEach((it) =>
+  items.push({
+    id: `istilah-${it.id}`,
+    type: 'istilah',
+    judul: it.istilah,
+    sub: it.arti.slice(0, 70),
+    to: `/panduan/glosarium#${it.id}`,
+    keywords: `${it.istilah} ${it.arab ?? ''} ${it.arti}`.toLowerCase(),
+  })
+);
+```
+(Opsional: dukung anchor `#id` di Glosarium agar search men-scroll ke istilah yang tepat, seperti pola FAQ.)
+
+---
+
+## CATATAN
+- Definisi disusun ringkas, untuk pemahaman jamaah awam, mengikuti pemahaman umum mazhab Syafi'i. Sebagai mahasiswa Ushuluddin, silakan review akurasi tiap definisi sebelum produksi.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

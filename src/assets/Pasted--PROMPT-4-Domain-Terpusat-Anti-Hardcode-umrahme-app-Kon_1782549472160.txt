@@ -1,0 +1,76 @@
+# PROMPT #4 — Domain Terpusat (Anti Hardcode `umrahme.app`)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx` (+ buat config kecil)
+
+Domain `umrahme.app` di-hardcode di beberapa tempat (preview & salin link slug). Kalau domain
+produksi berubah / belum aktif, link yang ditampilkan ke travel jadi salah. Solusi: pusatkan
+domain di satu konstanta, otomatis ikut domain yang sedang dipakai.
+
+---
+
+## LANGKAH 1 — Buat konstanta domain
+
+Buat file `artifacts/umrahme/src/config/site.ts`:
+```ts
+// Basis URL publik untuk link yang dibagikan ke jamaah (slug travel).
+// Pakai env kalau ada; kalau tidak, pakai origin browser saat ini (otomatis benar
+// baik di vercel.app maupun domain kustom).
+export const PUBLIC_BASE_URL: string =
+  (import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined)?.replace(/\/$/, '')
+  || (typeof window !== 'undefined' ? window.location.origin : 'https://umrahme.app');
+
+// Domain tanpa skema, untuk ditampilkan (mis. "umrahme.app")
+export const PUBLIC_HOST: string = PUBLIC_BASE_URL.replace(/^https?:\/\//, '');
+
+// Bangun URL slug lengkap
+export function slugUrl(slug: string): string {
+  return `${PUBLIC_BASE_URL}/t/${slug}`;
+}
+```
+
+> Catatan: kalau nanti punya domain tetap, set `VITE_PUBLIC_BASE_URL=https://umrahme.app`
+> di environment (Vercel). Tanpa itu, otomatis pakai origin domain yang sedang diakses —
+> jadi link selalu valid.
+
+---
+
+## LANGKAH 2 — Pakai di AdminTenantForm.tsx
+
+Import di atas:
+```ts
+import { PUBLIC_HOST, slugUrl } from '@/config/site';   // sesuaikan alias path bila perlu
+```
+
+### Ganti tampilan prefix (baris ~1355)
+```tsx
+<span className="font-mono text-[12px] flex-none" style={{ color: '#9ca3af' }}>{PUBLIC_HOST}/t/</span>
+```
+
+### Ganti preview link (baris ~1368)
+```tsx
+{PUBLIC_HOST}/t/{slug}
+```
+
+### Ganti salin link (baris ~1372)
+```tsx
+navigator.clipboard.writeText(slugUrl(slug));
+```
+
+---
+
+## Catatan
+- Setelah ini, link slug otomatis benar: di `umrahme-umrahme.vercel.app` akan jadi
+  `https://umrahme-umrahme.vercel.app/t/slug`; di domain kustom jadi pakai domain itu.
+- Kalau memang sudah punya `umrahme.app` & ingin selalu memakainya (walau diakses dari
+  domain lain), set `VITE_PUBLIC_BASE_URL=https://umrahme.app` di Vercel.
+
+## (Opsional, di luar kode) — Pasang domain kustom di Vercel
+1. Beli domain (mis. `umrahme.app`).
+2. Vercel → Project → Settings → Domains → Add → ikuti instruksi DNS.
+3. Set env `VITE_PUBLIC_BASE_URL=https://umrahme.app` (opsional, kalau mau dipaksa).
+
+## Verifikasi Setelah Deploy
+- Buka edit tenant → preview link slug menampilkan domain yang sedang dipakai (bukan hardcode)
+- Tombol "Salin Link" menyalin URL yang benar & bisa dibuka
+- Buka URL slug yang disalin → halaman login branded travel muncul

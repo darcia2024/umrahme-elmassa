@@ -1,0 +1,124 @@
+# PROMPT — Landing Page Desktop: Perbesar Teks & Poles (Pitch-Ready, Mobile TIDAK Berubah)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Masalah: di desktop/monitor besar, banyak teks (deskripsi section, kartu fitur, langkah,
+harga, dll) masih kecil (11–14px) karena di-hardcode inline. Terlihat mungil saat presentasi.
+
+Solusi AMAN: tambah satu blok `@media (min-width: 1024px)` (pakai `!important` agar menimpa
+inline style) yang memperbesar teks & memoles layout KHUSUS desktop. Mobile memakai
+`@media (max-width: ...)`, jadi blok `min-width` ini tidak akan pernah aktif di HP —
+**tampilan mobile dijamin sama persis**.
+
+---
+
+## LANGKAH 1 — Tambah `className="lp-inner"` di kontainer hero
+
+Agar hero ikut melebar di desktop. Cari div kontainer hero:
+```tsx
+<div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+```
+Tambahkan `className="lp-inner"` (pertahankan style inline-nya):
+```tsx
+<div className="lp-inner" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+```
+
+---
+
+## LANGKAH 2 — Tambah Blok CSS Desktop
+
+Di dalam blok `<style>{`...`}</style>`, TEPAT SEBELUM penutup backtick `` ` ``, tambahkan:
+
+```css
+/* ═══════════════════════════════════════════════════
+   DESKTOP POLISH & PERBESAR TEKS — hanya aktif ≥1024px.
+   Mobile (max-width) tidak tersentuh sama sekali.
+   Semua pakai !important agar menimpa inline style.
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  /* ---- Kontainer & ritme ---- */
+  .lp-inner { max-width: 1240px !important; }
+  .lp-section { padding-top: 88px !important; padding-bottom: 88px !important; }
+
+  /* ---- HERO lebih dominan ---- */
+  .lp-hero-padding { padding-top: 132px !important; padding-bottom: 120px !important; }
+  .lp-hero-padding h1 { font-size: clamp(52px, 5.4vw, 74px) !important; line-height: 1.04 !important; max-width: 960px !important; margin-bottom: 24px !important; }
+  .lp-hero-padding p  { font-size: 18px !important; max-width: 620px !important; margin-bottom: 32px !important; line-height: 1.75 !important; }
+  .lp-hero-btns .lp-btn { padding: 16px 34px !important; font-size: 16px !important; }
+
+  /* ---- Heading & sub-teks section ---- */
+  .lp-h2 { font-size: clamp(34px, 3.4vw, 44px) !important; }
+  /* sub-teks di bawah heading (paragraf pengantar tiap section) */
+  .lp-section > .lp-inner > p,
+  .lp-inner > p { font-size: 16px !important; line-height: 1.7 !important; max-width: 640px !important; }
+
+  /* ---- Eyebrow (label kecil di atas heading) ---- */
+  .lp-eyebrow { font-size: 13px !important; }
+
+  /* ---- Kartu FITUR ---- */
+  .lp-feat-card { padding: 22px !important; border-radius: 14px !important; }
+  .lp-feat-card h3 { font-size: 16.5px !important; margin-bottom: 6px !important; }
+  .lp-feat-card p  { font-size: 14px !important; line-height: 1.55 !important; }
+  .lp-feat-card .lp-feat-icon { width: 44px !important; height: 44px !important; }
+  .lp-feat-grid { gap: 16px !important; }
+
+  /* ---- BENTO (about) ---- */
+  .lp-bento { gap: 16px !important; }
+  .lp-bento h3 { font-size: 17px !important; }
+  .lp-bento p  { font-size: 14px !important; line-height: 1.55 !important; }
+
+  /* ---- PAIN cards ---- */
+  .lp-pain-grid h3 { font-size: 16px !important; }
+  .lp-pain-grid p  { font-size: 14px !important; line-height: 1.55 !important; }
+
+  /* ---- STEPS ---- */
+  .lp-steps h3 { font-size: 17px !important; }
+  .lp-steps p  { font-size: 14.5px !important; line-height: 1.6 !important; }
+
+  /* ---- PRICE ---- */
+  .lp-price-card p, .lp-price-wrap p, .lp-price-wrap li { font-size: 14.5px !important; }
+
+  /* ---- TESTIMONI ---- */
+  .lp-testi-grid p { font-size: 14.5px !important; line-height: 1.6 !important; }
+}
+
+/* Layar sangat besar (proyektor / monitor lebar) */
+@media (min-width: 1440px) {
+  .lp-inner { max-width: 1320px !important; }
+  .lp-section { padding-top: 104px !important; padding-bottom: 104px !important; }
+  .lp-hero-padding h1 { font-size: 80px !important; }
+  .lp-hero-padding p  { font-size: 19px !important; }
+  .lp-feat-card p { font-size: 14.5px !important; }
+}
+```
+
+---
+
+## LANGKAH 3 — Tambah class bantu untuk selector yang lebih presisi (opsional tapi disarankan)
+
+Beberapa selector di atas mengandalkan struktur `h3`/`p` di dalam grid. Agar pasti kena,
+tambahkan class pada elemen yang relevan KALAU selector descendant tidak menangkap:
+
+- Komponen `Eyebrow` (sekitar baris 50): tambahkan `className="lp-eyebrow"` pada div terluarnya.
+- Sub-teks pengantar section (paragraf dengan `color: C.muted, maxWidth: 520...`): kalau tidak
+  terkena `.lp-inner > p`, beri `className="lp-sub"` lalu tambahkan di CSS:
+  `@media (min-width:1024px){ .lp-sub{ font-size:16px !important; line-height:1.7 !important; } }`
+
+> Catatan: karena inline style TIDAK pakai `!important`, aturan media query ber-`!important`
+> akan menang. Kalau ada satu-dua teks yang belum ikut membesar, tambahkan class spesifik
+> seperti di atas lalu target di blok desktop.
+
+---
+
+## Yang TIDAK Boleh Diubah
+- JANGAN sentuh blok `@media (max-width: ...)` (semua untuk mobile/tablet).
+- JANGAN ubah nilai inline dasar, teks/copy, struktur, warna brand, atau animasi.
+- JANGAN ubah navbar mobile, dropdown mobile, atau phone mockup mobile.
+
+## Verifikasi Setelah Deploy
+- **Mobile (≤760px)**: resize browser sempit / buka HP → SAMA PERSIS seperti sebelumnya.
+- **Desktop (≥1024px)**: semua teks (deskripsi, kartu fitur, langkah, harga) terbaca lebih
+  besar & nyaman; hero besar & dominan; jarak antar-section lega.
+- **≥1440px**: makin besar & lega untuk proyektor/presentasi.
+- Cek tidak ada teks yang masih "mungil" di desktop — kalau ada, tambahkan class spesifik (Langkah 3).

@@ -1,0 +1,289 @@
+# PROMPT: Redesign MENYELURUH — Compact + Variasi Layout + Copy Menjual — LandingPage.tsx
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Ini tugas penting — kerjakan dengan teliti, jangan asal. Rombak SEMUA bagian halaman dari atas ke bawah: **Hero → Partners Marquee → Bento → Pain Points → Features → How It Works → White-Label → Pricing → FAQ → Final CTA → Footer.** (Testimonials DIHAPUS — lihat bagian penghapusan.)
+
+Tujuan utama:
+1. **Compact** — semua card jauh lebih kecil, hemat ruang vertikal, halaman tidak melelahkan di-scroll
+2. **Variasi layout** — jangan semua section pola sama (heading tengah → kartu tumpuk). Buat ritme visual yang menarik
+3. **Copy lebih menjual** — kata-kata yang meyakinkan, menjanjikan, dan membuat owner travel ingin segera deal
+
+**JANGAN ubah:** warna brand (`C` object), logika React, animasi `Reveal`/`motion`, navbar, struktur data `features`/`faqs`. Boleh ubah: ukuran (padding/font/gap/radius), susunan layout grid, dan teks copy.
+
+**Konteks produk:** Umrahme = aplikasi pendamping umrah white-label untuk travel agency. 10 SAR/jamaah. Fitur: 55+ doa, manasik, counter tawaf, peta ziarah, agenda, kartu jamaah, jadwal sholat, sertifikat, portal travel, pengumuman. Target pembaca: owner travel umrah.
+
+---
+
+## ⚠️ PENGHAPUSAN (KERJAKAN PALING DULU)
+
+Tiga hal ini DIHAPUS total dari halaman:
+
+### A. Hapus seluruh SECTION TESTIMONIALS
+Hapus blok JSX dari komentar `{/* ══════════ TESTIMONIALS ══════════ */}` sampai sebelum `{/* ══════════ FAQ ══════════ */}`. Hapus juga `const testimonials = [...]` di atas komponen karena tidak terpakai lagi. Abaikan instruksi "SECTION 6 — TESTIMONIALS" di bawah.
+
+### B. Hapus MOCKUP HP di section White-Label
+Di White-Label Showcase, hapus kolom kanan berisi dua mockup HP (blok `<Reveal delay={0.08}>` berisi `.lp-wl-phones`). Ubah `.lp-wl` jadi SATU kolom: `grid-template-columns: 1fr;`. Bungkus konten teks dengan `max-width: 680px; margin: 0 auto;` (boleh `text-align: center` atau biarkan kiri, pilih yang rapi). Abaikan instruksi mockup di "SECTION 4B".
+
+### C. Hapus "TRANSISI PUTIH" hero → section berikutnya
+Hapus seluruh floating cards di hero (blok `.lp-float-wrap` beserta semua isinya / array 5 card). Hero cukup: headline + subheadline + 2 tombol CTA + social proof. Hapus `marginBottom` negatif yang menyertainya, supaya tidak ada area putih menggantung. Lalu kecilkan padding atas Partners Marquee dari `90px 0 50px` → `44px 0 32px` agar hero langsung menyambung rapi.
+
+---
+
+## PRINSIP DESAIN COMPACT (terapkan ke SEMUA section)
+
+- Section padding: dari `90px` → **`56px 0`** (desktop), **`40px 0`** (mobile)
+- Card padding: dari `26-40px` → **`16-20px`**
+- Card border-radius: dari `20-28px` → **`14px`**
+- Gap antar card: dari `18-24px` → **`12px`**
+- Heading section (`h2`): dari `clamp(28px, 4.5vw, 46px)` → **`clamp(24px, 3.5vw, 36px)`**, `marginBottom` dari `40px` → **`28px`**
+- Sub-heading (`p` di bawah h2): font `16px` → **`14px`**, `marginBottom` → **`28px`**
+- Icon box di card: dari `44-48px` → **`34px`**, radius → **`9px`**
+- Eyebrow (label kecil atas): pertahankan, tapi `marginBottom` → **`10px`**
+
+---
+
+## SECTION 1 — BENTO ("Tentang Umrahme")
+
+**Copy baru:**
+- Heading: ganti `Satu keputusan. Jamaah lebih tenang. Travel lebih profesional.` → **`Satu langkah kecil. Lompatan besar untuk travel Anda.`**
+
+**Layout baru (lebih variatif & compact):**
+Ubah `.lp-bento` jadi grid 4 kolom asimetris yang lebih padat. Stat cards harus KECIL — tinggi maksimal ~140px, bukan 280px.
+
+Susun ulang jadi 4 kartu stat compact dalam 1 baris (di desktop), masing-masing menonjolkan SATU angka + label pendek:
+- Kartu 1 (aksen biru gradient): angka **`10 SAR`** + label `per jamaah, sekali bayar`
+- Kartu 2 (putih border): angka **`55+`** + label `doa & panduan ibadah`
+- Kartu 3 (accent hijau): angka **`100%`** + label `bermerek travel Anda`
+- Kartu 4 (ink gelap): angka **`Rp 0`** + label `biaya setup & bulanan`
+
+Set `.lp-bento` jadi:
+```
+display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+```
+Tiap kartu stat: `padding: 20px; border-radius: 14px; min-height: auto;` dengan angka `fontSize: 32` dan label `fontSize: 12.5`.
+
+Mobile (`@media max-width: 760px`): `.lp-bento { grid-template-columns: 1fr 1fr !important; }` — 2x2 grid compact.
+
+Hapus quote panjang di bento tengah (yang "Pertanyaan jamaah berkurang drastis..."). Bento murni stat compact.
+
+---
+
+## SECTION 2 — PAIN POINTS ("Masalah Anda Hari Ini")
+
+**Copy baru:**
+- Heading: `Masih begini setiap keberangkatan?` → **`Kenali masalahnya. Rasakan bedanya.`**
+- Sub: `Jika iya, Anda tidak sendirian. Dan ada cara yang lebih baik.` → **`Setiap travel pernah mengalaminya. Bedanya, sekarang ada solusinya.`**
+
+**Layout baru (compact + variatif):**
+Saat ini 6 kartu besar di grid 3 kolom dengan ikon emoji besar. Ubah jadi **list compact 2 kolom** dengan gaya berbeda — kartu kecil horizontal (ikon kiri, teks kanan), bukan ikon di atas.
+
+Struktur tiap item:
+```
+[ikon kecil 32px] | [judul tebal 14px + desc 12.5px]
+```
+`.lp-pain-grid`: `grid-template-columns: repeat(2, 1fr); gap: 10px;` (desktop), `1fr` (mobile).
+Tiap kartu: `padding: 16px; border-radius: 12px; display: flex; gap: 12px; align-items: flex-start;`
+Ikon: `width: 32px; height: 32px; border-radius: 8px; font-size: 16px; flex-shrink: 0;`
+Judul: `fontSize: 14`. Desc: `fontSize: 12.5; color: C.muted;` (potong desc biar maksimal 2 baris — buat lebih ringkas).
+
+**Copy desc dipersingkat** (lebih punchy):
+1. `"Jadwal hari ini apa, Pak?"` → desc: `Pertanyaan sama, dijawab berulang sepanjang hari.`
+2. `Muthowif lelah sebelum ibadah dimulai` → desc: `Energi habis untuk hal teknis, bukan membimbing.`
+3. `Buku doa cetak mahal dan percuma` → desc: `15-25 SAR per buku. Hilang, rusak, jarang dibaca.`
+4. `Info penting tenggelam di grup WA` → desc: `Pengumuman penting tertimbun ratusan chat.`
+5. `Semua dikerjakan manual` → desc: `Excel, kertas, WA — tak ada sistem terpadu.`
+6. `Travel lain sudah punya aplikasi` → desc: `Dan mereka terlihat lebih profesional di mata calon jamaah.`
+
+---
+
+## SECTION 3 — FEATURES ("Fitur Lengkap")
+
+**Copy baru:**
+- Heading: `12 fitur siap pakai. Tanpa biaya tambahan.` → **`Semua yang jamaah butuhkan. Sudah termasuk.`**
+- Sub: `Semuanya sudah ada dan langsung aktif begitu Anda daftar...` → **`12 fitur lengkap, aktif begitu Anda daftar. Tanpa biaya tambahan, tanpa tim IT.`**
+
+**Layout baru (compact + bento variatif):**
+Saat ini 12 kartu seragam di grid 3 kolom — terlalu besar dan monoton. Buat jadi grid 4 kolom yang lebih rapat dengan kartu KECIL, dan jadikan 2 kartu pertama (55+ Doa, Counter Tawaf) sebagai "featured" yang span 2 kolom dengan visual lebih kaya — ini menciptakan variasi bento.
+
+`.lp-feat-grid`: `grid-template-columns: repeat(4, 1fr); gap: 12px;`
+- Kartu index 0 dan 1: tambah inline style `gridColumn: 'span 2'` agar lebih lebar (featured)
+- Sisanya kartu kecil biasa
+
+`.lp-feat-card`: `padding: 16px; border-radius: 12px;`
+Icon: `width: 32px; height: 32px; borderRadius: 8px; fontSize: 17px; marginBottom: 10px;`
+Label "FITUR 01": `fontSize: 10`. Judul: `fontSize: 14`. Desc: `fontSize: 12px; color: C.muted;`
+
+Mobile: `.lp-feat-grid { grid-template-columns: 1fr 1fr !important; }` dan featured cards reset ke `gridColumn: span 1` via class atau media query. Tambahkan class `lp-feat-featured` ke 2 kartu pertama, lalu di mobile: `.lp-feat-featured { grid-column: span 2 !important; }` (di mobile 2 kolom, featured ambil full width = span 2).
+
+**Desc fitur dipersingkat jadi 1 kalimat punchy** (semua, biar compact):
+1. 55+ Doa Lengkap → `Arab, latin, terjemahan. Ganti buku doa cetak selamanya.`
+2. Counter Tawaf & Sa'i → `Hitung putaran otomatis, doa muncul tiap putaran.`
+3. Panduan Ibadah → `Tuntunan step-by-step, bisa dipelajari sebelum berangkat.`
+4. Peta & Lokasi → `10 lokasi ziarah + sejarah + Google Maps.`
+5. Jadwal Sholat → `Otomatis sesuai lokasi jamaah, akurat.`
+6. Pengumuman → `Broadcast instan ke semua jamaah, pasti terbaca.`
+7. Agenda Harian → `Jadwal hari ini tampil otomatis di HP jamaah.`
+8. Kartu Jamaah → `Identitas digital lengkap, berguna saat darurat.`
+9. Jurnal → `Jamaah simpan momen perjalanan suci mereka.`
+10. Sertifikat → `Sertifikat digital bermerek travel Anda.`
+11. White-Label → `Logo & nama travel Anda di setiap halaman.`
+12. Portal Travel → `Satu dashboard kelola jamaah, agenda, pengumuman.`
+
+---
+
+## SECTION 4 — HOW IT WORKS ("Cara Kerja")
+
+**Copy baru:**
+- Heading: `Aktif dalam hitungan menit` → **`Dari daftar sampai jalan, cuma 3 langkah`**
+- Sub: pertahankan tapi persingkat → **`Tanpa tim IT, tanpa training. Siap untuk keberangkatan berikutnya.`**
+
+**Layout baru (compact horizontal):**
+Saat ini 3 kartu besar (`padding: 32px 28px`). Ubah jadi 3 langkah horizontal yang ramping dengan nomor besar di kiri.
+`.lp-steps`: pertahankan grid 3 kolom (desktop), tapi kartu lebih kecil.
+Tiap step: `padding: 20px; border-radius: 12px;`
+Nomor: `width: 36px; height: 36px; borderRadius: 10px; fontSize: 18px; marginBottom: 14px;`
+Judul: `fontSize: 15`. Desc: `fontSize: 12.5; color: C.muted;`
+
+**Copy step dipersingkat:**
+1. `Daftar & Pasang Logo Travel Anda` → desc: `Upload logo, pilih warna, masukkan nama. Selesai dalam menit.`
+2. `Input Jamaah & Jadwal` → desc: `Masukkan data jamaah & agenda. Tersinkron otomatis.`
+3. `Bagikan Kode, Jamaah Langsung Pakai` → desc: `Jamaah buka link, masukkan kode. Tanpa install.`
+
+---
+
+## SECTION 5 — PRICING ("Harga")
+
+**Copy baru:**
+- Heading: `Lebih murah dari buku doa cetak. Jauh lebih lengkap.` → **`Harga yang bikin Anda untung sejak hari pertama.`**
+- Sub: persingkat → **`Cetak buku doa 15-25 SAR per jamaah — hanya buku. Umrahme 10 SAR — 12 fitur, bermerek travel Anda.`**
+
+**Layout baru (compact):**
+Pricing card terlalu besar (`padding: 40`, angka `fontSize: 64`). Buat compact:
+- `.lp-price-card`: `padding: 28px; border-radius: 18px;`
+- Angka "10": `fontSize: 48` (dari 64)
+- List checklist: `fontSize: 13`, `marginBottom: 9px` per item, icon check `width: 19px; height: 19px;`
+- Tombol: pertahankan tapi `marginTop: 20px`
+
+Kalkulator di kanan: tetap sembunyikan di mobile (`lp-calc-hide`), tapi di desktop buat lebih compact (`padding: 24px`).
+
+**Tambah micro-copy persuasif** di bawah angka harga (kecil, `fontSize: 12`, italic, warna muted):
+**`Balik modal hanya dari hemat biaya cetak buku doa.`**
+
+---
+
+## SECTION 6 — TESTIMONIALS → DIHAPUS (lihat bagian penghapusan di atas). Lewati.
+
+---
+
+## SECTION 7 — FINAL CTA
+
+**Copy baru:**
+- Heading: `Keberangkatan berikutnya bisa jauh lebih baik` → **`Keberangkatan berikutnya, naik kelas.`**
+- Sub: persingkat & pertegas → **`Jamaah lebih tenang, muthowif lebih fokus, travel Anda lebih profesional. Semua mulai 10 SAR per jamaah. Coba demo gratis dulu — kami setup dengan nama travel Anda.`**
+
+**Layout:** CTA box compact — `padding: 40px 32px; borderRadius: 20px;` heading `fontSize: clamp(24px, 4vw, 36px)`.
+
+---
+
+## SECTION 0 — HERO (paling atas, wajib diperhatikan)
+
+**Copy baru:**
+- Headline: pertahankan struktur tapi pastikan kuat → **`Aplikasi Umrah`** + (italic accent) **`Bermerek Travel Anda`**
+- Subheadline: ganti yang panjang → **`Satu aplikasi menggantikan buku doa, grup WA, dan koordinasi manual. Bermerek nama travel Anda — hanya 10 SAR per jamaah.`**
+- Social proof bawah: **`Lebih hemat dari buku doa cetak. Lebih profesional dari grup WhatsApp.`** (pertahankan)
+
+**Layout compact:**
+- Hero padding: dari `150px 0 0` → **`120px 0 0`** (desktop), **`90px 0 0`** (mobile)
+- Headline `fontSize`: dari `clamp(38px, 6vw, 74px)` → **`clamp(34px, 5vw, 60px)`** (lebih ramping, tidak makan layar)
+- Subheadline `fontSize`: `clamp(15px, 2vw, 17px)` → **`clamp(14px, 1.8vw, 16px)`**, `marginBottom` → `26px`
+- Floating cards: kecilkan — `marginTop: 36, marginBottom: -56, minHeight: 170`, tiap card `width` dikurangi ~15% (150→128, 168→146, 140→122), padding card `16px` → `13px`, radius `16px` → `12px`, font angka `30px` → `26px`
+
+---
+
+## SECTION 0B — PARTNERS MARQUEE
+
+**Copy:** pertahankan `BERGABUNGLAH BERSAMA TRAVEL UMRAH YANG LEBIH MODERN` — tapi kecilkan jaraknya.
+
+**Layout compact:**
+- Padding wrapper: dari `90px 0 50px` → **`44px 0 32px`**
+- Label `fontSize`: `13px` → `12px`, `marginBottom` `26px` → `18px`
+- Logo item di marquee: `fontSize: 17` → `15`, kotak logo `22px` → `18px`, gap `60px` → `44px`
+
+---
+
+## SECTION 4B — WHITE-LABEL SHOWCASE
+
+**Copy baru:**
+- Heading: `Mereka pikir Anda yang bikin aplikasinya` → **`Jamaah lihat nama Anda. Bukan kami.`**
+- Sub teks: persingkat → **`Logo, warna, dan nama travel Anda di setiap halaman. Tanpa jejak pihak ketiga. Yang jamaah ingat dan rekomendasikan: travel Anda.`**
+- Checklist (persingkat tiap poin):
+  1. `Logo & nama travel di setiap halaman`
+  2. `Warna brand Anda, konsisten & profesional`
+  3. `Terlihat sekelas travel besar yang punya app sendiri`
+  4. `Semua kustomisasi termasuk — tanpa biaya ekstra`
+
+**Layout compact (SATU kolom, tanpa mockup HP — mockup dihapus):**
+- `.lp-wl` jadi `grid-template-columns: 1fr;` — kolom kanan (mockup HP) sudah dihapus
+- Bungkus konten teks: `max-width: 680px; margin: 0 auto;`
+- Heading `fontSize`: `clamp(28px, 4vw, 42px)` → **`clamp(24px, 3.2vw, 34px)`**
+- Sub teks `fontSize`: `16px` → `14px`, `marginBottom` `22px` → `18px`
+- Checklist item `fontSize`: `15px` → `13.5px`, `marginBottom` `14px` → `10px`, icon check `24px` → `20px`
+
+---
+
+## SECTION 5B — FAQ
+
+**Copy baru:**
+- Heading: `Pertanyaan yang Sering Ditanyakan` → **`Masih ragu? Ini jawabannya.`**
+- Pertanyaan & jawaban: pertahankan isi (sudah bagus), tapi kompakkan ukuran.
+
+**Layout compact:**
+- Section `maxWidth`: pertahankan `760`
+- FAQ item `borderRadius`: `16px` → `12px`, `marginBottom` `12px` → `9px`
+- Tombol pertanyaan: `padding: '20px 22px'` → **`'15px 18px'`**, `fontSize: 16` → `14`
+- Jawaban: `padding: '0 22px 20px'` → **`'0 18px 15px'`**, `fontSize: 15` → `13.5`, `lineHeight: 1.75` → `1.65`
+- Icon "+" : `width: 26px; height: 26px;` → `22px; 22px;`
+- Heading `fontSize`: `clamp(28px, 4vw, 38px)` → **`clamp(23px, 3vw, 32px)`**, `marginBottom` `40px` → `28px`
+
+---
+
+## SECTION 8 — FOOTER
+
+**Copy:** pertahankan tagline `Ganti buku doa cetak. Ringankan kerja muthowif...` — tapi compact.
+
+**Layout compact:**
+- Footer padding: `70px 0 36px` → **`44px 0 28px`**
+- Grid gap: `40px` → `28px`, `marginBottom` `46px` → `32px`
+- Logo footer: `34px` → `28px`, judul `fontSize: 21` → `18`
+- Tagline `fontSize`: `14px` → `13px`
+- Link kolom: judul `fontSize: 14` → `13`, link `fontSize: 14` → `13`, `marginBottom: 10` → `8`
+- Bottom bar: `paddingTop: 26` → `18`, `fontSize: 13` → `12`
+
+---
+
+## MOBILE (`@media max-width: 760px`) — pastikan semua compact
+
+```css
+.lp-section { padding-top: 40px !important; padding-bottom: 40px !important; }
+.lp-bento { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+.lp-pain-grid { grid-template-columns: 1fr !important; }
+.lp-feat-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+.lp-feat-featured { grid-column: span 2 !important; }
+.lp-steps { grid-template-columns: 1fr !important; gap: 10px !important; }
+.lp-price-wrap { grid-template-columns: 1fr !important; }
+.lp-calc-hide { display: none !important; }
+```
+
+---
+
+## ATURAN EKSEKUSI
+
+1. Kerjakan section per section. Setelah satu section selesai, lanjut berikutnya.
+2. Pertahankan semua `className` yang sudah ada + tambahkan yang baru disebutkan (`lp-feat-featured`).
+3. Jangan ubah warna brand, logika, animasi, navbar, atau data array.
+4. Pastikan tetap responsive — cek desktop DAN mobile.
+5. Setelah selesai: `pnpm --filter umrahme typecheck` — nol error.
+6. Laporkan ringkasan perubahan per section.
+
+**Prioritas kalau tidak semua bisa sekaligus:** Hero, Bento, dan Features paling penting (paling makan ruang & paling dilihat). Lalu Pain Points, White-Label, Pricing. Sisanya (Marquee, How It Works, Testimonials, FAQ, Footer) terakhir. Tapi target idealnya: SEMUA bagian dikerjakan dalam satu pass.

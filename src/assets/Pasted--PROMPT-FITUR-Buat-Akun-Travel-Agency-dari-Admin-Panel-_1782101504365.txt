@@ -1,0 +1,204 @@
+# PROMPT FITUR — Buat Akun Travel Agency dari Admin Panel
+
+> Konteks: admin panel di `/admin` saat ini mengharuskan super admin pergi ke Supabase Dashboard secara manual untuk membuat akun travel agency (Authentication → Add user) dan kemudian menjalankan SQL insert ke `tenant_users`. Fitur ini mengotomatisasi proses tersebut langsung dari halaman edit tenant di admin panel.
+>
+> Arsitektur: app ini adalah pure frontend (Vite/React) tanpa backend Express. Membuat user baru di Supabase Auth WAJIB menggunakan service role key yang tidak boleh di-expose ke browser. Solusi yang tepat: **Supabase Edge Function** sebagai perantara — frontend memanggil Edge Function, Edge Function yang menyimpan service role key dan melakukan operasi admin.
+
+## 1. Buat Supabase Edge Function `create-travel-user`
+
+Buat file `supabase/functions/create-travel-user/index.ts`:
+
+```ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    // Verifikasi caller adalah super admin yang sudah login
+    // (header Authorization berisi JWT dari sesi admin yang sedang login)
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Buat client dengan anon key untuk verifikasi sesi caller
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Verifikasi email caller adalah super admin
+    const { data: { user: caller } } = await supabaseClient.auth.getUser();
+    const SUPER_ADMIN_EMAIL = Deno.env.get('SUPER_ADMIN_EMAIL') ?? '';
+    if (!caller || caller.email !== SUPER_ADMIN_EMAIL) {
+      return new Response(JSON.stringify({ error: 'Forbidden: hanya super admin yang boleh membuat akun travel agency' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Ambil data dari request body
+    const { email, password, tenant_id } = await req.json();
+    if (!email || !password || !tenant_id) {
+      return new Response(JSON.stringify({ error: 'email, password, dan tenant_id wajib diisi' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Gunakan service role key untuk operasi admin
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    // Buat user baru di Supabase Auth
+    const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true, // langsung confirm tanpa perlu klik email
+    });
+
+    if (createError || !newUser.user) {
+      return new Response(JSON.stringify({ error: createError?.message ?? 'Gagal membuat user' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Insert mapping ke tenant_users
+    const { error: mappingError } = await supabaseAdmin
+      .from('tenant_users')
+      .insert({ user_id: newUser.user.id, tenant_id });
+
+    if (mappingError) {
+      // Rollback: hapus user yang baru dibuat kalau mapping gagal
+      await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+      return new Response(JSON.stringify({ error: `Gagal mapping tenant: ${mappingError.message}` }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      user_id: newUser.user.id,
+      email: newUser.user.email,
+    }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+```
+
+### Setup environment variable Edge Function
+Di Supabase Dashboard → Edge Functions → create-travel-user → Secrets, tambahkan:
+- `SUPER_ADMIN_EMAIL` = `daru.fahma@gmail.com`
+- `SUPABASE_SERVICE_ROLE_KEY` = (service role key dari Supabase → Settings → API)
+
+`SUPABASE_URL` dan `SUPABASE_ANON_KEY` sudah otomatis tersedia di Edge Function tanpa perlu di-set manual.
+
+### Deploy Edge Function
+```bash
+npx supabase functions deploy create-travel-user
+```
+
+## 2. Tambah section "Akun Travel Agency" di `AdminTenantForm.tsx`
+
+Tambahkan section baru di bagian PALING BAWAH form (setelah "Daftar Jamaah"), hanya muncul saat `!isNew`:
+
+```tsx
+{/* ── Akun Travel Agency ── */}
+{!isNew && (
+  <section>
+    <h2>Akun Travel Agency</h2>
+    <p>Buat akun login untuk travel agency ini. 
+       Mereka bisa login di /travel/login untuk mengelola jamaah sendiri.</p>
+
+    {/* List akun yang sudah ada */}
+    {/* Form buat akun baru */}
+  </section>
+)}
+```
+
+### List akun yang sudah terhubung
+Query: `select tu.id, tu.user_id, tu.created_at from tenant_users tu where tu.tenant_id = :id`
+Tampilkan: user_id (dipersingkat 8 karakter pertama), tanggal dibuat, tombol "Cabut Akses" per baris.
+
+Catatan: Supabase tidak mengizinkan baca email user lewat anon key karena alasan privasi. Tampilkan user_id saja untuk sementara, atau minta admin mencatat email saat membuat akun.
+
+### Form buat akun baru
+Field:
+- **Email** travel agency (text input, type="email", wajib)
+- **Password** (text input, type="password", wajib, minimal 8 karakter)
+- Tombol **"Buat Akun & Hubungkan"**
+
+Submit handler memanggil Supabase Edge Function `create-travel-user`:
+```ts
+const { data: { session } } = await supabase.auth.getSession();
+const response = await fetch(
+  `${SUPABASE_URL}/functions/v1/create-travel-user`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({
+      email: formEmail,
+      password: formPassword,
+      tenant_id: id, // ID tenant yang sedang diedit
+    }),
+  }
+);
+```
+
+Tampilkan pesan sukses yang jelas setelah berhasil, termasuk URL portal yang bisa dikasih ke travel agency: `"Akun berhasil dibuat. Travel agency bisa login di /travel/login"`.
+
+### Cabut akses
+Tombol "Cabut Akses" per baris → `delete from tenant_users where id = :id` → refresh list.
+Catatan: ini hanya menghapus mapping, akun Supabase Auth-nya tetap ada (bisa di-assign ulang ke tenant lain nanti jika diperlukan).
+
+## 3. Tambah konstanta SUPABASE_URL di frontend
+
+Di `src/lib/supabase.ts`, tambahkan export konstanta URL yang bisa dipakai untuk memanggil Edge Function:
+
+```ts
+export const SUPABASE_FUNCTIONS_URL = `${supabaseUrl}/functions/v1`;
+```
+
+Ini agar `AdminTenantForm.tsx` bisa memanggil Edge Function tanpa hardcode URL.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Semua section yang sudah ada di `AdminTenantForm.tsx` (Info Operasional, Agenda, Pengumuman, Daftar Jamaah) — tidak diubah, hanya ditambah section baru di bawahnya.
+- Tabel `tenant_users` dan RLS yang sudah ada — tidak diubah.
+- Portal travel agency (`/travel`) dan `TravelDashboard.tsx` — tidak disentuh.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Deploy Edge Function ke Supabase dan konfirmasi berhasil.
+4. **Tunjukkan bukti end-to-end**: buka `/admin` → edit tenant Barakah Mulia Wisata → section "Akun Travel Agency" muncul → isi email + password baru → klik "Buat Akun & Hubungkan" → sukses → coba login di `/travel/login` pakai akun yang baru dibuat → berhasil masuk dan hanya lihat jamaah Barakah Mulia Wisata.

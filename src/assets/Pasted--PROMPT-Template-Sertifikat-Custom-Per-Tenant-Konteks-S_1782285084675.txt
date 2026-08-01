@@ -1,0 +1,307 @@
+# PROMPT — Template Sertifikat Custom Per Tenant
+
+## Konteks
+Sistem sertifikat sekarang pakai desain hardcoded (gold/dark).
+Kita mau admin bisa upload **gambar template sertifikat** (JPG/PNG landscape) per tenant.
+Gambar itu jadi background, lalu data jamaah di-overlay di atasnya pakai CSS positioning.
+
+---
+
+## LANGKAH 1 — SQL (jalankan di Supabase SQL Editor dulu)
+
+```sql
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS sertifikat_template_url TEXT;
+```
+
+---
+
+## LANGKAH 2 — `src/lib/supabase.ts`
+
+### 2a. Tambah field ke `TenantRow`
+```ts
+sertifikat_template_url: string | null;
+```
+
+### 2b. Tambah function upload (di bawah `uploadHeroImage`)
+```ts
+export async function uploadSertifikatTemplate(file: File): Promise<string> {
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+  const filename = `sertifikat/${crypto.randomUUID()}.${ext}`;
+  const { data, error } = await supabase.storage
+    .from('logos')
+    .upload(filename, file, { upsert: false, contentType: file.type });
+  if (error) throw new Error(error.message);
+  const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(data.path);
+  return publicUrl;
+}
+```
+
+---
+
+## LANGKAH 3 — `src/pages/admin/AdminTenantForm.tsx`
+
+### 3a. Import
+```ts
+import {
+  // ... yang sudah ada ...
+  uploadSertifikatTemplate as apiUploadSertifikatTemplate,
+} from '@/lib/supabase';
+```
+
+### 3b. State baru (di dekat state hero image)
+```ts
+const [sertifikatFile, setSertifikatFile]           = React.useState<File | null>(null);
+const [sertifikatPreview, setSertifikatPreview]     = React.useState<string>('');
+const [existingSertifikatUrl, setExistingSertifikatUrl] = React.useState<string>('');
+const sertifikatInputRef = React.useRef<HTMLInputElement>(null);
+const MAX_SERTIFIKAT_SIZE = 5 * 1024 * 1024; // 5MB
+```
+
+### 3c. Load saat edit tenant (di useEffect)
+```ts
+setExistingSertifikatUrl(t.sertifikat_template_url ?? '');
+```
+
+### 3d. Handler upload
+```ts
+function handleSertifikatChange(e: ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (file.size > MAX_SERTIFIKAT_SIZE) { setError('Ukuran template sertifikat maksimal 5MB.'); return; }
+  const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    setError('Template sertifikat harus PNG, JPG, atau WEBP.');
+    return;
+  }
+  setSertifikatFile(file);
+  const reader = new FileReader();
+  reader.onload = ev => setSertifikatPreview(ev.target?.result as string);
+  reader.readAsDataURL(file);
+}
+```
+
+### 3e. Upload di `handleSubmit` (setelah heroImageUrl)
+```ts
+let sertifikatTemplateUrl = existingSertifikatUrl;
+if (sertifikatFile) sertifikatTemplateUrl = await apiUploadSertifikatTemplate(sertifikatFile);
+```
+
+Tambah ke `payload`:
+```ts
+sertifikat_template_url: sertifikatTemplateUrl || null,
+```
+
+### 3f. UI di form (di bawah section Hero Image)
+```tsx
+{/* ── Template Sertifikat ─────────────────────────── */}
+<div>
+  <label className="block text-[11px] font-semibold uppercase tracking-widest text-slate-400 mb-2">
+    Template Sertifikat
+  </label>
+
+  {(sertifikatPreview || existingSertifikatUrl) && (
+    <div className="mb-3 rounded-xl overflow-hidden border border-slate-200" style={{ aspectRatio: '16/9', maxHeight: '120px' }}>
+      <img
+        src={sertifikatPreview || existingSertifikatUrl}
+        alt="Preview template sertifikat"
+        className="w-full h-full object-cover"
+      />
+    </div>
+  )}
+
+  <div className="flex items-center gap-3">
+    <button
+      type="button"
+      onClick={() => sertifikatInputRef.current?.click()}
+      className="flex items-center gap-2 px-4 py-2.5 text-[12px] font-semibold rounded-xl transition-all duration-150"
+      style={{ background: 'rgba(67,56,202,0.07)', color: '#4338ca', border: '1px solid rgba(67,56,202,0.15)' }}
+    >
+      <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      {existingSertifikatUrl || sertifikatPreview ? 'Ganti Template' : 'Upload Template'}
+    </button>
+    {(sertifikatPreview || existingSertifikatUrl) && (
+      <button
+        type="button"
+        onClick={() => { setSertifikatFile(null); setSertifikatPreview(''); setExistingSertifikatUrl(''); }}
+        className="text-[11px] text-red-400 hover:text-red-600 transition-colors"
+      >
+        Hapus
+      </button>
+    )}
+  </div>
+
+  <input
+    ref={sertifikatInputRef}
+    type="file"
+    accept="image/png,image/jpeg,image/webp"
+    onChange={handleSertifikatChange}
+    className="hidden"
+  />
+  <p className="mt-1.5 text-[10px] text-slate-400">
+    Maks 5MB · PNG, JPG, WEBP · Rekomendasi: landscape 1200×848px
+  </p>
+  <p className="mt-1 text-[10px] text-amber-500">
+    Pastikan template punya area kosong untuk nama jamaah di tengah
+  </p>
+</div>
+```
+
+---
+
+## LANGKAH 4 — `src/pages/Sertifikat.tsx`
+
+Ganti seluruh blok `certCard` (mulai dari `const certCard = (` sampai penutup `);`) dengan versi baru ini yang support dua mode: template custom dan fallback ke desain lama.
+
+```tsx
+const hasTemplate = Boolean(tenant?.sertifikat_template_url);
+
+const certCard = (
+  <div
+    ref={certRef}
+    className="relative overflow-hidden rounded-2xl animate-fade-up"
+    style={{
+      aspectRatio: '1.414 / 1',
+      background: hasTemplate ? 'transparent' : 'radial-gradient(120% 60% at 50% 0%, rgba(212,162,78,0.18), #130a04 60%)',
+    }}
+  >
+    {/* Background template image */}
+    {hasTemplate && (
+      <img
+        src={tenant!.sertifikat_template_url!}
+        alt=""
+        aria-hidden
+        className="absolute inset-0 h-full w-full object-cover"
+        crossOrigin="anonymous"
+      />
+    )}
+
+    {/* Overlay gelap tipis supaya teks tetap terbaca (hanya kalau pakai template) */}
+    {hasTemplate && (
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'rgba(0,0,0,0.18)' }}
+      />
+    )}
+
+    {/* Border ornamen (hanya kalau TIDAK pakai template) */}
+    {!hasTemplate && (
+      <>
+        <div className="pointer-events-none absolute inset-3 rounded-2xl border border-gold/40" />
+        <div className="pointer-events-none absolute inset-[18px] rounded-xl border border-gold/15" />
+        {['left-2 top-2', 'right-2 top-2', 'left-2 bottom-2', 'right-2 bottom-2'].map((p) => (
+          <span key={p} className={`pointer-events-none absolute ${p} h-2 w-2 rotate-45 bg-gold/70`} />
+        ))}
+      </>
+    )}
+
+    {/* Konten teks — di-overlay di tengah */}
+    <div className="relative flex h-full flex-col items-center justify-center px-8 text-center">
+      {!hasTemplate && (
+        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold">
+          Sertifikat Pelaksanaan
+        </p>
+      )}
+
+      {!hasTemplate && (
+        <h2 className="mt-1.5 font-display text-2xl font-bold" style={{ color: '#f3e9d5' }}>
+          Ibadah Umrah
+        </h2>
+      )}
+
+      {!hasTemplate && (
+        <div className="mx-auto my-4 flex items-center justify-center gap-3">
+          <span className="h-px w-10 bg-gold/40" />
+          <span className="h-1.5 w-1.5 rotate-45 bg-gold/70" />
+          <span className="h-px w-10 bg-gold/40" />
+        </div>
+      )}
+
+      {!hasTemplate && (
+        <p className="text-[11px] uppercase tracking-widest" style={{ color: 'rgba(243,233,213,0.5)' }}>
+          Dengan ini menerangkan bahwa
+        </p>
+      )}
+
+      {/* Nama jamaah — selalu tampil, ukuran menyesuaikan mode */}
+      <p
+        className="font-display font-bold leading-tight"
+        style={{
+          color: hasTemplate ? '#ffffff' : '#f3e9d5',
+          fontSize: hasTemplate ? 'clamp(22px, 4vw, 36px)' : undefined,
+          textShadow: hasTemplate ? '0 2px 8px rgba(0,0,0,0.6)' : 'none',
+          marginTop: hasTemplate ? 0 : '8px',
+        }}
+        {...(!hasTemplate && { className: 'mt-2 font-display text-3xl font-bold leading-tight' })}
+      >
+        {jamaah.nama}
+      </p>
+
+      {/* Nomor jamaah */}
+      <p
+        className="font-mono text-[11px] mt-2"
+        style={{
+          color: hasTemplate ? 'rgba(255,255,255,0.7)' : 'rgba(243,233,213,0.5)',
+          textShadow: hasTemplate ? '0 1px 4px rgba(0,0,0,0.5)' : 'none',
+          letterSpacing: '0.15em',
+        }}
+      >
+        {jamaah.nomorJamaah}
+      </p>
+
+      {!hasTemplate && (
+        <>
+          <p className="mt-3 max-w-[34ch] mx-auto text-pretty text-sm leading-relaxed" style={{ color: 'rgba(243,233,213,0.6)' }}>
+            telah menunaikan rangkaian ibadah umrah ke Baitullah Al-Haram dengan penuh khusyuk.
+            Semoga menjadi umrah yang mabrur.
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-3 text-left w-full">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-gold/80">Tanggal</p>
+              <p className="mt-0.5 text-sm" style={{ color: '#f3e9d5' }}>{tanggalSekarang}</p>
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-widest text-gold/80">No. Sertifikat</p>
+              <p className="mt-0.5 font-mono text-sm" style={{ color: '#f3e9d5' }}>{nomorSertifikat(jamaah.nomorJamaah)}</p>
+            </div>
+          </div>
+          <div className="mt-6 border-t border-gold/15 pt-4 w-full text-center">
+            <p className="font-mono text-[10px] uppercase tracking-widest" style={{ color: 'rgba(243,233,213,0.4)' }}>
+              Diselenggarakan oleh
+            </p>
+            <p className="mt-0.5 font-display text-base font-bold" style={{ color: '#f3e9d5' }}>
+              {tenant?.nama_travel ?? jamaah.travel}
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+);
+```
+
+### Ganti `backgroundColor` di fungsi `unduh` dan `bagikan`
+
+Cari:
+```ts
+backgroundColor: '#130a04',
+```
+
+Ganti jadi:
+```ts
+backgroundColor: hasTemplate ? '#ffffff' : '#130a04',
+```
+
+(Ada 2 tempat — di fungsi `unduh` dan `bagikan`)
+
+---
+
+## Catatan
+- Kalau `sertifikat_template_url` null → fallback ke desain gold/dark lama (tidak ada breaking change)
+- `crossOrigin="anonymous"` di `<img>` penting supaya `toPng` (html-to-image) bisa capture gambar dari Supabase Storage
+- Pastikan Supabase Storage bucket `logos` sudah public (sudah ada dari sebelumnya)
+- Nama jamaah di-render di tengah canvas dengan `text-shadow` supaya terbaca di atas template apapun
+- Tidak perlu ubah fungsi `unduh` / `bagikan` selain `backgroundColor`

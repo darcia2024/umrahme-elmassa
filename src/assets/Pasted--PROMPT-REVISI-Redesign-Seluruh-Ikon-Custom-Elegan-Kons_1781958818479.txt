@@ -1,0 +1,47 @@
+# PROMPT REVISI — Redesign Seluruh Ikon (Custom, Elegan, Konsisten)
+
+> Konteks: project Umrahme. Saat ini ikon-ikon di seluruh app menggunakan ikon generik dari library (terlihat seperti Lucide/Feather/Heroicons default) — kotak, polos, tidak punya karakter khusus. Revisi ini mendesain ulang SELURUH ikon di app agar terasa premium dan custom, sesuai identitas Umrahme, bukan ikon app generik.
+
+Scope: SEMUA ikon di seluruh aplikasi — bottom navigation, FAB, kartu fitur Beranda, ikon kategori doa, ikon lokasi/masjid, ikon checklist, ikon tombol aksi, ikon di header, dan ikon-ikon kecil lainnya yang tersebar di berbagai halaman.
+
+---
+
+## ARAH VISUAL
+
+1. **Outline tipis dengan stroke konsisten** — semua ikon pakai gaya garis (outline/stroke), BUKAN filled/solid, kecuali untuk state aktif tertentu yang sudah memang dirancang filled (mis. ikon di FAB). Stroke width harus SAMA di semua ikon (pilih satu angka, mis. 1.5px pada ukuran dasar, dan jaga rasio ini saat ikon di-scale ke ukuran berbeda).
+
+2. **Geometris dan presisi** — sudut dan kurva digambar dengan proporsi yang disengaja (bukan hasil generate ikon library generik), garis simetris, sudut presisi. Hindari kesan "sketsa" atau "kartun" — harus terasa seperti dirancang oleh desainer, bukan dipilih dari katalog.
+
+3. **Sentuhan detail islami HALUS pada ikon yang relevan secara tematik** (TIDAK semua ikon — hanya yang berhubungan langsung dengan elemen ibadah/budaya, agar terasa bermakna bukan dipaksakan):
+   - Ikon untuk **Doa**: terinspirasi bentuk lengkung kubah/mihrab (echo dari elemen mihrab card yang sudah jadi signature Umrahme) — bukan ikon hati/lonceng generik.
+   - Ikon untuk **Tawaf**: terinspirasi bentuk orbit/lingkaran konsentris mengelilingi titik pusat (merepresentasikan mengelilingi Ka'bah) — bukan ikon kubus/box generik yang sekarang dipakai.
+   - Ikon untuk **Sa'i**: terinspirasi dua titik terhubung garis melengkung bolak-balik (merepresentasikan Shafa-Marwah) — bukan ikon panah generik.
+   - Ikon untuk **Ihram**: terinspirasi bentuk kain sederhana/siluet pakaian ihram minimalis.
+   - Ikon untuk **Peta Lokasi**: terinspirasi pin lokasi dengan sedikit sentuhan bentuk kubah kecil di dalamnya, bukan pin generik Google Maps.
+   - Ikon **lain yang tidak punya makna islami spesifik** (Beranda, Profil, Pengaturan, tombol kembali, search, checklist, dll) — CUKUP dibuat elegan dan presisi secara geometris, TIDAK perlu dipaksa diberi elemen islami (mis. ikon "Beranda" cukup siluet pintu/rumah minimalis yang rapi, ikon "Profil" siluet figur sederhana). Memaksakan elemen islami di setiap ikon justru akan terasa berlebihan dan tidak tulus.
+
+4. **Ukuran dan ruang internal konsisten** — semua ikon dirancang dalam grid/canvas yang sama (mis. 24x24 viewBox sebagai dasar), dengan padding internal yang seragam, sehingga saat ditempatkan berdampingan (seperti di bottom nav) semua ikon terlihat punya "berat visual" yang setara, tidak ada yang terasa lebih besar/kecil/padat dari yang lain secara tidak sengaja.
+
+5. **Warna ikon mengikuti token yang sudah ada** — TIDAK menambah warna baru. Ikon non-aktif pakai `mute-500` atau `parchment-100` (sesuai konteks), ikon aktif/penting pakai `rose-600`/`rose-400`/`gold-400` sesuai elemen yang sudah ditentukan sebelumnya (mis. FAB tetap parchment-100 di atas rose-600, ikon aktif nav tetap warna yang sudah ditentukan).
+
+---
+
+## IMPLEMENTASI TEKNIS
+
+- Buat ikon sebagai **komponen SVG React custom** (bukan import dari library ikon eksternal seperti lucide-react untuk ikon-ikon yang sudah direvisi) — simpan di `src/components/icons/` sebagai komponen-komponen terpisah (mis. `IconDoa.tsx`, `IconTawaf.tsx`, `IconBeranda.tsx`, dst), masing-masing menerima props standar (`size`, `className`, atau `color` mengikuti pola komponen ikon React yang umum) agar mudah dipakai ulang di berbagai tempat dengan ukuran berbeda.
+- Ganti SEMUA pemakaian ikon generik di seluruh komponen/halaman dengan komponen ikon custom yang baru ini — lakukan pengecekan menyeluruh ke semua file yang mengimpor ikon dari library eksternal, ganti satu per satu.
+- Pastikan tidak ada ikon yang "tertinggal" memakai gaya lama setelah revisi — inkonsistensi (sebagian custom, sebagian masih generik) akan terlihat lebih buruk daripada semuanya generik.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Layout, posisi, dan ukuran area ikon di tiap komponen (bottom nav, kartu, dll) — TIDAK berubah, hanya isi/desain ikonnya yang diganti.
+- Token warna dan design system lainnya — tidak berubah.
+- Fungsi dan interaksi setiap elemen yang memuat ikon — tidak berubah.
+
+## OUTPUT
+
+Sebelum membangun, tampilkan dulu daftar SEMUA ikon yang akan dibuat ulang (inventarisasi dari seluruh halaman yang sudah ada) beserta konsep visual singkat untuk masing-masing — agar bisa dicek dulu sebelum eksekusi penuh ke puluhan ikon.
+
+Build dimulai dari ikon-ikon di bottom navigation dan FAB (paling sering terlihat), lalu ikon kartu fitur Beranda, baru ikon-ikon kecil lainnya yang tersebar di berbagai halaman.
+
+Setelah selesai, lakukan **self-review**: bandingkan semua ikon berdampingan (screenshot grid semua ikon baru) untuk memastikan stroke width, ukuran, dan gaya benar-benar konsisten satu sama lain — bukan terlihat seperti gabungan beberapa gaya berbeda.

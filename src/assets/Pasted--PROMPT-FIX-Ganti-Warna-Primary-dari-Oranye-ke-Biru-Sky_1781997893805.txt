@@ -1,0 +1,51 @@
+# PROMPT FIX — Ganti Warna Primary dari Oranye ke Biru Sky
+
+> Konteks: project Umrahme. Token warna `primary` di seluruh app saat ini oranye-merah (`#ea2804`), akan diganti ke biru sky cerah (`#0ea5e9`). Ini PURE color token swap — tidak mengubah layout, struktur komponen, copy/teks, ukuran, atau elemen lain apapun selain warna yang disebutkan di bawah.
+
+## PERUBAHAN YANG HARUS DITERAPKAN
+
+Terapkan replace berikut di file-file ini secara PERSIS (case-sensitive, jangan ubah huruf besar/kecil hex):
+
+### 1. `tailwind.config.ts`
+- `primary: '#ea2804'` → `primary: '#0ea5e9'`
+- `'primary-deep': '#c01f00'` → `'primary-deep': '#0284c7'`
+- `'glow-primary': '0 4px 20px rgba(234,40,4,0.30)'` → `'glow-primary': '0 4px 20px rgba(14,165,233,0.30)'`
+
+### 2. `src/index.css`
+- `::selection { background: rgba(234, 40, 4, 0.14); ... }` → ganti rgba jadi `rgba(14, 165, 233, 0.14)`
+- `:focus-visible { outline: 2px solid rgba(234, 40, 4, 0.6); ... }` → ganti rgba jadi `rgba(14, 165, 233, 0.6)`
+- `.card-primary-tint { background: linear-gradient(135deg, #fff8f7 0%, #fff0ee 100%); }` → ganti jadi `linear-gradient(135deg, #f3fbfe 0%, #e7f6fd 100%)`
+
+### 3. `src/components/BottomNav.tsx`
+Gradient FAB tombol "Ibadah" di tengah bottom nav:
+- Background aktif: `linear-gradient(145deg, #ea2804 0%, #c01f00 100%)` → `linear-gradient(145deg, #0ea5e9 0%, #0284c7 100%)`
+- Background non-aktif: `linear-gradient(145deg, #ff3d1a 0%, #d42200 100%)` → `linear-gradient(145deg, #38bdf8 0%, #0ea5e9 100%)`
+- Box-shadow aktif & non-aktif: ganti semua `rgba(234,40,4,...)` jadi `rgba(14,165,233,...)` (nilai opacity tetap sama, cuma RGB-nya yang ganti)
+
+### 4. `src/pages/JadwalSholat.tsx`
+Semua fill/stroke SVG timeline waktu sholat yang pakai `#ea2804` (ada 7 titik berbeda: track progress, lingkaran halo, titik sholat aktif/lewat, teks jam & nama, garis penanda posisi) — ganti SEMUA ke `#0ea5e9`. Tidak ada nilai lain selain `#ea2804` di file ini yang perlu diganti.
+
+### 5. File-file dengan SATU hardcoded hex `#ea2804` (ganti ke `#0ea5e9`, tidak ada perubahan lain):
+- `src/pages/CounterTawaf.tsx` — conic-gradient progress ring counter tawaf
+- `src/pages/CounterSai.tsx` — conic-gradient progress ring counter sa'i
+- `src/pages/LokasiDetail.tsx` — repeating-linear-gradient pattern dekoratif
+- `src/pages/Peta.tsx` — repeating-linear-gradient pattern dekoratif
+- `src/pages/ManasikModulDetail.tsx` — variabel `const red = '#ea2804'` (boleh tetap nama variabel `red`, cuma value-nya yang ganti ke `'#0ea5e9'`)
+
+### 6. `src/pages/Beranda.tsx`
+Gradient tombol CTA:
+- `linear-gradient(90deg, #ea2804 0%, #ff6b47 100%)` → `linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%)`
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Warna `gold` (`#d4a24e`) dan semua turunannya (`text-gold`, `bg-gold`, `border-gold`, glow-gold, dll) — TETAP SAMA, ini elemen sakral/Arab yang sengaja dipertahankan.
+- Warna `ink`, `charcoal`, `mute`, `ash`, `stone`, `canvas`, `surface-bone`, `surface-card`, `hairline`, `badge-success` — TETAP SAMA, tidak disentuh sama sekali.
+- Layout, struktur komponen, copy/teks, spacing, ukuran font, animasi — TIDAK ADA yang berubah selain warna yang disebutkan di atas.
+- Jangan rename class Tailwind apapun (tetap `bg-primary`, `text-primary`, dll — cuma value hex di balik token itu yang berubah).
+
+## OUTPUT
+
+Setelah selesai apply semua replace di atas:
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses tanpa error (warning soal chunk size besar itu normal, abaikan).
+3. Tunjukkan preview halaman Beranda, Login, dan Jadwal Sholat untuk verifikasi visual: pastikan semua elemen yang sebelumnya oranye/merah (tombol Masuk, FAB Ibadah, progress ring, gauge Jadwal Sholat, CTA Beranda) sekarang tampil biru sky cerah, dan elemen gold/Arab tetap tidak berubah.

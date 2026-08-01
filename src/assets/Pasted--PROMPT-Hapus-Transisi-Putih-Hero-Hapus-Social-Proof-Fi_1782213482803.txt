@@ -1,0 +1,78 @@
+# PROMPT: Hapus Transisi Putih Hero + Hapus Social Proof
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Dua hal di HERO section. Jangan ubah bagian lain.
+
+---
+
+## 1. HAPUS social proof (bintang ★★★★★ + tulisan "Lebih hemat...")
+
+Cari dan HAPUS TOTAL blok `motion.div` social proof ini (yang ada bintang dan teks "Lebih hemat dari buku doa cetak..."):
+
+```jsx
+<motion.div
+  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.48 }}
+  style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 600 }}
+>
+  <div style={{ display: 'flex' }}>
+    {[0, 1, 2, 3].map(i => <span key={i} style={{ width: 28, height: 28, borderRadius: '50%', border: '2px solid #fff', marginLeft: i > 0 ? -8 : 0, background: C.accent, display: 'inline-block' }} />)}
+  </div>
+  <span style={{ color: C.accent, letterSpacing: 2 }}>★★★★★</span>
+  <span>Lebih hemat dari buku doa cetak. Lebih profesional dari grup WhatsApp.</span>
+</motion.div>
+```
+
+Hapus seluruh blok itu. (Jika teksnya sedikit berbeda, cari `motion.div` yang berisi `★★★★★` dan hapus seluruhnya.)
+
+---
+
+## 2. HAPUS transisi/gradasi putih di bawah hero
+
+**Penyebab:** Gambar `hero-bg.avif` punya gradasi memudar ke putih di bagian bawahnya (baked-in ke file gambar), sehingga muncul area putih canggung sebelum section berikutnya.
+
+**Solusi:** Tambahkan overlay gradient di atas foto hero yang menyatu dengan warna section berikutnya, DAN ubah posisi foto agar bagian putihnya tidak dominan.
+
+### Langkah A — Ubah hero photo div
+**Cari:**
+```jsx
+{/* hero photo */}
+<div style={{
+  position: 'absolute', inset: 0, pointerEvents: 'none',
+  backgroundImage: 'url(/hero-bg.avif)',
+  backgroundSize: 'cover', backgroundPosition: 'center center',
+}} />
+```
+**Ganti:**
+```jsx
+{/* hero photo */}
+<div style={{
+  position: 'absolute', inset: 0, pointerEvents: 'none',
+  backgroundImage: 'url(/hero-bg.avif)',
+  backgroundSize: 'cover', backgroundPosition: 'center top',
+}} />
+```
+
+### Langkah B — Tambahkan overlay gradient penutup di bagian bawah hero
+Tepat SETELAH div "dark scrim" (yang `background: 'rgba(0,0,0,0.18)'`), tambahkan div baru ini:
+```jsx
+{/* bottom fade overlay — tutup gradasi putih bawaan gambar */}
+<div style={{
+  position: 'absolute', left: 0, right: 0, bottom: 0, height: '45%', pointerEvents: 'none',
+  background: `linear-gradient(180deg, transparent 0%, ${C.blue3} 75%, ${C.blue3} 100%)`,
+}} />
+```
+
+Ini akan menutup area putih bawaan gambar dengan warna biru hero (`C.blue3`) yang menyatu mulus.
+
+### Langkah C — Pastikan hero menyambung rapi ke section berikutnya
+Jika section setelah hero (Bento "Tentang Umrahme" atau Marquee) berlatar putih, biarkan — transisi dari biru `C.blue3` ke putih akan terlihat natural sebagai batas section, bukan gradasi canggung di tengah foto.
+
+Jika ingin lebih mulus lagi, set hero section punya `borderBottom: 'none'` dan pastikan tidak ada `marginBottom` negatif yang tersisa dari elemen yang sudah dihapus.
+
+---
+
+## ATURAN
+- Jangan ubah warna brand, logika, animasi, atau section lain.
+- Pastikan tidak ada error referensi setelah social proof dihapus.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

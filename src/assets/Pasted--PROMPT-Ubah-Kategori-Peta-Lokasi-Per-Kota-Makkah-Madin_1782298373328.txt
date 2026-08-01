@@ -1,0 +1,89 @@
+# PROMPT: Ubah Kategori Peta Lokasi — Per Kota (Makkah / Madinah)
+
+**File:** `artifacts/umrahme/src/data/lokasi.ts` & `artifacts/umrahme/src/pages/Peta.tsx`
+
+Ganti kategori tab di Peta Lokasi dari berdasarkan tipe (Masjid / Tempat Bersejarah) menjadi berdasarkan KOTA (Makkah / Madinah). Lebih natural untuk jamaah yang berpikir "hari ini di Makkah" atau "sekarang di Madinah". Di tiap kota, masjid dan tempat bersejarah tampil bercampur (semua lokasi di kota itu).
+
+Catatan: ada lokasi dengan `kota: 'Arafah'` (Jabal Rahmah). Arafah masuk kawasan Makkah, jadi kelompokkan bersama Makkah.
+
+---
+
+## LANGKAH 1 — Tambah helper di `data/lokasi.ts`
+
+Tambahkan fungsi baru (boleh biarkan `lokasiByTipe` tetap ada untuk kompatibilitas):
+```ts
+export type KotaFilter = 'Makkah' | 'Madinah';
+
+export function lokasiByKota(kota: KotaFilter): Lokasi[] {
+  return daftarLokasi.filter((l) => {
+    if (kota === 'Makkah') return l.kota === 'Makkah' || l.kota === 'Arafah';
+    return l.kota === 'Madinah';
+  });
+}
+```
+
+---
+
+## LANGKAH 2 — Ubah `Peta.tsx`
+
+### 2a. Ganti import & tipe tab
+Cari:
+```tsx
+import { lokasiByTipe } from '../data/lokasi';
+import type { TipeLokasi } from '../types';
+
+const tabs: { id: TipeLokasi; label: string }[] = [
+  { id: 'masjid', label: 'Masjid' },
+  { id: 'sejarah', label: 'Tempat Bersejarah' },
+];
+```
+Ganti:
+```tsx
+import { lokasiByKota, type KotaFilter } from '../data/lokasi';
+
+const tabs: { id: KotaFilter; label: string }[] = [
+  { id: 'Makkah', label: 'Makkah' },
+  { id: 'Madinah', label: 'Madinah' },
+];
+```
+
+### 2b. Ganti state & data
+Cari:
+```tsx
+const [tab, setTab] = useState<TipeLokasi>('masjid');
+const lokasi = lokasiByTipe(tab);
+```
+Ganti:
+```tsx
+const [tab, setTab] = useState<KotaFilter>('Makkah');
+const lokasi = lokasiByKota(tab);
+```
+
+### 2c. Badge kota di kartu jadi redundan — ganti jadi badge TIPE
+Karena sekarang sudah dikelompokkan per kota, badge "Makkah/Madinah" di tiap kartu jadi mubazir. Ganti badge itu menjadi badge TIPE (Masjid / Bersejarah) supaya tetap informatif:
+
+Pada kartu (mobile & desktop), cari badge kota:
+```tsx
+<span className={`... ${l.kota === 'Madinah' ? 'bg-primary/10 text-primary' : 'bg-gold/15 text-gold'}`}>
+  {l.kota}
+</span>
+```
+Ganti dengan badge tipe:
+```tsx
+<span className={`flex-none rounded-md px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider ${
+  l.tipe === 'masjid' ? 'bg-primary/10 text-primary' : 'bg-gold/15 text-gold'
+}`}>
+  {l.tipe === 'masjid' ? 'Masjid' : 'Bersejarah'}
+</span>
+```
+
+### 2d. Teks jumlah lokasi
+Jika ada teks "{jumlah} lokasi", biarkan — sekarang menampilkan jumlah lokasi di kota terpilih, tetap relevan.
+
+---
+
+## ATURAN
+- Jangan ubah banner atas, header, atau struktur kartu selain badge.
+- Lokasi Arafah (Jabal Rahmah) harus muncul di tab Makkah.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

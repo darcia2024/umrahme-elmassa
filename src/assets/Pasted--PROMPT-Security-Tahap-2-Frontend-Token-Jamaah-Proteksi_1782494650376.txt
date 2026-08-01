@@ -1,0 +1,278 @@
+# PROMPT — Security Tahap 2 Frontend: Token Jamaah + Proteksi API
+
+## Konteks
+Setelah `security-rls-tahap2.sql` dijalankan:
+- `jamaah_data` & `jurnal_entries` tidak bisa diakses anon langsung — harus lewat RPC bertoken.
+- Tiap jamaah punya `access_token` yang dikembalikan saat login.
+- API endpoint AI perlu verifikasi auth (cegah penyalahgunaan kuota OpenRouter).
+
+File yang diubah:
+- `artifacts/umrahme/src/types/index.ts` (tambah field token)
+- `artifacts/umrahme/src/data/jamaah.ts` (simpan token saat login)
+- `artifacts/umrahme/src/lib/supabase.ts` (data jamaah & jurnal pakai RPC)
+- `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx` (kirim auth header ke API)
+- `api/ai-ocr.ts` & `api/ai-extract-jamaah.ts` (verifikasi auth)
+
+> URUTAN: jalankan SQL Tahap 2 DULU, lalu deploy ini. Tanpa deploy ini, jurnal & counter
+> jamaah berhenti bekerja (akses anon sudah ditutup).
+
+---
+
+## BAGIAN 1 — Tambah field token di type Jamaah (`types/index.ts`)
+
+```ts
+export interface Jamaah {
+  nama: string;
+  nomorJamaah: string;
+  travel: string;
+  kodeAktivasi: string;
+  fase: Fase;
+  accessToken?: string;   // ← tambah: token rahasia untuk akses data jamaah
+  // ... field lain tetap
+}
+```
+
+---
+
+## BAGIAN 2 — Simpan token saat login (`data/jamaah.ts`)
+
+Di helper `bangunHasil` (atau di kedua fungsi validasiKode/validasiSlug saat membangun
+objek `jamaah`), tambahkan `accessToken` dari data RPC:
+
+```ts
+const jamaah: Jamaah = {
+  nama: akun.nama,
+  nomorJamaah: akun.nomor_jamaah,
+  travel: tenant.nama_travel,
+  kodeAktivasi,
+  fase,
+  accessToken: akun.access_token ?? undefined,   // ← tambah
+  rombongan: akun.rombongan ?? undefined,
+  // ... sisanya tetap
+};
+```
+
+> `akun.access_token` otomatis ada karena RPC `validate_jamaah_login` mengembalikan
+> seluruh kolom jamaah_accounts (termasuk access_token yang baru).
+
+---
+
+## BAGIAN 3 — Data jamaah & jurnal pakai RPC (`lib/supabase.ts`)
+
+### 3a. Helper baca token dari localStorage
+Tambahkan helper kecil (token disimpan di objek jamaah pada localStorage oleh AuthContext):
+```ts
+function getJamaahToken(): string | null {
+  try {
+    const raw = localStorage.getItem('umrahme.jamaah');
+    if (!raw) return null;
+    const j = JSON.parse(raw);
+    return j?.accessToken ?? null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### 3b. Ganti `getJamaahData` & `setJamaahData` jadi pakai RPC
+```ts
+export async function getJamaahData<T = unknown>(
+  tenantId: string,
+  nomorJamaah: string,
+  key: string,
+): Promise<T | null> {
+  const token = getJamaahToken();
+  if (!token) return null;
+  const { data, error } = await supabase.rpc('jamaah_data_get', {
+    p_tenant_id: tenantId,
+    p_nomor_jamaah: nomorJamaah,
+    p_token: token,
+    p_key: key,
+  });
+  if (error) throw new Error(error.message);
+  return (data as T) ?? null;
+}
+
+export async function setJamaahData(
+  tenantId: string,
+  nomorJamaah: string,
+  key: string,
+  value: unknown,
+): Promise<void> {
+  const token = getJamaahToken();
+  if (!token) return;
+  const { error } = await supabase.rpc('jamaah_data_set', {
+    p_tenant_id: tenantId,
+    p_nomor_jamaah: nomorJamaah,
+    p_token: token,
+    p_key: key,
+    p_value: value,
+  });
+  if (error) throw new Error(error.message);
+}
+```
+
+### 3c. Ganti `fetchJurnal`, `createJurnal`, `deleteJurnal` jadi pakai RPC
+```ts
+export async function fetchJurnal(tenantId: string, nomorJamaah: string): Promise<JurnalRow[]> {
+  const token = getJamaahToken();
+  if (!token) return [];
+  const { data, error } = await supabase.rpc('jurnal_list', {
+    p_tenant_id: tenantId,
+    p_nomor_jamaah: nomorJamaah,
+    p_token: token,
+  });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as JurnalRow[];
+}
+
+export async function createJurnal(
+  tenantId: string,
+  nomorJamaah: string,
+  payload: { tanggal: string; judul?: string | null; isi: string; lokasi?: string | null }
+): Promise<JurnalRow> {
+  const token = getJamaahToken();
+  if (!token) throw new Error('Sesi tidak valid. Silakan login ulang.');
+  const { data, error } = await supabase.rpc('jurnal_create', {
+    p_tenant_id: tenantId,
+    p_nomor_jamaah: nomorJamaah,
+    p_token: token,
+    p_tanggal: payload.tanggal,
+    p_judul: payload.judul ?? null,
+    p_isi: payload.isi,
+    p_lokasi: payload.lokasi ?? null,
+  });
+  if (error) throw new Error(error.message);
+  return data as JurnalRow;
+}
+
+export async function deleteJurnal(
+  id: string,
+  tenantId: string,
+  nomorJamaah: string,
+): Promise<void> {
+  const token = getJamaahToken();
+  if (!token) throw new Error('Sesi tidak valid. Silakan login ulang.');
+  const { error } = await supabase.rpc('jurnal_delete', {
+    p_id: id,
+    p_tenant_id: tenantId,
+    p_nomor_jamaah: nomorJamaah,
+    p_token: token,
+  });
+  if (error) throw new Error(error.message);
+}
+```
+
+> CATATAN: `deleteJurnal` sekarang butuh `tenantId` & `nomorJamaah`. Update pemanggilnya di
+> `pages/Jurnal.tsx` (sekitar baris 292): `await deleteJurnal(id, tenantId, nomorJamaah);`
+> (nilai tenantId & nomorJamaah sudah tersedia di komponen itu).
+
+---
+
+## BAGIAN 4 — Proteksi API Endpoint AI
+
+### 4a. Frontend: kirim token Supabase saat memanggil API (`AdminTenantForm.tsx`)
+
+Sebelum tiap `fetch('/api/ai-ocr'...)` dan `fetch('/api/ai-extract-jamaah'...)`, ambil
+access token sesi admin/travel dan kirim di header Authorization:
+
+```ts
+const { data: { session } } = await supabase.auth.getSession();
+const authHeader = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+
+const response = await fetch('/api/ai-ocr', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', ...authHeader },
+  body: JSON.stringify({ /* ... */ }),
+});
+```
+
+Terapkan pola yang sama pada ketiga pemanggilan (`ai-ocr` baris ~286, `ai-extract-jamaah`
+baris ~599 & ~614).
+
+### 4b. Endpoint: verifikasi token (`api/ai-ocr.ts` dan `api/ai-extract-jamaah.ts`)
+
+Tambahkan fungsi verifikasi di awal handler (sebelum proses apa pun). Verifikasi token ke
+Supabase Auth, lalu pastikan user adalah admin atau travel-user.
+
+```ts
+async function verifyCaller(req: VercelRequest): Promise<{ ok: boolean; userId?: string }> {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) return { ok: false };
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) return { ok: false };
+
+  // Verifikasi token → dapatkan user
+  const userResp = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+  });
+  if (!userResp.ok) return { ok: false };
+  const user = await userResp.json();
+  if (!user?.id) return { ok: false };
+
+  // Cek apakah admin atau travel-user (pakai REST + service role kalau ada, atau anon+token)
+  // Sederhana: cek keanggotaan via REST dengan token user (RLS akan mengizinkan baca milik sendiri)
+  const adminResp = await fetch(`${supabaseUrl}/rest/v1/app_admins?user_id=eq.${user.id}&select=user_id`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+  });
+  const adminRows = adminResp.ok ? await adminResp.json() : [];
+  if (Array.isArray(adminRows) && adminRows.length > 0) return { ok: true, userId: user.id };
+
+  const travelResp = await fetch(`${supabaseUrl}/rest/v1/tenant_users?user_id=eq.${user.id}&select=user_id`, {
+    headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
+  });
+  const travelRows = travelResp.ok ? await travelResp.json() : [];
+  if (Array.isArray(travelRows) && travelRows.length > 0) return { ok: true, userId: user.id };
+
+  return { ok: false };
+}
+```
+
+Lalu di awal `handler`, setelah cek method:
+```ts
+const caller = await verifyCaller(req);
+if (!caller.ok) {
+  return res.status(401).json({ error: 'Unauthorized. Silakan login sebagai admin atau travel.' });
+}
+```
+
+> Ini memastikan hanya admin/travel yang login yang bisa memakai fitur AI — anon/orang luar
+> ditolak, sehingga kuota OpenRouter tidak bisa disalahgunakan orang asing.
+
+### 4c. (Opsional) Rate limiting sederhana
+Tambahkan pembatasan kasar per-user (best-effort, bisa reset saat cold start):
+```ts
+const rlMap = (globalThis as any).__rl ?? ((globalThis as any).__rl = new Map<string, number[]>());
+function rateLimited(userId: string, max = 20, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const arr = (rlMap.get(userId) ?? []).filter((t: number) => now - t < windowMs);
+  arr.push(now);
+  rlMap.set(userId, arr);
+  return arr.length > max;
+}
+// setelah verifyCaller:
+if (caller.userId && rateLimited(caller.userId)) {
+  return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi sebentar.' });
+}
+```
+
+---
+
+## Catatan Penting
+- **Token jamaah** disimpan di localStorage (bagian dari objek `umrahme.jamaah`). Saat logout,
+  AuthContext menghapusnya — token ikut hilang. Aman.
+- **Kompatibilitas data lama**: jamaah yang sudah login SEBELUM update ini tidak punya
+  `accessToken` di localStorage → jurnal/counter mereka tidak jalan sampai login ulang.
+  Ini wajar; minta jamaah login ulang sekali setelah update.
+- **Pemanggil `deleteJurnal`** wajib diupdate karena signature berubah (tambah tenantId & nomorJamaah).
+- Jangan ubah fungsi admin/travel lain yang sudah jalan.
+
+## Verifikasi Setelah Deploy
+- Jamaah login ulang → jurnal & counter tawaf/sa'i tetap tersimpan & termuat
+- Akses langsung ke `jamaah_data`/`jurnal_entries` via anon REST → ditolak (kosong/error)
+- Memanggil `/api/ai-ocr` tanpa login → 401 Unauthorized
+- Admin/travel yang login → fitur AI (OCR poster, import jamaah) tetap berfungsi
+- Counter & jurnal hanya bisa diakses oleh jamaah pemilik token (tidak bisa baca milik orang lain)

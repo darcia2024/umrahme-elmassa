@@ -1,0 +1,50 @@
+# PROMPT: Ganti Pain Points dengan Masalah Nyata Jamaah Umrah (Hasil Riset)
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Ganti 6 pain points di section "Kenyataan di Lapangan" dengan masalah yang lebih spesifik dan relate dengan kenyataan travel umrah Indonesia (hasil riset keluhan jamaah & travel). Pertahankan struktur kartu + ikon SVG outline yang sudah ada — hanya ganti title + desc tiap kartu. Sesuaikan ikon jika relevan.
+
+---
+
+## 6 PAIN POINTS BARU (urut sesuai dampak)
+
+Ganti array pain points jadi seperti ini (sesuaikan dengan struktur `{ title, desc, icon }` yang ada):
+
+**1. Jamaah tertinggal & tersesat saat Tawaf**
+- title: `Jamaah tersesat saat Tawaf & Sai`
+- desc: `Terpisah di lautan jutaan orang. Lansia dan jamaah pertama paling rawan.`
+- icon: gunakan ikon orang/pin lokasi (mis. users atau map-pin)
+
+**2. "Jadwal hari ini apa, Pak?"**
+- title: `"Hari ini kita ke mana, Pak?"`
+- desc: `Pertanyaan sama berulang sepanjang hari. Muthowif jadi mesin penjawab.`
+- icon: ikon chat bubble (pertahankan yang ada)
+
+**3. Salah niat & rukun karena tertinggal arahan**
+- title: `Salah niat ihram saat lewat Miqat`
+- desc: `Jamaah tertinggal arahan muthowif. Risiko ibadah jadi tidak sah.`
+- icon: ikon peringatan/check (mis. alert-circle atau shield)
+
+**4. Info penting tenggelam di grup WA**
+- title: `Info penting tenggelam di grup WA`
+- desc: `Pengumuman jam kumpul & perubahan jadwal tertimbun ratusan chat.`
+- icon: ikon broadcast/megaphone (pertahankan)
+
+**5. Muthowif kelelahan urus hal teknis**
+- title: `Muthowif habis energi untuk hal teknis`
+- desc: `Sibuk jawab pertanyaan & koordinasi, bukan membimbing ibadah.`
+- icon: ikon users (pertahankan)
+
+**6. Lupa nomor kamar, bus, & titik kumpul**
+- title: `Lupa nomor kamar, bus & titik kumpul`
+- desc: `Jamaah bingung cari hotel, bus, atau gerbang masjid tempat berkumpul.`
+- icon: ikon grid/smartphone atau map-pin
+
+---
+
+## CATATAN
+- Masalah-masalah ini hasil riset keluhan nyata jamaah & travel umrah Indonesia: tersesat saat tawaf, salah niat di miqat, info tenggelam di WA, muthowif kelelahan, lupa titik kumpul. Lebih relate daripada masalah generik.
+- Hanya ubah teks (title + desc) dan ikon bila perlu. Jangan ubah layout, warna, animasi, atau heading section.
+- Heading section tetap "Tiap keberangkatan, masalah yang sama." dan sub "Bukan salah tim Anda. Memang belum ada sistem yang pas. Sampai sekarang."
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

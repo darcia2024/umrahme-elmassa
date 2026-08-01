@@ -1,0 +1,125 @@
+# PROMPT: Tambah Section "Tempat Bersejarah" di Beranda
+
+**File:** `artifacts/umrahme/src/pages/Beranda.tsx`
+
+Tambahkan section "Tempat Bersejarah" di dashboard (Beranda) berupa carousel horizontal yang menampilkan preview lokasi ziarah, supaya jamaah bisa langsung lihat-lihat tanpa harus masuk ke menu Panduan dulu. Tap salah satu → buka detail lokasi.
+
+---
+
+## LANGKAH 1 — Import data lokasi
+
+Di bagian atas `Beranda.tsx`, tambahkan import:
+```tsx
+import { daftarLokasi } from '../data/lokasi';
+import { Link } from 'react-router-dom'; // jika belum ada
+```
+
+---
+
+## LANGKAH 2 — Buat komponen carousel
+
+Tambahkan komponen ini di dalam file `Beranda.tsx` (sebelum komponen utama atau di bawahnya):
+
+```tsx
+function KartuTempatBersejarah() {
+  // Ambil beberapa lokasi unggulan untuk preview (maks 8)
+  const preview = daftarLokasi.slice(0, 8);
+
+  return (
+    <div>
+      {/* Header section */}
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Jelajahi</p>
+          <h2 className="mt-0.5 text-[15px] font-bold text-ink">Tempat Bersejarah</h2>
+        </div>
+        <Link to="/peta" className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
+          Lihat Semua
+          <IconChevron className="h-3 w-3" />
+        </Link>
+      </div>
+
+      {/* Carousel horizontal */}
+      <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1 lg:mx-0 lg:px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {preview.map((l) => (
+          <Link
+            key={l.id}
+            to={`/peta/${l.id}`}
+            className="group relative flex-none overflow-hidden rounded-xl border border-hairline bg-surface-card active:scale-[0.98] transition-transform"
+            style={{ width: 150 }}
+          >
+            {/* Gambar / placeholder */}
+            <div className="relative h-24 w-full overflow-hidden bg-surface-bone">
+              {l.gambar ? (
+                <img src={l.gambar} alt={l.nama} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+              ) : (
+                <>
+                  <div className="absolute inset-0 opacity-[0.18]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #d4a24e 0 1px, transparent 1px 8px)' }} aria-hidden />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <IconPeta className="h-5 w-5 text-gold/60" />
+                  </div>
+                </>
+              )}
+              {/* Badge kota */}
+              <span className="absolute left-1.5 top-1.5 rounded-md bg-black/55 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wider text-white backdrop-blur-sm">
+                {l.kota}
+              </span>
+            </div>
+            {/* Teks */}
+            <div className="p-2.5">
+              <h3 className="truncate text-[12.5px] font-bold leading-tight text-ink">{l.nama}</h3>
+              {l.namaArab && (
+                <p className="mt-0.5 truncate text-right font-arab text-[12px] text-gold" dir="rtl">{l.namaArab}</p>
+              )}
+              <p className="mt-1 line-clamp-2 text-[10.5px] leading-snug text-charcoal">{l.ringkas}</p>
+            </div>
+          </Link>
+        ))}
+
+        {/* Kartu "Lihat Semua" di akhir */}
+        <Link
+          to="/peta"
+          className="flex-none flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-hairline-strong bg-surface-bone active:scale-[0.98] transition-transform"
+          style={{ width: 110 }}
+        >
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+            <IconChevron className="h-4 w-4 text-primary" />
+          </div>
+          <span className="px-2 text-center text-[11px] font-semibold text-primary leading-tight">Lihat Semua Lokasi</span>
+        </Link>
+      </div>
+    </div>
+  );
+}
+```
+
+**Catatan:** pastikan `IconPeta`, `IconChevron`, `daftarLokasi`, `Link` sudah ter-import. Jika token `hairline-strong` belum ada, ganti `border-hairline-strong` → `border-hairline`.
+
+---
+
+## LANGKAH 3 — Sisipkan ke layout MOBILE
+
+Cari blok Quick actions di bagian mobile (sebelum `{/* Pemisah */}` yang berisi "Akses Cepat"). Sisipkan section ini SEBELUM pemisah "Akses Cepat":
+
+```tsx
+{/* Tempat Bersejarah */}
+<KartuTempatBersejarah />
+```
+
+Posisinya: setelah Checklist (atau setelah KartuItinerary), sebelum pemisah "Akses Cepat".
+
+---
+
+## LANGKAH 4 — Sisipkan ke layout DESKTOP
+
+Di kolom kiri desktop (`lg:grid`), sisipkan `<KartuTempatBersejarah />` di posisi serupa — setelah Checklist/Itinerary, sebelum blok "Akses Cepat".
+
+---
+
+## ATURAN
+- Nama section harus **"Tempat Bersejarah"** (sesuai permintaan).
+- Carousel scroll horizontal, scrollbar disembunyikan.
+- Tap kartu → `/peta/{id}` (detail lokasi). Tombol "Lihat Semua" → `/peta`.
+- Jangan ubah section lain di Beranda.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

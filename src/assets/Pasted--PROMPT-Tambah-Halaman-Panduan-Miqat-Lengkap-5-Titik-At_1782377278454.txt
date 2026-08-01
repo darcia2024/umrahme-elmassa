@@ -1,0 +1,150 @@
+# PROMPT: Tambah Halaman Panduan "Miqat" — Lengkap 5 Titik + Aturan Fikih
+
+**File terkait:**
+- `artifacts/umrahme/src/data/miqat.ts` (BARU — data miqat)
+- `artifacts/umrahme/src/pages/PanduanMiqat.tsx` (BARU — halaman panduan)
+- `artifacts/umrahme/src/pages/Panduan.tsx` (tambah entri menu)
+- `artifacts/umrahme/src/App.tsx` (tambah route)
+
+Miqat adalah konsep krusial — salah/terlewat miqat tanpa ihram = wajib dam. Buat halaman panduan khusus yang menjelaskan 5 miqat makani + miqat khusus jamaah Indonesia + aturan & adabnya. Ini berbeda dari Peta Lokasi (yang menampilkan tempat fisik); halaman ini fokus edukasi konsep miqat.
+
+---
+
+## LANGKAH 1 — Buat `data/miqat.ts`
+
+```ts
+export interface TitikMiqat {
+  id: string;
+  nama: string;
+  namaArab: string;
+  namaLain?: string;
+  untuk: string;            // jamaah dari arah mana
+  jarakKeMakkah: string;    // perkiraan jarak
+  koordinat?: { lat: number; lng: number };
+  keterangan: string;
+}
+
+export const daftarMiqat: TitikMiqat[] = [
+  {
+    id: 'dzulhulaifah',
+    nama: 'Dzulhulaifah (Bir Ali)',
+    namaArab: 'ذو الحليفة',
+    namaLain: 'Bir Ali / Masjid Asy-Syajarah',
+    untuk: 'Penduduk Madinah & jamaah yang berangkat dari/melewati Madinah',
+    jarakKeMakkah: '± 450 km (utara Makkah)',
+    koordinat: { lat: 24.4131, lng: 39.5419 },
+    keterangan:
+      'Miqat terjauh dari Makkah dan yang paling dikenal jamaah Indonesia gelombang dari Madinah. Rasulullah ﷺ berihram dari sini saat Haji Wada. Kini berupa kompleks Masjid Bir Ali yang besar dan lengkap.',
+  },
+  {
+    id: 'juhfah',
+    nama: 'Al-Juhfah',
+    namaArab: 'الجحفة',
+    namaLain: 'Kini umumnya dari Rabigh',
+    untuk: 'Jamaah dari arah Syam (Suriah, Lebanon, Yordania, Palestina) & Mesir',
+    jarakKeMakkah: '± 187 km (barat laut Makkah)',
+    koordinat: { lat: 22.7000, lng: 39.1333 },
+    keterangan:
+      'Terletak di barat laut Makkah. Karena lokasi asli sudah jarang dilewati, kini jamaah umumnya mengambil miqat dari Rabigh (± 15 km dari Juhfah). Sudah ada Masjid Miqat Al-Juhfah sejak 1306 H.',
+  },
+  {
+    id: 'qarnul-manazil',
+    nama: 'Qarnul Manazil',
+    namaArab: 'قرن المنازل',
+    namaLain: 'Kini disebut As-Sail Al-Kabir',
+    untuk: 'Jamaah dari arah Najd & wilayah timur (termasuk dari Thaif)',
+    jarakKeMakkah: '± 75–94 km (timur Makkah)',
+    koordinat: { lat: 21.6286, lng: 40.4231 },
+    keterangan:
+      'Bukit/lembah di timur Makkah, membentang hingga arah Arafah. Saat ini dikenal sebagai As-Sail Al-Kabir dan menjadi miqat praktis bagi jamaah dari arah timur, termasuk pengganti Dzatu Irq yang aksesnya tertutup.',
+  },
+  {
+    id: 'yalamlam',
+    nama: 'Yalamlam',
+    namaArab: 'يلملم',
+    namaLain: 'Kini disebut As-Sa\u2019diyyah',
+    untuk: 'Jamaah dari arah Yaman & Asia (termasuk Indonesia via jalur laut/udara dari selatan)',
+    jarakKeMakkah: '± 54 km (selatan Makkah)',
+    koordinat: { lat: 20.5167, lng: 39.8667 },
+    keterangan:
+      'Lembah/perbukitan di selatan Makkah. Dahulu menjadi miqat jamaah Indonesia yang datang dengan kapal laut. Jamaah pesawat yang melintas di atasnya berihram saat kru mengumumkan posisi sejajar Yalamlam.',
+  },
+  {
+    id: 'dzatu-irq',
+    nama: 'Dzatu \u2018Irq',
+    namaArab: 'ذات عرق',
+    namaLain: 'Kini disebut Adh-Dharibah',
+    untuk: 'Jamaah dari arah Irak & sekitarnya',
+    jarakKeMakkah: '± 94–100 km (timur laut Makkah)',
+    koordinat: { lat: 21.9333, lng: 40.4167 },
+    keterangan:
+      'Ditetapkan oleh Khalifah Umar bin Khattab رضي الله عنه berdasarkan prinsip muhadzah (kesejajaran jalur) untuk memudahkan penduduk Irak. Akses ke lokasi asli kini tertutup, sehingga jamaah dari timur umumnya mengambil miqat di Qarnul Manazil.',
+  },
+];
+```
+
+---
+
+## LANGKAH 2 — Buat halaman `pages/PanduanMiqat.tsx`
+
+Halaman dengan struktur: header → penjelasan apa itu miqat → kartu 5 titik miqat → bagian khusus jamaah Indonesia → adab & peringatan dam. Gunakan design tokens & komponen yang ada (`PageHeader`, `gold`, `primary`, `surface-card`, `font-arab`, dll). Pakai data dari `daftarMiqat`.
+
+Konten teks yang harus ada:
+
+**Penjelasan miqat:**
+"Miqat adalah batas tempat (miqat makani) atau waktu (miqat zamani) yang ditetapkan untuk memulai ihram. Melewati batas miqat tanpa berihram bagi yang hendak umrah/haji mewajibkan dam (denda) atau harus kembali ke miqat. Untuk umrah, tidak ada batas waktu — bisa kapan saja sepanjang tahun."
+
+**Dalil (tampilkan dalam kartu kutipan):**
+- HR. Bukhari & Muslim (dari Ibnu Abbas): "Nabi ﷺ menetapkan miqat penduduk Madinah di Dzulhulaifah, penduduk Syam di Juhfah, penduduk Najd di Qarnul Manazil, penduduk Yaman di Yalamlam. (Berlaku) bagi mereka dan siapa pun yang melewatinya yang hendak haji & umrah."
+- HR. Abu Dawud & Nasa'i (dari Aisyah): "Nabi ﷺ menetapkan miqat penduduk Irak di Dzatu 'Irq."
+
+**Bagian khusus jamaah Indonesia (PENTING, buat menonjol):**
+"Jamaah Indonesia umumnya terbagi 2 gelombang:
+- **Gelombang dari Madinah:** miqat di Dzulhulaifah (Bir Ali) — berihram di Masjid Bir Ali sebelum berangkat ke Makkah.
+- **Gelombang langsung ke Makkah (via Jeddah):** miqat saat pesawat melintas di atas Yalamlam/Qarnul Manazil (kru memberi aba-aba), atau dari Bandara King Abdulaziz Jeddah sesuai fatwa MUI (1980 & dikukuhkan 1981). Sebagian travel menganjurkan berihram dari asrama haji/hotel sebelum melintas miqat agar tidak terlewat."
+
+**Adab & peringatan (kartu peringatan halus):**
+- Mandi sunnah ihram & kenakan pakaian ihram SEBELUM/di miqat.
+- Shalat sunnah 2 rakaat sebelum berniat ihram.
+- WAJIB berniat ihram sebelum melewati batas miqat.
+- Jika terlewat tanpa ihram → wajib kembali ke miqat ATAU membayar dam.
+- Bagi jamaah pesawat: siapkan ihram lebih awal, niat segera saat aba-aba kru.
+
+---
+
+## LANGKAH 3 — Tambah entri di `Panduan.tsx`
+
+Tambahkan item menu baru di array `items`:
+```tsx
+{
+  to: '/panduan/miqat',
+  label: 'Panduan Miqat',
+  desc: '5 titik miqat & aturan ihram — jangan sampai terlewat',
+  Icon: IconPeta, // atau ikon yang sesuai
+  accent: 'gold',
+},
+```
+(Letakkan setelah "Panduan Ihram" karena topiknya berkaitan.)
+
+---
+
+## LANGKAH 4 — Tambah route di `App.tsx`
+```tsx
+import PanduanMiqat from './pages/PanduanMiqat';
+// ...
+<Route path="/panduan/miqat" element={<PanduanMiqat />} />
+```
+
+---
+
+## CATATAN AKURASI (penting, sebagai mahasiswa Ushuluddin)
+- Miqat untuk UMRAH tidak punya batas waktu (beda dengan haji yang ada miqat zamani: Syawal, Dzulqa'dah, 10 hari pertama Dzulhijjah).
+- Dzatu 'Irq ditetapkan Umar bin Khattab via ijtihad (muhadzah), bukan langsung dari teks Nabi untuk lokasi itu — tapi tetap sah karena prinsip kesejajaran jalur. Hadis Aisyah (Abu Dawud) menyebutkannya juga.
+- Penduduk Makkah berihram dari Makkah sendiri (untuk haji); untuk umrah, penduduk Makkah keluar ke tanah halal terdekat seperti Tan'im/Ji'ranah (sudah ada di data sebagai Masjid Aisyah/Tan'im).
+- Jangan sebut keutamaan/pahala khusus yang tidak ada dalilnya.
+
+---
+
+## ATURAN
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

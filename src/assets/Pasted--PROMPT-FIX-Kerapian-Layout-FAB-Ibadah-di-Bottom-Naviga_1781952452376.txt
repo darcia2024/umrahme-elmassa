@@ -1,0 +1,29 @@
+# PROMPT FIX — Kerapian Layout FAB "Ibadah" di Bottom Navigation
+
+> Konteks: project Umrahme, bottom navigation mobile dengan FAB rose-600 di slot tengah "Ibadah". Warna FAB sudah benar (jangan diubah). Masalahnya murni KERAPIAN/PRESISI layout — FAB terlihat "nyelip"/terpotong di pinggir container nav, jaraknya ke label tidak konsisten dengan 4 item lain, dan proporsi ikon di dalamnya kurang pas.
+
+## MASALAH PERSISNYA (lihat referensi screenshot kondisi saat ini)
+
+1. **FAB terpotong/nabrak di tepi container nav bar**: lingkaran FAB posisinya terlalu mepet ke batas atas card/container nav, sehingga terlihat seperti "nyelip" atau terpotong rata oleh garis tepi container, bukan mengambang bebas dengan jarak yang proporsional di atas nav bar.
+2. **Jarak label "IBADAH" ke FAB tidak konsisten**: pada 4 item nav lain (Beranda, Panduan, Doa, Profil), jarak antara ikon dan label teks di bawahnya itu seragam dan rapi. Pada FAB, jarak antara lingkaran dan label "IBADAH" terlalu mepet/rapat dibanding 4 item lainnya — harus disamakan rasio spacing-nya.
+3. **Ikon di dalam FAB kurang presisi**: ikon kubus terlihat sedikit terlalu besar/tidak center sempurna secara optical di dalam lingkaran, membuatnya terkesan sesak, bukan proporsional dan tenang seperti seharusnya elemen FAB yang premium.
+4. **Alignment vertikal antar 5 item nav**: pastikan base label (baris teks paling bawah dari semua 5 item: Beranda, Panduan, Ibadah, Doa, Profil) sejajar rata pada satu garis horizontal yang sama — jangan sampai label "IBADAH" posisinya lebih tinggi/rendah dibanding 4 label lain akibat ukuran FAB yang berbeda.
+
+## PERBAIKAN YANG DIMINTA
+
+1. **Beri jarak yang jelas dan konsisten** antara tepi atas FAB dengan tepi atas container/card nav bar — FAB harus terlihat mengambang BEBAS, bukan menempel/terpotong oleh elemen container di belakangnya. Gunakan negative margin-top yang cukup pada FAB sehingga sekitar 50-60% tinggi lingkaran berada di atas permukaan nav bar, dengan jarak aman/padding yang membuatnya tidak terlihat "nyelip" ke tepi card.
+2. **Samakan rasio jarak ikon-ke-label** pada FAB dengan 4 item nav lainnya — ukur gap (dalam px atau rem) yang dipakai antara ikon dan label pada 4 item biasa, terapkan rasio/gap yang proporsional sama pada FAB (boleh sedikit lebih besar mengingat FAB lebih besar ukurannya, tapi tetap dalam rasio yang serasi, bukan tiba-tiba sangat mepet).
+3. **Perbaiki padding internal ikon dalam FAB**: pastikan ikon kubus punya ruang napas yang cukup di dalam lingkaran (padding internal proporsional, target ikon mengisi sekitar 40-45% dari diameter FAB seperti yang sudah ditentukan sebelumnya), dan dipusatkan secara optical (bukan hanya secara matematis — kadang ikon dengan bentuk tidak simetris perlu sedikit penyesuaian agar terlihat center secara visual, bukan hanya berdasarkan bounding box).
+4. **Sejajarkan baseline label** semua 5 item nav pada satu garis horizontal yang konsisten, terlepas dari perbedaan ukuran ikon/FAB di atasnya — gunakan flex alignment yang tepat (mis. `items-end` pada container masing-masing item, atau height tetap yang seragam untuk area ikon sebelum label dimulai) sehingga teks "BERANDA", "PANDUAN", "IBADAH", "DOA", "PROFIL" semua dimulai pada posisi vertikal yang sama.
+5. **Cek keseluruhan komposisi setelah perbaikan**: pastikan tidak ada elemen yang terlihat asimetris atau "ganjil" dibanding 4 lainnya — FAB boleh dan memang harus lebih besar serta menonjol, tapi tetap harus terasa sebagai BAGIAN YANG RAPI dari satu baris navigasi, bukan elemen terpisah yang "ditempel" terburu-buru.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Warna FAB (rose-600), warna ikon (parchment-100), dan glow rose-400 — sudah benar, jangan disentuh.
+- Warna active-state 4 item nav lain (termasuk warna oranye/merah pada Beranda) — tidak berubah.
+- Fungsi dan routing FAB tetap mengarah ke Counter Tawaf — tidak berubah, ini murni perbaikan visual/layout.
+- Ukuran FAB tetap di rentang 64-72px diameter — jangan dikecilkan untuk "menyelesaikan" masalah kerapian, perbaiki spacing-nya bukan ukurannya.
+
+## OUTPUT
+
+Fix ini spesifik pada satu komponen (bottom navigation bar) — build langsung tanpa perlu konfirmasi rencana panjang. Setelah selesai, tunjukkan area bottom nav saja untuk verifikasi: FAB mengambang bebas dengan jarak jelas dari container, jarak ikon-label FAB proporsional dengan 4 item lain, ikon ter-center dengan baik, dan semua label sejajar pada baseline yang sama.

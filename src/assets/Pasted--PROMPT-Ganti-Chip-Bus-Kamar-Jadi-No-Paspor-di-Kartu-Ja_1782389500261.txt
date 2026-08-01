@@ -1,0 +1,166 @@
+# PROMPT — Ganti Chip Bus & Kamar Jadi No. Paspor di Kartu Jamaah
+
+## Konteks
+Di kartu beranda jamaah, chip operasional saat ini: **Rombongan · Bus · Kamar**.
+Bus & Kamar sering tidak relevan (1 keberangkatan/bulan, kamar fleksibel).
+Ganti jadi: **Rombongan · No. Paspor** (chip Bus & Kamar dihapus, diganti 1 chip No. Paspor).
+
+No. Paspor adalah data per-jamaah, jadi perlu ditambah end-to-end: DB → type → admin form → kartu.
+Chip No. Paspor bersifat **opsional** — hanya tampil kalau datanya ada (tidak menampilkan chip kosong).
+
+---
+
+## LANGKAH 1 — SQL (jalankan di Supabase SQL Editor dulu)
+
+```sql
+ALTER TABLE jamaah_accounts ADD COLUMN IF NOT EXISTS nomor_paspor TEXT;
+```
+
+---
+
+## LANGKAH 2 — `src/lib/supabase.ts`
+
+Tambah `nomor_paspor` ke type `JamaahAccountRow`:
+```ts
+export type JamaahAccountRow = {
+  id: string;
+  tenant_id: string;
+  nama: string;
+  nomor_jamaah: string;
+  rombongan: string | null;
+  nomor_bus: string | null;
+  nomor_kamar: string | null;
+  nomor_paspor: string | null;   // ← tambahkan ini
+  fase: 'persiapan' | 'tanah-suci' | 'selesai';
+  fase_override: 'persiapan' | 'tanah-suci' | 'selesai' | null;
+  created_at: string;
+};
+```
+
+> CATATAN: `nomor_bus` & `nomor_kamar` JANGAN dihapus dari type/DB — biarkan saja
+> (mungkin masih dipakai di tempat lain seperti TravelDashboard). Kita hanya mengubah
+> APA yang DITAMPILKAN di kartu, bukan menghapus datanya.
+
+---
+
+## LANGKAH 3 — `src/types/index.ts`
+
+Tambah `nomorPaspor` ke interface `Jamaah`:
+```ts
+export interface Jamaah {
+  // ... field yang sudah ada ...
+  rombongan?: string;
+  nomorBus?: string;
+  nomorKamar?: string;
+  nomorPaspor?: string;   // ← tambahkan ini
+  hotelMakkah?: string;
+  // ... dst
+}
+```
+
+Pastikan juga di tempat mapping dari `JamaahAccountRow` ke `Jamaah` (cari di mana
+`nomorBus: row.nomor_bus` atau sejenisnya di-set, kemungkinan di AuthContext atau saat login),
+tambahkan:
+```ts
+nomorPaspor: row.nomor_paspor ?? undefined,
+```
+
+---
+
+## LANGKAH 4 — `src/components/dashboard/TravelCompanionFlow.tsx`
+
+Ini komponen kartu di beranda. Cari bagian variabel & chips.
+
+### 4a. Tambah variabel paspor, hapus bus & kamar dari tampilan
+
+Cari:
+```tsx
+const rombongan   = jamaah.rombongan ?? info.groupCode;
+const bus         = jamaah.nomorBus  ?? info.busNumber;
+const kamar       = jamaah.nomorKamar ?? info.roomNumber;
+```
+
+Ganti jadi:
+```tsx
+const rombongan = jamaah.rombongan ?? info.groupCode;
+const paspor    = jamaah.nomorPaspor;
+```
+
+### 4b. Ubah chips
+
+Cari:
+```tsx
+{/* Chips: Rombongan · Bus · Kamar */}
+<div className="mt-3 flex flex-wrap gap-1.5">
+  {[rombongan, bus, `Kamar ${kamar}`].map((v) => (
+    <span key={v}
+      className="rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold text-charcoal"
+      style={{ background: 'rgba(0,0,0,0.045)', border: '1px solid rgba(0,0,0,0.06)' }}>
+      {v}
+    </span>
+  ))}
+</div>
+```
+
+Ganti jadi:
+```tsx
+{/* Chips: Rombongan · No. Paspor (paspor opsional) */}
+<div className="mt-3 flex flex-wrap gap-1.5">
+  {[rombongan, paspor ? `Paspor ${paspor}` : null]
+    .filter(Boolean)
+    .map((v) => (
+      <span key={v as string}
+        className="rounded-full px-2.5 py-1 font-mono text-[10px] font-semibold text-charcoal"
+        style={{ background: 'rgba(0,0,0,0.045)', border: '1px solid rgba(0,0,0,0.06)' }}>
+        {v}
+      </span>
+    ))}
+</div>
+```
+
+> `.filter(Boolean)` memastikan chip paspor hanya muncul kalau datanya ada.
+> Kalau paspor kosong, hanya chip Rombongan yang tampil.
+
+---
+
+## LANGKAH 5 — `src/pages/admin/AdminTenantForm.tsx` (form jamaah)
+
+Cari bagian input data jamaah yang ada field `nomor_bus` & `nomor_kamar`.
+Tambahkan input baru untuk `nomor_paspor` (boleh diletakkan setelah rombongan).
+
+Contoh pola (sesuaikan dengan struktur form yang ada):
+```tsx
+<div>
+  <label className="...">No. Paspor</label>
+  <input
+    type="text"
+    value={nomorPaspor}
+    onChange={(e) => setNomorPaspor(e.target.value)}
+    placeholder="Contoh: C1234567"
+    className="..."
+  />
+</div>
+```
+
+Dan tambahkan `nomor_paspor` ke payload saat create/update jamaah:
+```ts
+nomor_paspor: nomorPaspor || null,
+```
+
+> Bus & Kamar boleh tetap ada di form admin (untuk travel yang masih pakai). Yang penting
+> No. Paspor sekarang bisa diisi. Kalau mau dirapikan, Bus & Kamar bisa dijadikan opsional,
+> tapi itu di luar scope perubahan ini.
+
+---
+
+## Catatan
+- Hanya TAMPILAN chip di kartu beranda (`TravelCompanionFlow.tsx`) yang berubah dari Bus/Kamar ke Paspor
+- Data `nomor_bus` & `nomor_kamar` tetap ada di DB & type (tidak dihapus) untuk kompatibilitas
+- Chip paspor opsional — tidak muncul kalau kosong, jadi tidak ada chip "Paspor -" yang janggal
+- Jalankan SQL di Langkah 1 SEBELUM deploy kode
+- Jangan ubah `TravelCompanionCards.tsx` kecuali kalau komponen itu juga dipakai di tempat yang sama (cek dulu; kalau kartu beranda hanya pakai `TravelCompanionFlow`, cukup ubah itu saja)
+
+## Verifikasi Setelah Deploy
+- Kartu beranda menampilkan chip: Rombongan + Paspor (kalau ada)
+- Jamaah tanpa data paspor → hanya chip Rombongan, tidak ada chip kosong
+- Admin bisa isi No. Paspor di form jamaah

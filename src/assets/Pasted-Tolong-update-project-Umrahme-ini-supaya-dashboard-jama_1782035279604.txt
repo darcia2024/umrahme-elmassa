@@ -1,0 +1,680 @@
+Tolong update project Umrahme ini supaya dashboard jamaah terasa seperti aplikasi resmi dari travel yang menemani perjalanan umrah jamaah, bukan sekadar aplikasi doa/panduan umum.
+
+Konteks project:
+
+* App utama ada di `artifacts/umrahme`
+* Dashboard jamaah ada di `src/pages/Beranda.tsx`
+* Route utama ada di `src/App.tsx`
+* Auth jamaah ada di `src/context/AuthContext.tsx`
+* Tipe data ada di `src/types/index.ts`
+* Data login jamaah ada di `src/data/jamaah.ts`
+* Agenda perjalanan sudah ada:
+
+  * `src/pages/AgendaLengkap.tsx`
+  * Supabase table: `agenda_items`
+  * Dashboard sudah punya `KartuAgendaHariIni`
+
+Jangan hapus fitur lama. Jangan ubah total desain lama. Tambahkan komponen baru yang membuat dashboard lebih terasa seperti aplikasi travel.
+
+Target perubahan:
+
+1. Dashboard harus menampilkan identitas travel dan jamaah secara lebih operasional.
+2. Dashboard harus menampilkan:
+
+   * Fokus perjalanan hari ini
+   * Pengumuman penting dari travel
+   * Kontak pembimbing / bantuan darurat
+   * Kartu jamaah digital
+   * Info rombongan, bus, kamar, hotel
+3. Dashboard lama tetap mempertahankan:
+
+   * Agenda hari ini
+   * Checklist persiapan
+   * Doa
+   * Panduan
+   * Counter Tawaf
+   * Counter Sa’i
+   * Jurnal
+   * Sertifikat
+4. Tambahkan page baru `/profil/kartu` untuk Kartu Jamaah Digital.
+5. Untuk tahap ini, data operasional travel boleh memakai fallback/demo data dari file lokal. Nanti baru disambungkan ke admin/Supabase.
+
+File yang perlu dibuat:
+
+* `src/data/travelCompanion.ts`
+* `src/components/dashboard/TravelCompanionCards.tsx`
+* `src/pages/KartuJamaah.tsx`
+
+File yang perlu diubah:
+
+* `src/types/index.ts`
+* `src/data/jamaah.ts`
+* `src/App.tsx`
+* `src/pages/Beranda.tsx`
+
+==================================================
+
+1. UPDATE `src/types/index.ts`
+   ==================================================
+
+Cari interface `Jamaah`, lalu ubah menjadi seperti ini:
+
+```ts
+export interface Jamaah {
+  nama: string;
+  nomorJamaah: string; // contoh: "UMR-2026-0142"
+  travel: string; // nama travel (white-label)
+  kodeAktivasi: string;
+  fase: Fase;
+
+  // Data operasional perjalanan — sementara optional untuk kompatibilitas data lama
+  rombongan?: string;
+  nomorBus?: string;
+  nomorKamar?: string;
+  hotelMakkah?: string;
+  hotelMadinah?: string;
+  pembimbingNama?: string;
+  pembimbingWhatsapp?: string;
+}
+```
+
+==================================================
+2. BUAT FILE `src/data/travelCompanion.ts`
+==========================================
+
+Isi file:
+
+```ts
+import type { Fase } from '../types';
+
+export type TravelAnnouncement = {
+  id: string;
+  label: string;
+  title: string;
+  content: string;
+  important?: boolean;
+  publishedAt: string;
+};
+
+export type TravelOperationalInfo = {
+  groupCode: string;
+  busNumber: string;
+  roomNumber: string;
+  hotelMakkah: string;
+  hotelMadinah: string;
+  meetingPoint: string;
+  guideName: string;
+  guideRole: string;
+  guideWhatsapp: string;
+  travelWhatsapp: string;
+  emergencyNote: string;
+};
+
+const DEFAULT_OPERATIONAL_INFO: TravelOperationalInfo = {
+  groupCode: 'Rombongan A',
+  busNumber: 'Bus 3',
+  roomNumber: '804',
+  hotelMakkah: 'Hotel Makkah — diisi travel',
+  hotelMadinah: 'Hotel Madinah — diisi travel',
+  meetingPoint: 'Lobby hotel / titik kumpul dari pembimbing',
+  guideName: 'Ust. Pembimbing',
+  guideRole: 'Pembimbing Rombongan',
+  guideWhatsapp: '6281234567890',
+  travelWhatsapp: '6281234567890',
+  emergencyNote: 'Jika tersesat, tetap tenang. Hubungi pembimbing dan tunjukkan Kartu Jamaah Digital.',
+};
+
+const DEFAULT_ANNOUNCEMENTS: TravelAnnouncement[] = [
+  {
+    id: 'announcement-1',
+    label: 'Penting',
+    title: 'Perhatikan titik kumpul hari ini',
+    content: 'Jamaah dimohon berkumpul sesuai arahan pembimbing. Bawa sandal, tas kecil, kartu jamaah, dan tetap bersama rombongan.',
+    important: true,
+    publishedAt: new Date().toISOString(),
+  },
+];
+
+export function getOperationalInfo(_tenantId?: string | null): TravelOperationalInfo {
+  return DEFAULT_OPERATIONAL_INFO;
+}
+
+export function getLatestAnnouncement(_tenantId?: string | null): TravelAnnouncement | null {
+  return DEFAULT_ANNOUNCEMENTS[0] ?? null;
+}
+
+export function getFocusByFase(fase: Fase): {
+  title: string;
+  description: string;
+  ctaLabel: string;
+  ctaTo: string;
+} {
+  if (fase === 'tanah-suci') {
+    return {
+      title: 'Fokus ibadah hari ini',
+      description: 'Ikuti arahan pembimbing, buka panduan ibadah, dan gunakan counter saat tawaf atau sa’i.',
+      ctaLabel: 'Buka Navigator',
+      ctaTo: '/ibadah/navigator',
+    };
+  }
+
+  if (fase === 'selesai') {
+    return {
+      title: 'Jaga kenangan perjalanan',
+      description: 'Lengkapi jurnal, simpan sertifikat, dan terus jaga amal setelah pulang.',
+      ctaLabel: 'Buka Jurnal',
+      ctaTo: '/profil/jurnal',
+    };
+  }
+
+  return {
+    title: 'Persiapkan keberangkatan',
+    description: 'Lengkapi checklist, dokumen, perlengkapan, dan pahami tata cara umrah sebelum berangkat.',
+    ctaLabel: 'Cek Persiapan',
+    ctaTo: '/profil/persiapan',
+  };
+}
+
+export function whatsappLink(phone: string, message = 'Assalamu’alaikum, saya butuh bantuan selama perjalanan umrah.'): string {
+  const clean = phone.replace(/\D/g, '');
+  const normalized = clean.startsWith('0') ? `62${clean.slice(1)}` : clean;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}
+```
+
+==================================================
+3. BUAT FILE `src/components/dashboard/TravelCompanionCards.tsx`
+================================================================
+
+Isi file:
+
+```tsx
+import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import {
+  getFocusByFase,
+  getLatestAnnouncement,
+  getOperationalInfo,
+  whatsappLink,
+} from '../../data/travelCompanion';
+import { IconChevron } from '../icons';
+
+function IconBell({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  );
+}
+
+function IconPhone({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.74a16 16 0 0 0 6.26 6.26l1.28-1.28a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+function IconIdCard({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="12" r="2" />
+      <path d="M14 10h4M14 14h3M7 16c.6-1.2 3.4-1.2 4 0" />
+    </svg>
+  );
+}
+
+function IconRoute({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="6" cy="19" r="2" />
+      <circle cx="18" cy="5" r="2" />
+      <path d="M8 19h3a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h7" />
+    </svg>
+  );
+}
+
+export function DashboardTravelCompanionCards() {
+  const { jamaah, tenant } = useAuth();
+  if (!jamaah) return null;
+
+  const info = getOperationalInfo(tenant?.id);
+  const announcement = getLatestAnnouncement(tenant?.id);
+  const focus = getFocusByFase(jamaah.fase);
+
+  const rombongan = jamaah.rombongan ?? info.groupCode;
+  const bus = jamaah.nomorBus ?? info.busNumber;
+  const kamar = jamaah.nomorKamar ?? info.roomNumber;
+  const pembimbing = jamaah.pembimbingNama ?? info.guideName;
+  const pembimbingWa = jamaah.pembimbingWhatsapp ?? info.guideWhatsapp;
+
+  return (
+    <section className="px-5 pb-4 space-y-3">
+      {/* Fokus perjalanan */}
+      <div className="rounded-2xl border border-hairline bg-white p-4 shadow-drop-card">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-10 w-10 flex-none items-center justify-center rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(14,165,233,0.10) 0%, rgba(14,165,233,0.04) 100%)',
+              border: '1.5px solid rgba(14,165,233,0.16)',
+            }}
+          >
+            <IconRoute className="h-4 w-4 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Fokus Perjalanan</p>
+            <h3 className="mt-0.5 text-[14px] font-bold leading-snug text-ink">{focus.title}</h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-charcoal">{focus.description}</p>
+            <Link
+              to={focus.ctaTo}
+              className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary"
+            >
+              {focus.ctaLabel} <IconChevron className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Pengumuman travel */}
+      {announcement && (
+        <div
+          className="rounded-2xl border p-4 shadow-drop-card"
+          style={{
+            background: announcement.important ? '#fff8ee' : '#ffffff',
+            borderColor: announcement.important ? 'rgba(212,162,78,0.25)' : 'rgba(0,0,0,0.06)',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className="flex h-10 w-10 flex-none items-center justify-center rounded-xl"
+              style={{
+                background: 'linear-gradient(135deg, #fffcf0 0%, #fdf0d8 100%)',
+                border: '1.5px solid rgba(212,162,78,0.24)',
+              }}
+            >
+              <IconBell className="h-4 w-4 text-gold" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-gold">{announcement.label}</p>
+                <span className="h-1 w-1 rounded-full bg-gold/50" />
+                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Dari Travel</p>
+              </div>
+              <h3 className="mt-0.5 text-[14px] font-bold leading-snug text-ink">{announcement.title}</h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-charcoal">{announcement.content}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Kartu jamaah + bantuan */}
+      <div className="grid grid-cols-2 gap-3">
+        <Link to="/profil/kartu" className="rounded-2xl border border-hairline bg-white p-4 shadow-drop-card active:scale-[0.98] transition-all">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-bone">
+            <IconIdCard className="h-4 w-4 text-primary" />
+          </div>
+          <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Kartu Jamaah</p>
+          <h3 className="mt-0.5 text-[13px] font-bold leading-snug text-ink">{rombongan}</h3>
+          <p className="mt-1 text-[11px] leading-relaxed text-charcoal">
+            {bus} · Kamar {kamar}
+          </p>
+          <span className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Buka <IconChevron className="h-3 w-3" />
+          </span>
+        </Link>
+
+        <div className="rounded-2xl border border-hairline bg-white p-4 shadow-drop-card">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50">
+            <IconPhone className="h-4 w-4 text-red-500" />
+          </div>
+          <p className="mt-3 font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Butuh Bantuan?</p>
+          <h3 className="mt-0.5 text-[13px] font-bold leading-snug text-ink">{pembimbing}</h3>
+          <p className="mt-1 text-[11px] leading-relaxed text-charcoal">{info.guideRole}</p>
+          <a
+            href={whatsappLink(pembimbingWa)}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-red-500"
+          >
+            WhatsApp <IconChevron className="h-3 w-3" />
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export function DashboardTravelCompanionDesktopRow() {
+  const { jamaah, tenant } = useAuth();
+  if (!jamaah) return null;
+
+  const info = getOperationalInfo(tenant?.id);
+  const announcement = getLatestAnnouncement(tenant?.id);
+
+  const rombongan = jamaah.rombongan ?? info.groupCode;
+  const bus = jamaah.nomorBus ?? info.busNumber;
+  const kamar = jamaah.nomorKamar ?? info.roomNumber;
+  const pembimbing = jamaah.pembimbingNama ?? info.guideName;
+  const pembimbingWa = jamaah.pembimbingWhatsapp ?? info.guideWhatsapp;
+
+  return (
+    <div className="mb-6 grid grid-cols-3 gap-4">
+      <Link
+        to="/profil/kartu"
+        className="group rounded-2xl border border-hairline bg-white p-5 shadow-drop-card transition-all hover:-translate-y-0.5 hover:shadow-drop-lifted"
+      >
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Kartu Jamaah</p>
+        <h3 className="mt-1 text-[17px] font-bold text-ink">{jamaah.nama}</h3>
+        <p className="mt-1 text-[12px] text-charcoal">{rombongan} · {bus} · Kamar {kamar}</p>
+        <span className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-primary group-hover:gap-2 transition-all">
+          Buka Kartu <IconChevron className="h-3 w-3" />
+        </span>
+      </Link>
+
+      <div
+        className="rounded-2xl border p-5 shadow-drop-card"
+        style={{
+          background: '#fff8ee',
+          borderColor: 'rgba(212,162,78,0.25)',
+        }}
+      >
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-gold">Pengumuman Travel</p>
+        <h3 className="mt-1 text-[17px] font-bold text-ink">{announcement?.title ?? 'Belum ada pengumuman'}</h3>
+        <p className="mt-1 text-[12px] leading-relaxed text-charcoal line-clamp-2">{announcement?.content ?? 'Pengumuman dari travel akan tampil di sini.'}</p>
+      </div>
+
+      <div className="rounded-2xl border border-hairline bg-white p-5 shadow-drop-card">
+        <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-mute">Kontak Pembimbing</p>
+        <h3 className="mt-1 text-[17px] font-bold text-ink">{pembimbing}</h3>
+        <p className="mt-1 text-[12px] text-charcoal">{info.meetingPoint}</p>
+        <a
+          href={whatsappLink(pembimbingWa)}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider text-red-500"
+        >
+          Hubungi Sekarang <IconChevron className="h-3 w-3" />
+        </a>
+      </div>
+    </div>
+  );
+}
+```
+
+==================================================
+4. BUAT FILE `src/pages/KartuJamaah.tsx`
+========================================
+
+Isi file:
+
+```tsx
+import PageHeader from '../components/PageHeader';
+import { useAuth } from '../context/AuthContext';
+import { getOperationalInfo, whatsappLink } from '../data/travelCompanion';
+
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-hairline py-3 last:border-b-0">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-mute">{label}</p>
+      <p className="max-w-[60%] text-right text-[13px] font-semibold leading-snug text-ink">{value}</p>
+    </div>
+  );
+}
+
+export default function KartuJamaah() {
+  const { jamaah, tenant } = useAuth();
+  if (!jamaah) return null;
+
+  const info = getOperationalInfo(tenant?.id);
+
+  const rombongan = jamaah.rombongan ?? info.groupCode;
+  const bus = jamaah.nomorBus ?? info.busNumber;
+  const kamar = jamaah.nomorKamar ?? info.roomNumber;
+  const hotelMakkah = jamaah.hotelMakkah ?? info.hotelMakkah;
+  const hotelMadinah = jamaah.hotelMadinah ?? info.hotelMadinah;
+  const pembimbing = jamaah.pembimbingNama ?? info.guideName;
+  const pembimbingWa = jamaah.pembimbingWhatsapp ?? info.guideWhatsapp;
+
+  return (
+    <div className="min-h-screen bg-canvas">
+      <PageHeader
+        title="Kartu Jamaah"
+        eyebrow={tenant?.nama_travel ?? jamaah.travel}
+        backTo="/beranda"
+      />
+
+      <div className="px-4 pb-10 pt-4">
+        <div
+          className="relative overflow-hidden rounded-[28px] p-5 text-white shadow-drop-lifted"
+          style={{ background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%)' }}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -right-4 -bottom-20 h-48 w-48 rounded-full bg-black/10" />
+
+          <div className="relative">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/60">Kartu Jamaah Digital</p>
+                <h1 className="mt-2 font-display text-[28px] font-bold leading-tight tracking-[-0.8px]">{jamaah.nama}</h1>
+                <p className="mt-1 text-[13px] text-white/70">{tenant?.nama_travel ?? jamaah.travel}</p>
+              </div>
+
+              {tenant?.logo_url && (
+                <img
+                  src={tenant.logo_url}
+                  alt={tenant.nama_travel}
+                  className="h-8 w-auto max-w-[110px] object-contain"
+                  style={{ filter: 'brightness(0) invert(1)' }}
+                />
+              )}
+            </div>
+
+            <div className="mt-8 grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur">
+                <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50">Rombongan</p>
+                <p className="mt-1 text-[13px] font-bold">{rombongan}</p>
+              </div>
+              <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur">
+                <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50">Bus</p>
+                <p className="mt-1 text-[13px] font-bold">{bus}</p>
+              </div>
+              <div className="rounded-2xl bg-white/12 px-3 py-3 backdrop-blur">
+                <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-white/50">Kamar</p>
+                <p className="mt-1 text-[13px] font-bold">{kamar}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl bg-black/14 px-4 py-3">
+              <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-white/45">Kode Aktivasi</p>
+              <p className="mt-1 font-mono text-[15px] font-bold tracking-[0.12em]">{jamaah.kodeAktivasi}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-hairline bg-white px-5 py-2 shadow-drop-card">
+          <InfoRow label="Nomor Jamaah" value={jamaah.nomorJamaah} />
+          <InfoRow label="Hotel Makkah" value={hotelMakkah} />
+          <InfoRow label="Hotel Madinah" value={hotelMadinah} />
+          <InfoRow label="Titik Kumpul" value={info.meetingPoint} />
+          <InfoRow label="Pembimbing" value={pembimbing} />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-5 py-4">
+          <p className="text-[14px] font-bold text-red-700">Jika tersesat atau butuh bantuan</p>
+          <p className="mt-1 text-[12px] leading-relaxed text-red-600">{info.emergencyNote}</p>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <a
+              href={whatsappLink(pembimbingWa)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center justify-center rounded-xl bg-red-600 px-4 py-3 text-[12px] font-bold text-white active:scale-[0.98]"
+            >
+              WhatsApp
+            </a>
+            <a
+              href={`tel:${pembimbingWa}`}
+              className="flex items-center justify-center rounded-xl border border-red-200 bg-white px-4 py-3 text-[12px] font-bold text-red-600 active:scale-[0.98]"
+            >
+              Telepon
+            </a>
+          </div>
+        </div>
+
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-mute">
+          Simpan halaman ini atau screenshot kartu jamaah agar mudah ditunjukkan saat dibutuhkan.
+        </p>
+      </div>
+    </div>
+  );
+}
+```
+
+==================================================
+5. UPDATE `src/App.tsx`
+=======================
+
+Tambahkan import:
+
+```ts
+import KartuJamaah from './pages/KartuJamaah';
+```
+
+Lalu di dalam protected routes, tambahkan route ini:
+
+```tsx
+<Route path="/profil/kartu" element={<KartuJamaah />} />
+```
+
+Letakkan dekat route profil lain:
+
+```tsx
+<Route path="/profil" element={<Profil />} />
+<Route path="/profil/persiapan" element={<Persiapan />} />
+<Route path="/profil/sertifikat" element={<Sertifikat />} />
+<Route path="/profil/jurnal" element={<Jurnal />} />
+<Route path="/profil/agenda" element={<AgendaLengkap />} />
+<Route path="/profil/kartu" element={<KartuJamaah />} />
+```
+
+==================================================
+6. UPDATE `src/data/jamaah.ts`
+==============================
+
+Di function `validasiKode`, cari object:
+
+```ts
+const jamaah: Jamaah = {
+  nama: n,
+  nomorJamaah: `UMR-${tahun}-${String(nomorUrut++).padStart(4, '0')}`,
+  travel: data.nama_travel,
+  kodeAktivasi: k,
+  fase: 'persiapan',
+};
+```
+
+Ganti menjadi:
+
+```ts
+const jamaah: Jamaah = {
+  nama: n,
+  nomorJamaah: `UMR-${tahun}-${String(nomorUrut++).padStart(4, '0')}`,
+  travel: data.nama_travel,
+  kodeAktivasi: k,
+  fase: 'persiapan',
+
+  // Data demo operasional supaya dashboard terasa seperti app resmi travel.
+  // Nanti field ini bisa diganti dari database jamaah/travel.
+  rombongan: 'Rombongan A',
+  nomorBus: 'Bus 3',
+  nomorKamar: '804',
+  hotelMakkah: 'Hotel Makkah — diisi travel',
+  hotelMadinah: 'Hotel Madinah — diisi travel',
+  pembimbingNama: 'Ust. Pembimbing',
+  pembimbingWhatsapp: '6281234567890',
+};
+```
+
+==================================================
+7. UPDATE `src/pages/Beranda.tsx`
+=================================
+
+Tambahkan import di bagian atas:
+
+```ts
+import {
+  DashboardTravelCompanionCards,
+  DashboardTravelCompanionDesktopRow,
+} from '../components/dashboard/TravelCompanionCards';
+```
+
+Lalu di bagian MOBILE, cari komentar:
+
+```tsx
+{/* ── 2. CHIP AKSES CEPAT ──────────── */}
+```
+
+Tepat sebelum komentar itu, tambahkan:
+
+```tsx
+{/* ── 2. LAPISAN TRAVEL COMPANION ──────────── */}
+<DashboardTravelCompanionCards />
+```
+
+Jadi urutannya menjadi:
+
+1. Kartu Fokus Utama
+2. Travel Companion Cards
+3. Chip Akses Cepat
+4. Checklist
+5. Grid fitur
+6. Sertifikat
+
+Lalu di bagian DESKTOP, cari blok Stats strip:
+
+```tsx
+{/* Stats strip */}
+<div className="mb-6 grid grid-cols-4 ...
+```
+
+Setelah `</div>` penutup Stats strip, sebelum komentar:
+
+```tsx
+{/* BENTO GRID */}
+```
+
+tambahkan:
+
+```tsx
+{/* Travel companion desktop cards */}
+<DashboardTravelCompanionDesktopRow />
+```
+
+==================================================
+8. HASIL YANG DIHARAPKAN
+========================
+
+Setelah perubahan:
+
+* Dashboard tidak lagi terasa seperti aplikasi doa umum.
+* Dashboard terasa seperti aplikasi resmi dari travel.
+* Jamaah langsung melihat:
+
+  * dirinya ikut travel apa
+  * rombongan apa
+  * bus berapa
+  * kamar berapa
+  * siapa pembimbingnya
+  * ada pengumuman penting apa
+  * harus fokus ke apa hari ini
+  * tombol bantuan darurat
+  * kartu jamaah digital
+* Fitur lama tetap ada.
+* App tetap build tanpa error.
+* Jalankan:
+
+  * `npm run build`
+  * perbaiki error TypeScript jika ada.

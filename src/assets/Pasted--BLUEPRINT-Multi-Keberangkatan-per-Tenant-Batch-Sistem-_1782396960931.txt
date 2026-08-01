@@ -1,0 +1,184 @@
+# BLUEPRINT: Multi-Keberangkatan per Tenant (Batch Sistem)
+
+Satu travel (tenant) kini bisa punya BANYAK keberangkatan/rombongan, masing-masing dengan tanggal, hotel, pembimbing, agenda, pengumuman, dan jamaah yang berbeda — TANPA membuat tenant baru.
+
+## Keputusan desain (sudah disepakati)
+- **Login jamaah:** kode tenant + nomor jamaah. Sistem otomatis tahu jamaah ada di keberangkatan mana (karena tiap jamaah menyimpan `keberangkatan_id`).
+- **Data:** boleh fresh (early/demo), jadi pakai skema bersih, tidak perlu migrasi rumit.
+
+## Struktur baru
+```
+TENANT (travel)         → identitas: nama, kode aktivasi, slug, warna, logo, hero, sertifikat, akun login travel
+  └── KEBERANGKATAN      → batch: nama batch, tgl berangkat/pulang, hotel, guide, tour leader, meeting point, emergency, fase
+        ├── JAMAAH        → nempel ke keberangkatan (punya keberangkatan_id)
+        ├── AGENDA        → nempel ke keberangkatan
+        └── PENGUMUMAN    → nempel ke keberangkatan
+```
+
+Field yang PINDAH dari `tenants` → `keberangkatan`: tanggal_keberangkatan, tanggal_kepulangan, hotel_makkah, hotel_madinah, meeting_point, guide_name, guide_whatsapp, tour_leader_name, tour_leader_whatsapp, emergency_note, fase_override.
+
+Field yang TETAP di `tenants`: activation_code, slug, nama_travel, primary_color, primary_deep_color, logo_url, page_title, hero_image_url, sertifikat_template_url.
+
+---
+
+## TAHAP 1 — SQL: Buat tabel `keberangkatan` & relasi (Supabase SQL Editor)
+
+```sql
+-- 1. Tabel keberangkatan (batch)
+create table if not exists keberangkatan (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  nama_batch text not null,                 -- cth. "Umrah Reguler Februari 2026"
+  tanggal_keberangkatan date,
+  tanggal_kepulangan date,
+  hotel_makkah text,
+  hotel_madinah text,
+  meeting_point text,
+  guide_name text,
+  guide_whatsapp text,
+  tour_leader_name text,
+  tour_leader_whatsapp text,
+  emergency_note text,
+  fase_override text check (fase_override in ('persiapan','tanah-suci','selesai')),
+  aktif boolean default true,               -- batch masih berjalan / arsip
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_keberangkatan_tenant on keberangkatan(tenant_id);
+
+-- 2. Tambah keberangkatan_id ke jamaah, agenda, pengumuman
+alter table jamaah_accounts     add column if not exists keberangkatan_id uuid references keberangkatan(id) on delete cascade;
+alter table agenda_items        add column if not exists keberangkatan_id uuid references keberangkatan(id) on delete cascade;
+alter table travel_announcements add column if not exists keberangkatan_id uuid references keberangkatan(id) on delete cascade;
+
+create index if not exists idx_jamaah_keberangkatan on jamaah_accounts(keberangkatan_id);
+create index if not exists idx_agenda_keberangkatan on agenda_items(keberangkatan_id);
+create index if not exists idx_ann_keberangkatan on travel_announcements(keberangkatan_id);
+
+-- 3. (Opsional, karena fresh) bersihkan kolom lama di tenants yang sekarang pindah ke keberangkatan.
+-- Lakukan HANYA jika yakin tidak ada kode lain yang masih membacanya. Bisa juga dibiarkan (diabaikan) dulu.
+-- alter table tenants drop column if exists tanggal_keberangkatan, drop column if exists tanggal_kepulangan, ...
+```
+
+> Karena data fresh: boleh hapus semua baris jamaah/agenda/pengumuman lama yang `keberangkatan_id`-nya null, lalu input ulang lewat UI baru.
+
+---
+
+## TAHAP 2 — `lib/supabase.ts`: tipe & fungsi baru
+
+### Tambah tipe
+```ts
+export type KeberangkatanRow = {
+  id: string;
+  tenant_id: string;
+  nama_batch: string;
+  tanggal_keberangkatan: string | null;
+  tanggal_kepulangan: string | null;
+  hotel_makkah: string | null;
+  hotel_madinah: string | null;
+  meeting_point: string | null;
+  guide_name: string | null;
+  guide_whatsapp: string | null;
+  tour_leader_name: string | null;
+  tour_leader_whatsapp: string | null;
+  emergency_note: string | null;
+  fase_override: 'persiapan' | 'tanah-suci' | 'selesai' | null;
+  aktif: boolean;
+  created_at: string;
+};
+```
+Tambahkan `keberangkatan_id: string | null` ke `JamaahAccountRow`, `AgendaItemRow`, `TravelAnnouncementRow`.
+
+### Fungsi CRUD keberangkatan
+```ts
+export async function fetchKeberangkatan(tenantId: string): Promise<KeberangkatanRow[]> {
+  const { data, error } = await supabase.from('keberangkatan')
+    .select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+export async function createKeberangkatan(tenantId: string, payload: Partial<KeberangkatanRow>) {
+  const { data, error } = await supabase.from('keberangkatan')
+    .insert({ tenant_id: tenantId, ...payload }).select().single();
+  if (error) throw new Error(error.message);
+  return data as KeberangkatanRow;
+}
+export async function updateKeberangkatan(id: string, payload: Partial<KeberangkatanRow>) {
+  const { data, error } = await supabase.from('keberangkatan')
+    .update(payload).eq('id', id).select().single();
+  if (error) throw new Error(error.message);
+  return data as KeberangkatanRow;
+}
+export async function deleteKeberangkatan(id: string) {
+  const { error } = await supabase.from('keberangkatan').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+```
+
+### Sesuaikan fungsi jamaah/agenda/pengumuman
+Tambahkan parameter/filter `keberangkatan_id`:
+- `fetchJamaah(keberangkatanId)` → filter `.eq('keberangkatan_id', keberangkatanId)`
+- `createJamaah(keberangkatanId, payload)` → sertakan `keberangkatan_id` (tetap simpan `tenant_id` juga untuk kemudahan query).
+- Sama untuk agenda & pengumuman.
+
+### Login jamaah — mapping otomatis ke keberangkatan
+Karena login pakai kode tenant + nomor jamaah: cari tenant by `activation_code`, lalu cari jamaah by `nomor_jamaah` di tenant itu. Jamaah row sudah punya `keberangkatan_id`, jadi otomatis tahu batch-nya. Lalu ambil data keberangkatan untuk tanggal/hotel/guide/agenda/pengumuman.
+```ts
+export async function fetchKeberangkatanById(id: string): Promise<KeberangkatanRow | null> {
+  const { data, error } = await supabase.from('keberangkatan').select('*').eq('id', id).maybeSingle();
+  if (error) throw new Error(error.message);
+  return data;
+}
+```
+
+---
+
+## TAHAP 3 — Admin: kelola keberangkatan
+
+### 3a. Di halaman Edit Tenant (tab baru "Keberangkatan")
+Tambahkan tab **"Keberangkatan"** (sebelum tab Jamaah). Isi:
+- Daftar keberangkatan tenant (kartu: nama batch, tanggal, jumlah jamaah, badge aktif/arsip).
+- Tombol "+ Keberangkatan Baru" → form: nama batch, tanggal berangkat/pulang, hotel Makkah/Madinah, meeting point, guide (nama+wa), tour leader (nama+wa), emergency note, fase.
+- Tiap keberangkatan bisa di-Edit & Hapus.
+
+### 3b. Tab Jamaah, Agenda, Pengumuman → pilih keberangkatan dulu
+Di atas tab Jamaah/Agenda/Pengumuman, tambah **dropdown "Pilih Keberangkatan"**. Semua data (jamaah, agenda, pengumuman) yang ditampilkan & ditambahkan mengikuti keberangkatan terpilih. Tambah state:
+```tsx
+const [keberangkatanList, setKeberangkatanList] = useState<KeberangkatanRow[]>([]);
+const [selectedKeberangkatan, setSelectedKeberangkatan] = useState<string>('');
+```
+- Saat tab dibuka, load keberangkatan; default pilih yang pertama/aktif.
+- `fetchJamaah(selectedKeberangkatan)`, `createJamaah(selectedKeberangkatan, ...)`, dst.
+- Info operasional (hotel/guide/dll) yang dulu di form profil tenant → PINDAH ke form keberangkatan.
+
+### 3c. Form Profil Tenant → ramping
+Hapus field operasional & tanggal dari form profil tenant (sudah pindah ke keberangkatan). Profil tenant kini hanya: nama, kode, slug, warna, logo, hero, sertifikat, judul halaman.
+
+---
+
+## TAHAP 4 — Sisi Jamaah (app)
+
+- Saat jamaah login (kode tenant + nomor jamaah), simpan `keberangkatan_id` jamaah di session/context.
+- Halaman yang menampilkan tanggal, hotel, guide, tour leader, meeting point, emergency, agenda, pengumuman, fase → ambil dari **keberangkatan** jamaah tersebut, BUKAN dari tenant.
+- Branding (warna, logo, nama travel, hero, sertifikat) tetap dari tenant.
+- Pastikan komponen yang dulu membaca `tenant.tanggal_keberangkatan`, `tenant.hotel_makkah`, dll diganti membaca dari `keberangkatan.*`.
+
+---
+
+## TAHAP 5 — Urutan eksekusi yang disarankan
+1. Jalankan SQL TAHAP 1 di Supabase.
+2. Update `lib/supabase.ts` (tipe + fungsi) — TAHAP 2.
+3. Admin: tambah tab Keberangkatan + dropdown pemilih di Jamaah/Agenda/Pengumuman — TAHAP 3.
+4. Pindahkan field operasional dari profil tenant ke form keberangkatan.
+5. Sisi jamaah: ganti sumber data operasional ke keberangkatan — TAHAP 4.
+6. Buat 1 keberangkatan contoh untuk Temanumrah, tambah beberapa jamaah, tes login & tampilan.
+
+> Kerjakan BERTAHAP & commit tiap tahap. Jangan sekaligus, agar mudah menelusuri error. Tiap tahap: `pnpm --filter umrahme typecheck` harus nol error sebelum lanjut.
+
+---
+
+## Catatan
+- Pendekatan ini standar industri (multi-tenant + batch). Skalabel: 1 travel bisa puluhan keberangkatan/tahun tanpa duplikasi branding/akun.
+- Nanti bisa ditambah fitur: arsip keberangkatan lama, duplikat agenda dari batch sebelumnya (hemat waktu input), statistik per batch.
+- Untuk MVP, fokus alur inti dulu: buat keberangkatan → tambah jamaah ke keberangkatan → jamaah login lihat data batch-nya.
+```

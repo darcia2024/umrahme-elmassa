@@ -1,0 +1,217 @@
+# PROMPT: Redesign Panduan, Doa & Profil — Lebih Kaya Visual & Hidup
+
+**File terkait:**
+- `artifacts/umrahme/src/pages/Panduan.tsx`
+- `artifacts/umrahme/src/pages/Doa.tsx`
+- `artifacts/umrahme/src/pages/Profil.tsx`
+
+Tiga halaman ini terasa flat & datar. Buat lebih kaya visual: ikon berwarna dengan latar gradient halus, kartu berdepth (shadow lembut + aksen warna), tipografi lebih tegas. Pertahankan palet warm (maroon `primary` + cream `surface-bone` + `gold`) dan token Tailwind yang ada (`primary`, `gold`, `surface-card`, `surface-bone`, `ink`, `charcoal`, `mute`, `hairline`, `drop-soft`, `font-display`, `font-mono`, `font-arab`).
+
+Prinsip umum untuk ketiganya:
+- **Ikon dalam "tile" gradient** — kotak ikon pakai `bg-gradient-to-br` dari warna aksen ke versi lebih gelap/terang, bukan abu polos. Tiap kategori boleh punya warna aksen sendiri.
+- **Kartu berdepth** — `shadow-drop-soft`, border `hairline` tipis, `rounded-2xl`, dan aksen halus (garis kiri berwarna, atau glow lembut).
+- **Hover/active** — `hover:shadow-lg`, `active:scale-[0.99]`, transisi halus.
+- **Aksen warna per item** — tidak semua maroon; pakai variasi (maroon, gold, hijau, biru-tenang) agar hidup tapi tetap harmonis.
+
+---
+
+## HALAMAN 1 — Panduan.tsx
+
+Setiap item panduan diberi warna aksen sendiri. Ubah array `items` agar punya properti warna, lalu render kartu dengan tile ikon gradient.
+
+Definisikan warna aksen per item (tambahkan field `accent`):
+```tsx
+const items = [
+  {
+    to: '/panduan/manasik-interaktif',
+    label: 'Manasik Interaktif',
+    desc: 'Kenali, urutkan & uji paham — belajar umrah secara interaktif',
+    Icon: IconManasikInteraktif,
+    highlight: true,
+    accent: 'maroon',
+  },
+  {
+    to: '/panduan/tata-cara',
+    label: 'Tata Cara Umrah',
+    desc: 'Alur lengkap: Miqat, Ihram, Tawaf, Sai, Tahallul',
+    Icon: IconPanduan,
+    accent: 'gold',
+  },
+  {
+    to: '/panduan/ihram',
+    label: 'Panduan Ihram',
+    desc: 'Niat, larangan, & cara memakai ihram',
+    Icon: IconPanduan,
+    accent: 'green',
+  },
+  {
+    to: '/peta',
+    label: 'Peta Lokasi',
+    desc: '19 masjid & tempat bersejarah, lengkap dengan Google Maps',
+    Icon: IconPeta,
+    accent: 'blue',
+  },
+];
+```
+
+Buat helper map gradient untuk tile ikon:
+```tsx
+const accentMap: Record<string, { tile: string; icon: string; bar: string }> = {
+  maroon: { tile: 'bg-gradient-to-br from-primary/15 to-primary/5', icon: 'text-primary', bar: 'bg-primary' },
+  gold:   { tile: 'bg-gradient-to-br from-gold/20 to-gold/5',       icon: 'text-gold',    bar: 'bg-gold' },
+  green:  { tile: 'bg-gradient-to-br from-emerald-500/15 to-emerald-500/5', icon: 'text-emerald-600', bar: 'bg-emerald-500' },
+  blue:   { tile: 'bg-gradient-to-br from-sky-500/15 to-sky-500/5', icon: 'text-sky-600', bar: 'bg-sky-500' },
+};
+```
+
+Render kartu (mobile-first, tetap responsive grid di desktop):
+```tsx
+{items.map(({ to, label, desc, Icon, highlight, accent }) => {
+  const a = accentMap[accent];
+  return (
+    <Link
+      key={to}
+      to={to}
+      className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99] lg:p-5"
+    >
+      {/* aksen bar kiri */}
+      <span className={`absolute left-0 top-0 h-full w-1 ${a.bar} opacity-70`} aria-hidden />
+
+      {/* tile ikon gradient */}
+      <div className={`flex h-14 w-14 flex-none items-center justify-center rounded-2xl ${a.tile}`}>
+        <Icon className={`h-7 w-7 ${a.icon}`} />
+      </div>
+
+      {/* teks */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h2 className="font-display text-[17px] font-bold leading-tight text-ink">{label}</h2>
+          {highlight && (
+            <span className="flex-none rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wider text-primary">Baru</span>
+          )}
+        </div>
+        <p className="mt-1 text-[13px] leading-snug text-charcoal">{desc}</p>
+      </div>
+
+      {/* chevron */}
+      <IconChevron className="h-5 w-5 flex-none text-ash transition-transform group-hover:translate-x-0.5 group-hover:text-charcoal" />
+    </Link>
+  );
+})}
+```
+Container: ubah `space-y-3` jadi `space-y-3.5`, pertahankan grid desktop. Hapus `highlight` background lama (sekarang ditandai badge + aksen bar).
+
+---
+
+## HALAMAN 2 — Doa.tsx
+
+Daftar kategori doa dibuat lebih hidup: tiap kategori punya tile ikon gradient + warna aksen + badge jumlah doa yang lebih menonjol.
+
+### Tile ikon + warna per kategori
+Beri tiap kategori warna aksen bergiliran (maroon, gold, green, blue, ungu-tenang) agar berwarna-warni harmonis. Jika kategori sudah punya field, tambahkan `accent`; jika belum, tentukan berdasarkan index (`accents[i % accents.length]`):
+```tsx
+const accents = ['maroon', 'gold', 'green', 'blue', 'plum'];
+const accentMap: Record<string, { tile: string; icon: string; count: string }> = {
+  maroon: { tile: 'bg-gradient-to-br from-primary/15 to-primary/5', icon: 'text-primary', count: 'bg-primary/10 text-primary' },
+  gold:   { tile: 'bg-gradient-to-br from-gold/20 to-gold/5',       icon: 'text-gold',    count: 'bg-gold/15 text-gold' },
+  green:  { tile: 'bg-gradient-to-br from-emerald-500/15 to-emerald-500/5', icon: 'text-emerald-600', count: 'bg-emerald-500/10 text-emerald-600' },
+  blue:   { tile: 'bg-gradient-to-br from-sky-500/15 to-sky-500/5', icon: 'text-sky-600', count: 'bg-sky-500/10 text-sky-600' },
+  plum:   { tile: 'bg-gradient-to-br from-fuchsia-500/12 to-fuchsia-500/5', icon: 'text-fuchsia-700', count: 'bg-fuchsia-500/10 text-fuchsia-700' },
+};
+```
+
+### Kartu kategori
+Ganti kartu kategori jadi:
+```tsx
+<Link
+  to={...}
+  className="group flex items-center gap-4 rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.99]"
+>
+  <div className={`flex h-12 w-12 flex-none items-center justify-center rounded-xl ${a.tile}`}>
+    {/* ikon kategori; jika tidak ada ikon spesifik, pakai ikon doa/quran generik */}
+    <IconDoa className={`h-6 w-6 ${a.icon}`} />
+  </div>
+  <div className="min-w-0 flex-1">
+    <h2 className="font-display text-[16px] font-bold leading-tight text-ink">{kategori.nama}</h2>
+    <p className="mt-0.5 line-clamp-1 text-[12.5px] text-charcoal">{kategori.deskripsi}</p>
+  </div>
+  <div className="flex flex-none items-center gap-2">
+    <span className={`rounded-full px-2 py-0.5 font-mono text-[11px] font-semibold ${a.count}`}>{kategori.jumlah}</span>
+    <IconChevron className="h-4 w-4 text-ash transition-transform group-hover:translate-x-0.5" />
+  </div>
+</Link>
+```
+
+### Search bar lebih estetik
+Bikin search bar lebih menonjol: `rounded-full border border-hairline bg-surface-card px-4 py-3 shadow-drop-soft focus-within:ring-2 focus-within:ring-primary/20`, ikon search di kiri `text-mute`. Pertahankan fungsi pencarian yang sudah ada.
+
+Pertahankan SEMUA logika pencarian, data kategori, dan navigasi yang sudah ada — hanya ubah tampilan kartu, tile ikon, badge jumlah, dan search bar.
+
+---
+
+## HALAMAN 3 — Profil.tsx
+
+Buat lebih hidup terutama kartu identitas dan stepper fase perjalanan.
+
+### Kartu identitas (header profil)
+Beri latar gradient halus + avatar lebih menonjol:
+```tsx
+<div className="relative overflow-hidden rounded-2xl border border-hairline bg-surface-card p-5 shadow-drop-soft">
+  {/* glow gradient halus di pojok */}
+  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br from-primary/15 to-transparent blur-2xl" aria-hidden />
+  <div className="relative flex items-center gap-4">
+    {/* avatar inisial dengan gradient */}
+    <div className="flex h-16 w-16 flex-none items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary-deep font-display text-xl font-bold text-white shadow-md">
+      {inisial /* mis. "BS" */}
+    </div>
+    <div className="min-w-0">
+      <h2 className="font-display text-xl font-bold leading-tight text-ink">{nama}</h2>
+      <p className="mt-0.5 font-mono text-[13px] tracking-wider text-gold">{nomorJamaah}</p>
+    </div>
+  </div>
+  <div className="relative mt-4 border-t border-hairline pt-3">
+    <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-mute">Travel</p>
+    <p className="mt-0.5 text-[15px] font-semibold text-ink">{namaTravel}</p>
+  </div>
+</div>
+```
+(avatar tadinya outline kosong → sekarang gradient maroon dengan inisial putih, jauh lebih hidup.)
+
+### Stepper "Fase Perjalanan"
+Buat stepper lebih visual: titik fase aktif diberi gradient + ring, garis penghubung berwarna untuk fase yang sudah dilalui.
+```tsx
+{/* contoh struktur: 3 titik PERSIAPAN — DI TANAH SUCI — SELESAI */}
+<div className="flex items-center justify-between">
+  {fases.map((f, i) => (
+    <div key={f.key} className="flex flex-1 flex-col items-center text-center">
+      <div className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold transition-all ${
+        f.aktif
+          ? 'bg-gradient-to-br from-primary to-primary-deep text-white ring-4 ring-primary/15'
+          : f.selesai
+            ? 'bg-primary/20 text-primary'
+            : 'bg-surface-bone text-ash'
+      }`}>
+        {i + 1}
+      </div>
+      <span className={`mt-1.5 font-mono text-[9px] uppercase tracking-wider ${f.aktif ? 'font-bold text-ink' : 'text-mute'}`}>{f.label}</span>
+    </div>
+  ))}
+</div>
+```
+Kartu keterangan fase aktif di bawahnya: latar `bg-gradient-to-br from-surface-bone to-surface-card`, border `hairline`, dengan label kecil + judul fase + keterangan "Diperbarui otomatis sesuai jadwal travel".
+
+### Kartu menu (Checklist, dll)
+Samakan gaya dengan Panduan: tile ikon gradient + aksen, `rounded-2xl`, `shadow-drop-soft`, hover lift.
+
+Pertahankan SEMUA data profil, logika fase, dan navigasi yang ada — hanya ubah tampilan.
+
+---
+
+## ATURAN UMUM
+- Pertahankan semua logika, data, navigasi, dan struktur halaman. HANYA ubah tampilan (className, tile ikon, gradient, shadow, layout kartu).
+- Warna aksen tambahan (emerald, sky, fuchsia) pakai util Tailwind standar — pastikan tersedia (Tailwind default punya semua ini).
+- Jaga konsistensi: semua kartu `rounded-2xl`, `shadow-drop-soft`, border `hairline`, hover lift halus.
+- Jangan berlebihan — gradient halus & aksen tipis, tetap elegan bukan norak.
+- Responsif: tetap rapi di mobile & desktop.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

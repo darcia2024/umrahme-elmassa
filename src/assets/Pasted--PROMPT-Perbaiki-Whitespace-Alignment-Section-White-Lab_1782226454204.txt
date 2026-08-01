@@ -1,0 +1,59 @@
+# PROMPT: Perbaiki Whitespace & Alignment Section White-Label
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+**Masalah:** Section White-Label terasa "dempet" kiri-kanan dan tidak selaras dengan section lain. Penyebab: section ini masih pakai grid 2 kolom (`gridTemplateColumns: '1fr 1fr'`) padahal kolom kanan (mockup HP) sudah dihapus, sehingga konten teks melebar penuh tanpa centering dan rata kiri — beda dari section lain yang ter-center.
+
+**Solusi:** Jadikan section ini satu kolom yang ter-center dengan max-width terbatas, konsisten dengan section lain.
+
+---
+
+## Langkah 1 — Ubah grid jadi satu kolom ter-center
+
+Cari:
+```jsx
+<div className="lp-wl" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 50, alignItems: 'center' }}>
+```
+Ganti:
+```jsx
+<div className="lp-wl" style={{ maxWidth: 680, margin: '0 auto', textAlign: 'center' }}>
+```
+
+## Langkah 2 — Hapus blok mockup HP kalau masih ada
+
+Jika masih ada blok `<Reveal delay={0.08}>` yang berisi mockup HP (dua phone dengan `.lp-wl-phones` / array `Barokah Tour`, `Mabrur Travel`), HAPUS seluruh blok itu. Section ini cukup satu kolom teks saja.
+
+## Langkah 3 — Center-kan konten di dalamnya
+
+Pada `<Eyebrow align="left">` ubah jadi `<Eyebrow>` (hapus `align="left"` agar ter-center seperti section lain).
+
+Pada `<ul>` checklist, agar rapi saat ter-center, bungkus atau beri style agar list tetap rata kiri tapi blok-nya ter-center. Ubah `<ul>`:
+```jsx
+<ul style={{ listStyle: 'none' }}>
+```
+Menjadi:
+```jsx
+<ul style={{ listStyle: 'none', display: 'inline-block', textAlign: 'left', margin: '0 auto' }}>
+```
+
+Pada tombol di bawah (`<div style={{ marginTop: 28 }}>`), pastikan ter-center — ubah jadi:
+```jsx
+<div style={{ marginTop: 28, display: 'flex', justifyContent: 'center' }}>
+```
+
+## Langkah 4 — Pastikan padding outer konsisten
+
+Pastikan container luar tetap:
+```jsx
+<div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px' }}>
+```
+(sama seperti section lain — jangan diubah, ini sudah benar).
+
+---
+
+## Hasil yang diharapkan
+Section White-Label tampil ter-center dengan whitespace kiri-kanan yang konsisten dengan section lain (Bento, Features, dll). Tidak lagi mepet/dempet. Heading, paragraf, checklist, dan tombol semua rapi di tengah dengan lebar terbatas (`max-width: 680px`).
+
+## Aturan
+- Jangan ubah warna, animasi, atau teks konten.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

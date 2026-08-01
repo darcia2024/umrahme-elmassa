@@ -1,0 +1,57 @@
+# PROMPT: Tambah Lokasi Raudhah (Taman Surga di Masjid Nabawi)
+
+**File:** `artifacts/umrahme/src/data/lokasi.ts`
+
+Tambahkan lokasi **Raudhah** ke array `daftarLokasi`. Ini salah satu titik paling penting & paling dirindukan jamaah di Masjid Nabawi, tapi belum ada. Letakkan di kelompok masjid (bagian dari Masjid Nabawi, kota Madinah). Pakai escape unicode untuk teks Arab seperti pola objek yang sudah ada.
+
+---
+
+## DATA LOKASI
+
+- id: `raudhah`, tipe: `masjid`, kota: Madinah
+- namaArab: `الروضة الشريفة`, jarakKm: 0, jamKunjungan: "Wajib booking via aplikasi Nusuk"
+- koordinat: `{ lat: 24.4672, lng: 39.6112 }`
+- ringkas: "Area mulia di dalam Masjid Nabawi, disebut Nabi ﷺ sebagai taman dari taman-taman surga."
+
+**sejarah:** Area di dalam Masjid Nabawi antara mimbar Rasulullah ﷺ dan kamar Aisyah رضي الله عنها (kini area makam Nabi). Luas ~22x15m, ditandai karpet hijau (beda dari karpet merah area lain). Dahulu tempat Nabi ﷺ shalat, menerima wahyu, berdakwah, mengajar sahabat.
+
+**sejarahSeksi:**
+1. "Makna Taman Surga" — sabda Nabi area antara rumah & mimbar adalah taman surga; ulama tafsirkan secara majas (keutamaan) & hakikat (kelak jadi bagian surga); Ibnu Hajar dalam Fathul Baari.
+2. "Batas-Batas Raudhah" — timur: kamar Aisyah/makam Nabi; barat: mimbar; selatan: sejajar ujung mihrab Nabi; utara: sejajar ujung kamar Aisyah; ditandai karpet hijau.
+3. "Tiang-Tiang Bersejarah" — ustuwanah bersejarah: Ustuwanah Aisyah, Taubah (Abu Lubabah), Sarir.
+4. "Dekat Makam Rasulullah ﷺ" — saat keluar lewat makam Nabi + Abu Bakar & Umar; sunnah ucap salam & shalawat sambil jalan tertib, tanpa mengusap/berdoa ke penghuni kubur.
+
+**tokoh:** Nabi Muhammad ﷺ (shalat, wahyu, dakwah, mengajar); Sayyidah Aisyah رضي الله عنها (kamarnya batas timur Raudhah).
+
+**keutamaan:**
+- Disebut Nabi ﷺ sebagai "taman dari taman-taman surga".
+- Termasuk keutamaan umum shalat di Masjid Nabawi (>1.000 shalat di masjid lain, kecuali Masjidil Haram).
+- Dianjurkan memperbanyak shalat, dzikir, doa, baca Al-Qur'an.
+- Berdekatan makam Rasulullah ﷺ, kesempatan sampaikan salam.
+
+**dalil:**
+- HR. Bukhari & Muslim: "Apa yang berada di antara rumahku dan mimbarku adalah salah satu taman dari taman-taman surga."
+- QS. Al-Ahzab: 56 (perintah bershalawat & salam kepada Nabi).
+
+**adab:**
+- Wajib booking jadwal lewat aplikasi Nusuk; datang tepat waktu.
+- Jadwal pria & wanita dipisah; jaga tidak ikhtilath.
+- Perbanyak shalat sunnah, dzikir, doa; siapkan doa sebelumnya karena waktu terbatas.
+- Bersabar, tertib, tidak berdesak-desakan, beri kesempatan jamaah lain.
+- Dokumentasi secukupnya; jangan korbankan kekhusyukan demi video.
+
+**catatan:** "Tidak ada doa khusus yang wajib di Raudhah — semua doa boleh dengan bahasa apa pun. Hindari kesalahan umum: mengusap-usap dinding makam atau mimbar untuk tabaruk, dan berdoa/meminta kepada penghuni kubur. Berdoa hanya kepada Allah; salam kepada Nabi ﷺ diucapkan sambil lewat dengan tertib."
+
+> Teks lengkap (siap pakai, sudah escape unicode) ada di file `lokasi-raudhah.ts`. Salin objeknya langsung ke dalam array `daftarLokasi`.
+
+---
+
+## ATURAN
+- Jangan ubah lokasi lain.
+- `gambar: ''` (foto Raudhah menyusul — area karpet hijau dengan tiang putih).
+- Pastikan struktur cocok interface `Lokasi`.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.
+
+## ⭐ FOTO YANG PERLU DILENGKAPI
+- `raudhah.jpg` — area Raudhah (karpet hijau khas + tiang-tiang putih). Catatan: foto Raudhah agak sulit karena area sangat ramai & ada aturan; cari foto domain publik / resmi yang menampilkan karpet hijau dan pilar putihnya.

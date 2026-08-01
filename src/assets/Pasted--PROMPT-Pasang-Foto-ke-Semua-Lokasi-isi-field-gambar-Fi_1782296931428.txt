@@ -1,0 +1,68 @@
+# PROMPT: Pasang Foto ke Semua Lokasi (isi field `gambar`)
+
+**File:** `artifacts/umrahme/src/data/lokasi.ts`
+
+13 foto sudah disiapkan. Tugas: simpan foto ke folder public, lalu isi field `gambar` di tiap objek lokasi.
+
+---
+
+## LANGKAH 1 — Simpan foto
+
+Ekstrak `lokasi-foto.zip` (13 file .jpg) ke folder:
+```
+artifacts/umrahme/public/lokasi/
+```
+Sehingga path tiap foto jadi: `public/lokasi/{id}.jpg`
+
+Nama file sudah sesuai id lokasi:
+- masjidil-haram.jpg
+- masjid-nabawi.jpg
+- masjid-quba.jpg
+- jabal-nur.jpg
+- jabal-tsur.jpg
+- jabal-rahmah.jpg
+- jabal-uhud.jpg
+- jannatul-baqi.jpg
+- masjid-qiblatain.jpg
+- masjid-aisyah-tanim.jpg
+- masjid-jin.jpg
+- jannatul-mualla.jpg
+- jabal-qubais.jpg
+
+---
+
+## LANGKAH 2 — Isi field `gambar` di `data/lokasi.ts`
+
+Untuk SETIAP objek lokasi, ubah `gambar: ''` menjadi `gambar: '/lokasi/{id}.jpg'` sesuai id-nya:
+
+| id lokasi | nilai gambar |
+|-----------|--------------|
+| masjidil-haram | `/lokasi/masjidil-haram.jpg` |
+| masjid-nabawi | `/lokasi/masjid-nabawi.jpg` |
+| masjid-quba | `/lokasi/masjid-quba.jpg` |
+| jabal-nur | `/lokasi/jabal-nur.jpg` |
+| jabal-tsur | `/lokasi/jabal-tsur.jpg` |
+| jabal-rahmah | `/lokasi/jabal-rahmah.jpg` |
+| jabal-uhud | `/lokasi/jabal-uhud.jpg` |
+| jannatul-baqi | `/lokasi/jannatul-baqi.jpg` |
+| masjid-qiblatain | `/lokasi/masjid-qiblatain.jpg` |
+| masjid-aisyah-tanim | `/lokasi/masjid-aisyah-tanim.jpg` |
+| masjid-jin | `/lokasi/masjid-jin.jpg` |
+| jannatul-mualla | `/lokasi/jannatul-mualla.jpg` |
+| jabal-qubais | `/lokasi/jabal-qubais.jpg` |
+
+Contoh: pada objek dengan `id: 'jabal-nur'`, ubah `gambar: ''` jadi `gambar: '/lokasi/jabal-nur.jpg'`.
+
+---
+
+## LANGKAH 3 — Pastikan UI menampilkan gambar
+
+Cek di `Peta.tsx` dan `LokasiDetail.tsx`: bagian yang merender gambar harus menampilkan `<img src={l.gambar} />` saat `gambar` tidak kosong, dan placeholder saat kosong (logika `l.gambar ? <img> : <placeholder>` yang sudah dibuat sebelumnya). Karena sekarang semua sudah ada foto, gambar akan tampil.
+
+---
+
+## ATURAN
+- Vite otomatis menyajikan file di `public/` dari root, jadi `/lokasi/xxx.jpg` langsung bisa diakses.
+- Jangan ubah data lain selain field `gambar`.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+- Commit & push ke GitHub untuk auto-deploy.

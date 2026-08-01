@@ -1,0 +1,82 @@
+# PROMPT FITUR (BAGIAN 1/3) — Skema Database: Tanggal Keberangkatan & Agenda Travel
+
+> Konteks: tabel `tenants` di Supabase sudah ada (kolom: `id`, `activation_code`, `nama_travel`, `primary_color`, `primary_deep_color`, `logo_url`, `page_title`, `created_at`). Sekarang ditambahkan dua hal baru, level TRAVEL (bukan per-jamaah, karena satu kode aktivasi dipakai semua jamaah dari travel yang sama):
+> 1. Tanggal keberangkatan — dipakai untuk hitung "H-30" dst.
+> 2. Agenda/itinerary — daftar kegiatan terjadwal travel tersebut, ditampilkan ke semua jamaahnya.
+
+## 1. Tambah kolom ke tabel `tenants`
+
+```sql
+alter table tenants
+  add column tanggal_keberangkatan date,
+  add column tanggal_kepulangan date;
+```
+
+Keduanya NULLABLE (boleh kosong jika admin belum mengisi — jangan jadikan wajib, supaya tenant yang sudah ada tidak rusak).
+
+## 2. Tabel baru `agenda_items`
+
+```sql
+create table agenda_items (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  tanggal date not null,
+  jam_mulai time,
+  judul text not null,
+  deskripsi text,
+  lokasi text,
+  urutan integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index idx_agenda_items_tenant_tanggal on agenda_items (tenant_id, tanggal);
+```
+
+Penjelasan kolom: `tanggal` + `jam_mulai` dipakai untuk urutan kronologis dan pengelompokan "agenda hari ini"; `urutan` untuk override urutan manual dalam tanggal yang sama jika dibutuhkan (boleh default 0 dan diabaikan untuk versi awal — urutkan saja berdasarkan `jam_mulai` jika `urutan` tidak dipakai secara aktif).
+
+### RLS untuk `agenda_items`
+- AKTIFKAN RLS.
+- Policy READ (`select`): publik (`using (true)`) — sama seperti tabel `tenants`, karena dibaca oleh app jamaah yang sudah login tapi belum tentu punya sesi Supabase Auth (mereka login lewat kode aktivasi, bukan Supabase Auth).
+- Policy WRITE (`insert`, `update`, `delete`): TIDAK ada policy publik — hanya lewat admin panel yang menggunakan sesi Supabase Auth admin (pola yang sama dengan tabel `tenants`).
+
+## 3. Update `TenantRow` type
+
+Di `src/lib/supabase.ts`, tambahkan field baru ke `TenantRow`:
+```ts
+export type TenantRow = {
+  id: string;
+  activation_code: string;
+  nama_travel: string;
+  primary_color: string;
+  primary_deep_color: string;
+  logo_url: string | null;
+  page_title: string;
+  tanggal_keberangkatan: string | null;   // ISO date, mis. "2026-03-15"
+  tanggal_kepulangan: string | null;
+  created_at: string;
+};
+
+export type AgendaItemRow = {
+  id: string;
+  tenant_id: string;
+  tanggal: string;        // ISO date
+  jam_mulai: string | null; // "HH:MM:SS" atau null
+  judul: string;
+  deskripsi: string | null;
+  lokasi: string | null;
+  urutan: number;
+  created_at: string;
+};
+```
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Kolom-kolom yang sudah ada di tabel `tenants` — tidak dihapus/diubah tipenya, hanya ditambah kolom baru (operasi `ALTER TABLE ... ADD COLUMN`, bukan `DROP`/`MODIFY`).
+- RLS policy yang sudah ada di tabel `tenants` — tidak diubah.
+- Tidak ada perubahan ke halaman/komponen apapun di luar tipe data ini — admin panel dan app jamaah BELUM disambungkan ke kolom/tabel baru ini (itu Bagian 2 dan 3).
+
+## OUTPUT
+
+1. Tunjukkan SQL yang dijalankan dan konfirmasi sukses di Supabase (lewat SQL Editor atau dashboard Table Editor).
+2. Jalankan `pnpm run typecheck` — pastikan 0 error (perubahan tipe `TenantRow` tidak boleh merusak kode yang sudah memakainya di admin panel).
+3. Tunjukkan isi tabel `tenants` setelah `ALTER TABLE` — pastikan baris-baris tenant yang sudah ada (dari migrasi sebelumnya) tidak hilang datanya, hanya bertambah kolom baru yang nilainya NULL untuk sementara.

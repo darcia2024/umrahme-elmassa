@@ -1,0 +1,559 @@
+# PROMPT FITUR: Upgrade Peta Lokasi — Data Lengkap + Integrasi Google Maps + Detail Bersejarah
+
+**Konteks:** project Umrahme (React + TypeScript + Vite + Tailwind, react-router-dom, multi-tenant white-label). Fitur "Peta Lokasi" sudah ada (`src/pages/Peta.tsx`, `src/pages/LokasiDetail.tsx`, `src/data/lokasi.ts`, type `Lokasi` di `src/types/index.ts`). Saat ini data tipis: cuma `sejarah` 1 paragraf, ada placeholder "Peta interaktif — segera hadir", dan tidak ada koordinat / link Google Maps.
+
+**Tujuan:** rombak total jadi konten ziarah yang kaya & akurat. Tiap lokasi punya koordinat, deep-link Google Maps yang bisa diklik, sejarah panjang berstruktur, tokoh bersejarah, keutamaan, ayat/hadits terkait, adab kunjungan, dan fakta menarik. JANGAN ubah design system (warna, font, token Tailwind seperti `text-ink`, `bg-surface-card`, `text-gold`, `border-hairline`, dll) — tetap konsisten dengan halaman lain. JANGAN sentuh fitur lain.
+
+---
+
+## BAGIAN 1 — Update type `Lokasi`
+
+Di `src/types/index.ts`, ganti interface `Lokasi` jadi lengkap (tambah field baru, semua opsional kecuali yang lama tetap wajib, supaya backward-compatible):
+
+```ts
+export type TipeLokasi = 'masjid' | 'sejarah';
+
+/** Satu sub-bagian sejarah berstruktur (heading + paragraf). */
+export interface SejarahSeksi {
+  judul: string;
+  isi: string; // boleh beberapa kalimat
+}
+
+/** Tokoh penting yang terkait dengan lokasi. */
+export interface TokohLokasi {
+  nama: string;
+  peran: string; // contoh: "Paman Nabi ﷺ, syahid di Perang Uhud"
+}
+
+/** Dalil (ayat atau hadits) yang relevan. */
+export interface DalilLokasi {
+  sumber: string;      // contoh: "QS. At-Taubah: 108" atau "HR. Bukhari"
+  teks: string;        // terjemahan ringkas dalam bahasa Indonesia
+}
+
+export interface Lokasi {
+  id: string;
+  tipe: TipeLokasi;
+  nama: string;
+  namaArab?: string;   // contoh: "المسجد الحرام"
+  kota: string;
+  jarakKm: number;     // tetap: jarak representatif dari area hotel
+  jamKunjungan: string;
+  ringkas: string;     // 1 kalimat untuk list
+  /** Koordinat asli untuk deep-link Google Maps. WAJIB diisi. */
+  koordinat: { lat: number; lng: number };
+  /** Sejarah panjang dipecah jadi beberapa seksi berheading. */
+  sejarahSeksi?: SejarahSeksi[];
+  /** Tetap dipertahankan sebagai fallback / ringkasan sejarah. */
+  sejarah: string;
+  tokoh?: TokohLokasi[];
+  keutamaan?: string[];   // bullet poin keutamaan / fakta menarik
+  dalil?: DalilLokasi[];
+  adab?: string[];        // adab & tips kunjungan
+  /** true kalau ada riwayat lemah / perlu di-flag, ditampilkan sebagai catatan. */
+  catatan?: string;
+}
+```
+
+---
+
+## BAGIAN 2 — Ganti TOTAL isi `src/data/lokasi.ts`
+
+Pakai data lengkap di bawah ini PERSIS (sudah diriset dari sumber terpercaya). Pertahankan helper `lokasiByTipe` dan `lokasiById` di bawahnya. **PENTING soal akurasi religius:** teks ayat/hadits di bawah adalah terjemahan ringkas berbahasa Indonesia, bukan teks Arab penuh — jangan menambah teks Arab yang panjang sendiri, dan jangan mengarang riwayat. Riwayat yang lemah sudah ditandai di field `catatan`.
+
+```ts
+import type { Lokasi } from '../types';
+
+// =============================================================
+// DATA LOKASI — Masjid & Tempat Bersejarah (riset lengkap)
+// jarakKm: estimasi representatif dari area hotel jamaah.
+// koordinat: dipakai untuk deep-link Google Maps di LokasiDetail.
+// =============================================================
+
+export const daftarLokasi: Lokasi[] = [
+  // ===================================================== MASJID
+  {
+    id: 'masjidil-haram',
+    tipe: 'masjid',
+    nama: 'Masjidil Haram',
+    namaArab: 'المسجد الحرام',
+    kota: 'Makkah',
+    jarakKm: 0.4,
+    jamKunjungan: 'Buka 24 jam',
+    ringkas: 'Masjid teragung dalam Islam, mengelilingi Ka’bah — kiblat seluruh umat.',
+    koordinat: { lat: 21.4225, lng: 39.8262 },
+    sejarah:
+      'Masjidil Haram adalah masjid tertua sekaligus terbesar di dunia, berpusat pada Ka’bah yang dalam tradisi Islam dibangun kembali oleh Nabi Ibrahim dan putranya Ismail ‘alaihimas-salam, lalu mengalami perluasan besar dari masa para Khalifah hingga era Saudi modern.',
+    sejarahSeksi: [
+      {
+        judul: 'Asal Mula Ka’bah',
+        isi: 'Dalam tradisi Islam, Ka’bah adalah bangunan pertama yang didirikan untuk beribadah kepada Allah. Setelah hilang akibat banjir besar pada masa Nabi Nuh, Allah memerintahkan Nabi Ibrahim bersama putranya Ismail untuk membangunnya kembali di lokasi semula. Keduanya pula yang meletakkan Hajar Aswad dan menandai Maqam Ibrahim di sekitar Ka’bah.',
+      },
+      {
+        judul: 'Peristiwa Hajar Aswad & Gelar Al-Amin',
+        isi: 'Saat Ka’bah diperbaiki karena banjir di masa muda Nabi Muhammad ﷺ, kabilah-kabilah Quraisy berselisih tentang siapa yang berhak meletakkan Hajar Aswad. Nabi ﷺ menengahi dengan meletakkan batu di atas kain yang setiap ujungnya dipegang pemimpin kabilah, lalu mengangkatnya bersama. Atas kebijaksanaan ini beliau digelari Al-Amin (yang terpercaya).',
+      },
+      {
+        judul: 'Perluasan dari Masa ke Masa',
+        isi: 'Di zaman Nabi ﷺ, area tawaf hanyalah halaman luas dikelilingi rumah penduduk seluas ±1.500–2.000 m². Khalifah Umar bin Khattab membangun tembok pertama; Utsman bin Affan menambahkan serambi beratap. Perluasan berlanjut di masa Umayyah, Abbasiyah, hingga era Saudi modern yang kini menampung lebih dari dua juta jamaah.',
+      },
+      {
+        judul: 'Titik-Titik Penting di Dalamnya',
+        isi: 'Selain Ka’bah, di dalam kompleks terdapat Hajar Aswad di sudut Ka’bah, Maqam Ibrahim (batu pijakan Nabi Ibrahim saat membangun Ka’bah — bukan kuburan), Hijir Ismail, Multazam, sumur Zamzam di sisi timur Ka’bah, serta bukit Shafa dan Marwah tempat sa’i yang kini berada di dalam masjid.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Ibrahim ﷺ', peran: 'Membangun kembali Ka’bah bersama putranya' },
+      { nama: 'Nabi Ismail ﷺ', peran: 'Membantu pembangunan & peletakan Hajar Aswad' },
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Menengahi peletakan Hajar Aswad, membersihkan Ka’bah dari berhala saat Fathu Makkah' },
+    ],
+    keutamaan: [
+      'Shalat di Masjidil Haram bernilai 100.000 kali lipat dibanding masjid lain.',
+      'Ka’bah adalah kiblat shalat seluruh umat Islam di dunia.',
+      'Pusat pelaksanaan tawaf dalam ibadah haji dan umrah.',
+      'Sumur Zamzam adalah sumber air yang terus mengalir sejak zaman Nabi Ismail.',
+    ],
+    dalil: [
+      {
+        sumber: 'QS. Ali ‘Imran: 96',
+        teks: 'Sesungguhnya rumah yang mula-mula dibangun untuk (tempat ibadah) manusia ialah Baitullah di Bakkah (Makkah) yang diberkahi dan menjadi petunjuk bagi semesta alam.',
+      },
+    ],
+    adab: [
+      'Jaga kekhusyukan dan perbanyak doa, terutama di Multazam dan saat menatap Ka’bah.',
+      'Hati-hati terhadap “joki” Hajar Aswad yang meminta uang; mencium Hajar Aswad sunnah tetapi jangan sampai menyakiti atau berdesakan membahayakan.',
+      'Perhatikan sistem lampu pintu (hijau = ada ruang, merah = penuh).',
+    ],
+  },
+  {
+    id: 'masjid-nabawi',
+    tipe: 'masjid',
+    nama: 'Masjid Nabawi',
+    namaArab: 'المسجد النبوي',
+    kota: 'Madinah',
+    jarakKm: 1.1,
+    jamKunjungan: 'Buka 24 jam · Raudhah perlu tasrih/janji temu via aplikasi Nusuk',
+    ringkas: 'Masjid yang dibangun Rasulullah ﷺ, tempat makam beliau berada.',
+    koordinat: { lat: 24.4672, lng: 39.6111 },
+    sejarah:
+      'Masjid Nabawi didirikan Nabi Muhammad ﷺ sesaat setelah hijrah ke Madinah pada 622 M, berdampingan dengan kediaman beliau. Di dalamnya terdapat makam Rasulullah ﷺ bersama Abu Bakar dan Umar, serta Raudhah yang disebut “taman surga”.',
+    sejarahSeksi: [
+      {
+        judul: 'Dibangun Saat Hijrah',
+        isi: 'Ketika Rasulullah ﷺ hijrah ke Madinah pada 622 M, beliau membangun masjid ini sebagai pusat ibadah dan kegiatan sosial umat Islam. Strukturnya sangat sederhana: dinding dari batu bata, tiang dari batang kurma, dan atap dari pelepah kurma, tanpa kubah.',
+      },
+      {
+        judul: 'Raudhah — Taman Surga',
+        isi: 'Raudhah adalah area antara mimbar dan bekas rumah Nabi ﷺ. Rasulullah ﷺ bersabda bahwa area antara rumah dan mimbar beliau adalah “taman dari taman-taman surga”. Luasnya sekitar 330 m² (±22 m × 15 m), ditandai dengan karpet dan tiang putih. Kini akses Raudhah diatur dengan tasrih (izin) melalui aplikasi Nusuk.',
+      },
+      {
+        judul: 'Makam Rasulullah ﷺ & Dua Sahabat',
+        isi: 'Makam Nabi ﷺ berada di bekas kamar Aisyah (Hujrah asy-Syarifah) di sisi timur Raudhah, sesuai sabda beliau bahwa nabi dimakamkan di tempat ia wafat. Di sampingnya dimakamkan Abu Bakar Ash-Shiddiq lalu Umar bin Khattab, keduanya atas izin Aisyah. Karena perluasan masjid, ketiga makam kini berada di dalam masjid.',
+      },
+      {
+        judul: 'Kubah Hijau',
+        isi: 'Kubah Hijau menandai lokasi makam Nabi ﷺ. Kubah pertama dibangun era Mamluk oleh Sultan Al-Mansur Qalawun (678 H / 1279 M), awalnya dari kayu berlapis timah. Warna hijau yang dikenal sekarang baru diberikan pada masa Sultan Mahmud II dari Utsmaniyah (1817 M). Kubah ini menjadi ikon Madinah dan simbol kecintaan umat kepada Rasulullah ﷺ.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Pendiri masjid, dimakamkan di dalamnya' },
+      { nama: 'Abu Bakar Ash-Shiddiq', peran: 'Khalifah pertama, dimakamkan di samping Nabi ﷺ' },
+      { nama: 'Umar bin Khattab', peran: 'Khalifah kedua, dimakamkan di sisi Abu Bakar' },
+      { nama: 'Bilal bin Rabah', peran: 'Muadzin Rasulullah ﷺ' },
+    ],
+    keutamaan: [
+      'Shalat di Masjid Nabawi bernilai 1.000 kali lipat dibanding masjid lain (selain Masjidil Haram).',
+      'Berdoa di Raudhah termasuk tempat yang sangat dianjurkan.',
+      'Disunnahkan mengucapkan salam kepada Rasulullah ﷺ dan dua sahabatnya saat ziarah.',
+    ],
+    dalil: [
+      {
+        sumber: 'HR. Bukhari & Muslim',
+        teks: 'Antara rumahku dan mimbarku terdapat taman dari taman-taman surga.',
+      },
+    ],
+    adab: [
+      'Untuk masuk Raudhah, pesan tasrih lebih dulu lewat aplikasi Nusuk sesuai jadwal.',
+      'Ucapkan salam dengan tenang saat melewati makam; jangan mengusap pagar atau meminta kepada penghuni kubur.',
+      'Jaga ketertiban — area Raudhah sangat padat.',
+    ],
+  },
+  {
+    id: 'masjid-quba',
+    tipe: 'masjid',
+    nama: 'Masjid Quba',
+    namaArab: 'مسجد قباء',
+    kota: 'Madinah',
+    jarakKm: 5.0,
+    jamKunjungan: 'Buka 24 jam (waktu setempat)',
+    ringkas: 'Masjid pertama yang dibangun dalam sejarah Islam.',
+    koordinat: { lat: 24.4395, lng: 39.6175 },
+    sejarah:
+      'Masjid Quba adalah masjid pertama yang dibangun Rasulullah ﷺ saat tiba di pinggiran Madinah dalam perjalanan hijrah, dibangun di atas dasar takwa. Shalat di dalamnya berpahala seperti umrah.',
+    sejarahSeksi: [
+      {
+        judul: 'Masjid Pertama dalam Islam',
+        isi: 'Saat hijrah dari Makkah, Rasulullah ﷺ singgah di perkampungan Quba dan membangun masjid ini dengan tangannya sendiri bersama para sahabat. Dibangun pada 8 Rabiul Awwal tahun pertama Hijriah (23 September 622 M) di atas tanah ±1.200 m². Peletakan batu pertama di mihrab dilakukan Rasulullah ﷺ, diikuti Abu Bakar, Umar, dan Utsman.',
+      },
+      {
+        judul: 'Dibangun di Atas Takwa',
+        isi: 'Al-Qur’an memuji masjid ini sebagai masjid yang “didirikan atas dasar takwa sejak hari pertama”. Di sinilah shalat berjamaah pertama setelah hijrah dilakukan, dengan kiblat masih ke arah Baitul Maqdis, dan azan pertama di Madinah dikumandangkan Bilal bin Rabah.',
+      },
+      {
+        judul: 'Kebiasaan Rasulullah ﷺ',
+        isi: 'Rasulullah ﷺ rutin mengunjungi Masjid Quba, terutama setiap hari Sabtu, kadang berjalan kaki kadang berkendara. Kini masjid telah diperluas hingga mampu menampung puluhan ribu jamaah, dikelilingi kebun kurma dan empat menara putih.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Membangun masjid dengan tangannya sendiri' },
+      { nama: 'Bilal bin Rabah', peran: 'Mengumandangkan azan pertama di Madinah' },
+    ],
+    keutamaan: [
+      'Bersuci di rumah lalu shalat di Masjid Quba berpahala seperti umrah.',
+      'Masjid pertama yang dibangun atas dasar takwa.',
+      'Tempat shalat berjamaah pertama dalam sejarah Islam.',
+    ],
+    dalil: [
+      {
+        sumber: 'QS. At-Taubah: 108',
+        teks: 'Sungguh, masjid yang didirikan atas dasar takwa sejak hari pertama lebih pantas engkau melaksanakan shalat di dalamnya.',
+      },
+      {
+        sumber: 'HR. Ibnu Majah',
+        teks: 'Barangsiapa bersuci di rumahnya lalu mendatangi Masjid Quba dan shalat di dalamnya, ia memperoleh pahala seperti umrah.',
+      },
+    ],
+    adab: [
+      'Disunnahkan bersuci/berwudhu dari hotel sebelum berangkat agar meraih keutamaan hadits.',
+      'Datang di luar jam padat agar lebih leluasa shalat sunnah.',
+    ],
+  },
+
+  // ============================================ TEMPAT BERSEJARAH
+  {
+    id: 'jabal-nur',
+    tipe: 'sejarah',
+    nama: 'Jabal Nur (Gua Hira)',
+    namaArab: 'جبل النور',
+    kota: 'Makkah',
+    jarakKm: 6.5,
+    jamKunjungan: 'Disarankan pagi hari · pendakian berat, butuh fisik prima',
+    ringkas: 'Bukit tempat Gua Hira, lokasi turunnya wahyu pertama.',
+    koordinat: { lat: 21.4577, lng: 39.8617 },
+    sejarah:
+      'Jabal Nur (“Gunung Cahaya”) di timur laut Makkah memuat Gua Hira, tempat Nabi Muhammad ﷺ menerima wahyu pertama berupa lima ayat awal Surah Al-‘Alaq melalui Malaikat Jibril.',
+    sejarahSeksi: [
+      {
+        judul: 'Tempat Wahyu Pertama',
+        isi: 'Sebelum diangkat menjadi nabi, Rasulullah ﷺ kerap menyendiri dan bertafakkur di Gua Hira. Pada usia ±40 tahun, di bulan Ramadan (sekitar 610 M), Malaikat Jibril datang dan memerintahkan “Iqra’ (Bacalah)”. Setelah tiga kali dekapan, turunlah lima ayat pertama Surah Al-‘Alaq — penanda dimulainya kenabian.',
+      },
+      {
+        judul: 'Lokasi & Pendakian',
+        isi: 'Jabal Nur terletak sekitar 4–7 km di timur laut Masjidil Haram dengan ketinggian ±640 m dpl. Gua Hira sendiri kecil (±3,5 m × 1,5 m), berada dekat puncak menghadap ke arah Ka’bah. Mendaki ke puncak melewati ratusan anak tangga terjal dan bisa memakan 30–60 menit atau lebih, sehingga butuh fisik prima.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Menerima wahyu pertama di Gua Hira' },
+      { nama: 'Malaikat Jibril', peran: 'Menyampaikan wahyu pertama' },
+    ],
+    keutamaan: [
+      'Tempat turunnya wahyu pertama dan dimulainya risalah Islam.',
+      'Simbol pentingnya tafakkur, ilmu, dan membaca (Iqra’).',
+    ],
+    dalil: [
+      {
+        sumber: 'QS. Al-‘Alaq: 1–5',
+        teks: 'Bacalah dengan (menyebut) nama Tuhanmu yang menciptakan… Dia mengajarkan manusia apa yang tidak diketahuinya.',
+      },
+    ],
+    adab: [
+      'Gunakan alas kaki nyaman, bawa air cukup, berangkat pagi/sore agar tidak terlalu panas.',
+      'Jamaah lansia atau berisiko cukup menyaksikan dari kejauhan.',
+      'Ziarah ini bernilai mengambil pelajaran (ibrah), bukan ibadah khusus yang disyariatkan.',
+    ],
+    catatan:
+      'Mendaki Gua Hira tidak termasuk rangkaian wajib umrah/haji; niatkan sebagai napak tilas sejarah, bukan ritual.',
+  },
+  {
+    id: 'jabal-tsur',
+    tipe: 'sejarah',
+    nama: 'Jabal Tsur (Gua Tsur)',
+    namaArab: 'جبل ثور',
+    kota: 'Makkah',
+    jarakKm: 7.0,
+    jamKunjungan: 'Pagi hari · pendakian terjal & panjang',
+    ringkas: 'Gunung tempat Nabi ﷺ dan Abu Bakar bersembunyi saat hijrah.',
+    koordinat: { lat: 21.3733, lng: 39.8628 },
+    sejarah:
+      'Jabal Tsur di selatan Makkah memuat Gua Tsur, tempat Nabi Muhammad ﷺ dan Abu Bakar Ash-Shiddiq bersembunyi tiga hari dari kejaran Quraisy di awal perjalanan hijrah ke Madinah.',
+    sejarahSeksi: [
+      {
+        judul: 'Benteng Perlindungan Saat Hijrah',
+        isi: 'Sekitar 7 km di selatan Masjidil Haram, di puncak Jabal Tsur terdapat Gua Tsur tempat Rasulullah ﷺ dan Abu Bakar berlindung selama tiga hari sebelum melanjutkan hijrah pada sekitar 16 Juli 622 M. Saat Abu Bakar khawatir musuh menemukan mereka, Nabi ﷺ menenangkannya bahwa Allah bersama mereka.',
+      },
+      {
+        judul: 'Jabal Nur vs Jabal Tsur',
+        isi: 'Keduanya sering tertukar. Jabal Nur (utara/timur laut Makkah) adalah tempat wahyu pertama — pintu awal kenabian. Jabal Tsur (selatan Makkah) adalah tempat persembunyian saat hijrah — benteng yang menjaga kelangsungan risalah.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Bersembunyi di Gua Tsur saat hijrah' },
+      { nama: 'Abu Bakar Ash-Shiddiq', peran: 'Sahabat yang menemani hijrah' },
+    ],
+    keutamaan: [
+      'Saksi keteguhan iman dan tawakal di momen kritis hijrah.',
+      'Diabadikan dalam Al-Qur’an sebagai bukti pertolongan Allah.',
+    ],
+    dalil: [
+      {
+        sumber: 'QS. At-Taubah: 40',
+        teks: 'Ketika dia berkata kepada sahabatnya, “Jangan bersedih, sesungguhnya Allah bersama kita.”',
+      },
+    ],
+    adab: [
+      'Pendakian Jabal Tsur lebih berat dari Jabal Nur; perlu persiapan fisik baik.',
+      'Berangkat pagi, bawa air cukup, hindari kerumunan padat.',
+    ],
+    catatan:
+      'Mendaki gua bukan bagian dari ritual umrah; bernilai sebagai pelajaran sejarah.',
+  },
+  {
+    id: 'jabal-rahmah',
+    tipe: 'sejarah',
+    nama: 'Jabal Rahmah',
+    namaArab: 'جبل الرحمة',
+    kota: 'Arafah',
+    jarakKm: 22.0,
+    jamKunjungan: 'Ramai saat musim haji · area terbuka',
+    ringkas: 'Bukit di Padang Arafah, dikaitkan dengan Khutbah Wada’.',
+    koordinat: { lat: 21.3549, lng: 39.9843 },
+    sejarah:
+      'Jabal Rahmah (“Bukit Kasih Sayang”) di Padang Arafah. Di kawasan Arafah inilah Rasulullah ﷺ menyampaikan Khutbah Wada’ di hadapan puluhan ribu sahabat.',
+    sejarahSeksi: [
+      {
+        judul: 'Padang Arafah & Khutbah Wada’',
+        isi: 'Arafah adalah inti pelaksanaan ibadah haji — di sinilah jamaah haji melaksanakan wukuf. Di kawasan ini Rasulullah ﷺ menyampaikan Khutbah Wada’ (haji perpisahan), berisi pesan tentang persaudaraan, hak-hak manusia, dan penyempurnaan agama.',
+      },
+      {
+        judul: 'Tugu Penanda',
+        isi: 'Di puncak Jabal Rahmah terdapat tugu/monumen penanda. Banyak peziarah naik ke bukit ini saat berada di Arafah, terutama di luar musim haji.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Menyampaikan Khutbah Wada’ di Arafah' },
+    ],
+    keutamaan: [
+      'Arafah adalah rukun haji (wukuf) — “Haji itu (wukuf di) Arafah”.',
+      'Tempat bersejarah penyampaian Khutbah Wada’.',
+    ],
+    adab: [
+      'Tidak termasuk rangkaian wajib umrah; biasanya dikunjungi saat city tour Makkah.',
+      'Area terbuka & panas — bawa pelindung matahari dan air.',
+    ],
+    catatan:
+      'Kisah pertemuan Nabi Adam dan Hawa di bukit ini populer di masyarakat, namun TIDAK memiliki dasar riwayat yang kuat. Kunjungan bernilai sejarah, bukan ritual.',
+  },
+  {
+    id: 'jabal-uhud',
+    tipe: 'sejarah',
+    nama: 'Jabal Uhud',
+    namaArab: 'جبل أحد',
+    kota: 'Madinah',
+    jarakKm: 4.5,
+    jamKunjungan: '06.00 – 18.00 (waktu setempat)',
+    ringkas: 'Gunung tempat Perang Uhud dan makam para syuhada.',
+    koordinat: { lat: 24.5018, lng: 39.6157 },
+    sejarah:
+      'Jabal Uhud, gunung batu kemerahan ±5 km di utara Madinah, menjadi saksi Perang Uhud (3 H / 625 M). Di kakinya dimakamkan para syuhada Uhud, termasuk Hamzah bin Abdul Muthalib.',
+    sejarahSeksi: [
+      {
+        judul: 'Perang Uhud',
+        isi: 'Perang Uhud terjadi pada 15 Syawal 3 Hijriah (sekitar Maret 625 M), pembalasan Quraisy atas kekalahan di Badar. ±700 pasukan muslim menghadapi ±3.000 pasukan Quraisy. Kemenangan nyaris diraih, namun sebagian pasukan pemanah meninggalkan pos di Bukit Rumat karena tergiur harta rampasan. Khalid bin Walid (saat itu di pihak Quraisy) memanfaatkannya untuk menyerang balik, dan 70 sahabat gugur sebagai syuhada.',
+      },
+      {
+        judul: 'Makam Para Syuhada',
+        isi: 'Rasulullah ﷺ memerintahkan agar para syuhada dimakamkan di tempat mereka gugur, di antara Jabal Uhud dan Bukit Rumat. Yang paling utama adalah makam Hamzah bin Abdul Muthalib, paman Nabi ﷺ yang bergelar “Singa Allah” (Asadullah), gugur ditombak Wahsyi. Kompleks makam kini dipagari dan menjadi tujuan ziarah utama di Madinah.',
+      },
+      {
+        judul: 'Gunung yang Dicintai Nabi ﷺ',
+        isi: 'Rasulullah ﷺ bersabda bahwa Uhud adalah gunung yang mencintai beliau dan beliau mencintainya. Dalam riwayat lain disebutkan Uhud termasuk salah satu gunung di surga.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Hamzah bin Abdul Muthalib', peran: 'Paman Nabi ﷺ, “Singa Allah”, syahid di Uhud' },
+      { nama: 'Mush‘ab bin Umair', peran: 'Sahabat pembawa panji, syahid di Uhud' },
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Memimpin pasukan, terluka dalam perang' },
+    ],
+    keutamaan: [
+      'Tempat mengenang pengorbanan para syuhada dan mengambil pelajaran ketaatan pada pemimpin.',
+      'Disebut sebagai salah satu gunung yang dicintai Rasulullah ﷺ.',
+    ],
+    dalil: [
+      {
+        sumber: 'HR. Bukhari',
+        teks: 'Uhud adalah gunung yang mencintai kami dan kami mencintainya.',
+      },
+    ],
+    adab: [
+      'Berdiri di luar pagar makam dengan khidmat, ucapkan salam, dan doakan para syuhada.',
+      'Hindari mengusap pagar, mengambil tanah untuk “berkah”, atau meminta kepada penghuni kubur.',
+      'Naik ke Bukit Rumat (Bukit Pemanah) untuk merenungi medan perang.',
+    ],
+  },
+  {
+    id: 'jannatul-baqi',
+    tipe: 'sejarah',
+    nama: 'Jannatul Baqi’',
+    namaArab: 'جنة البقيع',
+    kota: 'Madinah',
+    jarakKm: 1.2,
+    jamKunjungan: 'Dibuka untuk ziarah pada waktu tertentu setelah shalat',
+    ringkas: 'Pemakaman utama umat Islam sejak zaman Nabi ﷺ.',
+    koordinat: { lat: 24.4672, lng: 39.6147 },
+    sejarah:
+      'Jannatul Baqi’ adalah kompleks pemakaman utama di sisi tenggara Masjid Nabawi, tempat bersemayam ribuan sahabat, keluarga, dan ahlul bait Rasulullah ﷺ.',
+    sejarahSeksi: [
+      {
+        judul: 'Pemakaman Para Sahabat',
+        isi: 'Sejak zaman Nabi ﷺ, Baqi’ menjadi pemakaman penduduk Madinah. Di sini dimakamkan banyak sahabat dan keluarga Rasulullah ﷺ, di antaranya istri-istri beliau (termasuk Aisyah), putri-putri beliau, Utsman bin Affan, serta banyak tabiin.',
+      },
+      {
+        judul: 'Adab Ziarah',
+        isi: 'Menziarahi Baqi’ dianjurkan untuk merenungkan kehidupan akhirat dan mendoakan para pendahulu. Rasulullah ﷺ sendiri sering mendatangi Baqi’ untuk mendoakan ahli kubur.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Utsman bin Affan', peran: 'Khalifah ketiga, dimakamkan di Baqi’' },
+      { nama: 'Aisyah binti Abu Bakar', peran: 'Istri Nabi ﷺ, Ummul Mukminin' },
+      { nama: 'Ibrahim bin Muhammad', peran: 'Putra Rasulullah ﷺ' },
+    ],
+    keutamaan: [
+      'Tempat dimakamkannya ribuan sahabat dan ahlul bait Nabi ﷺ.',
+      'Ziarah mengingatkan pada kematian dan akhirat.',
+    ],
+    adab: [
+      'Ucapkan salam kepada ahli kubur dan doakan mereka.',
+      'Saat ini umumnya hanya jamaah pria yang dapat masuk; ikuti aturan waktu buka.',
+      'Hindari perbuatan yang tidak dicontohkan seperti mengusap atau meminta kepada kubur.',
+    ],
+  },
+  {
+    id: 'masjid-qiblatain',
+    tipe: 'sejarah',
+    nama: 'Masjid Qiblatain',
+    namaArab: 'مسجد القبلتين',
+    kota: 'Madinah',
+    jarakKm: 5.5,
+    jamKunjungan: 'Buka 24 jam',
+    ringkas: 'Masjid “dua kiblat”, saksi perpindahan arah kiblat ke Ka’bah.',
+    koordinat: { lat: 24.4842, lng: 39.5779 },
+    sejarah:
+      'Masjid Qiblatain (“Masjid Dua Kiblat”) di barat laut Madinah adalah tempat turunnya perintah memindahkan kiblat dari Baitul Maqdis ke Ka’bah saat shalat berlangsung.',
+    sejarahSeksi: [
+      {
+        judul: 'Perpindahan Kiblat',
+        isi: 'Awalnya bernama Masjid Bani Salamah, dibangun Sawad bin Ghanam bin Ka’ab pada tahun 2 H. Setelah Nabi ﷺ shalat menghadap Baitul Maqdis selama sekitar 16 bulan di Madinah, turun wahyu memerintahkan menghadap Ka’bah. Saat shalat sedang berlangsung, imam dan jamaah berputar mengubah arah kiblat — sehingga masjid ini memiliki dua arah kiblat dalam satu peristiwa.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Nabi Muhammad ﷺ', peran: 'Menerima perintah perpindahan kiblat' },
+      { nama: 'Sawad bin Ghanam bin Ka’ab', peran: 'Membangun masjid (Masjid Bani Salamah)' },
+    ],
+    keutamaan: [
+      'Saksi peristiwa besar perpindahan arah kiblat umat Islam.',
+      'Simbol ketaatan penuh para sahabat terhadap perintah Allah.',
+    ],
+    dalil: [
+      {
+        sumber: 'QS. Al-Baqarah: 144',
+        teks: 'Maka palingkanlah wajahmu ke arah Masjidil Haram. Dan di mana saja kamu berada, palingkanlah wajahmu ke arahnya.',
+      },
+    ],
+    adab: [
+      'Biasanya dikunjungi dalam city tour Madinah bersama Masjid Quba dan Jabal Uhud.',
+    ],
+  },
+  {
+    id: 'masjid-aisyah-tanim',
+    tipe: 'sejarah',
+    nama: 'Masjid Aisyah (Tan’im)',
+    namaArab: 'مسجد عائشة',
+    kota: 'Makkah',
+    jarakKm: 7.5,
+    jamKunjungan: 'Buka 24 jam · titik miqat',
+    ringkas: 'Miqat terdekat dari Makkah untuk memulai ihram umrah.',
+    koordinat: { lat: 21.4486, lng: 39.7656 },
+    sejarah:
+      'Masjid Aisyah di Tan’im adalah salah satu titik miqat terdekat dari Makkah, sekitar 7,5 km dari Masjidil Haram, tempat banyak jamaah mengambil ihram untuk umrah.',
+    sejarahSeksi: [
+      {
+        judul: 'Miqat Sayyidah Aisyah',
+        isi: 'Setelah haji wada’, Aisyah radhiyallahu ‘anha ingin melaksanakan umrah. Rasulullah ﷺ menyuruhnya berangkat ke Tan’im dan memulai ihram dari sana. Karena itu masjid ini dikenal sebagai Masjid Aisyah, dan Tan’im menjadi salah satu batas tanah haram yang lazim digunakan penduduk Makkah untuk miqat umrah.',
+      },
+    ],
+    tokoh: [
+      { nama: 'Aisyah binti Abu Bakar', peran: 'Mengambil miqat umrah dari Tan’im' },
+    ],
+    keutamaan: [
+      'Titik miqat terdekat dari Makkah untuk ihram umrah.',
+      'Banyak dipakai jamaah untuk umrah sunnah tambahan.',
+    ],
+    adab: [
+      'Berniat ihram dan mulai talbiyah dari sini saat hendak umrah lagi.',
+      'Sediakan kain ihram sebelum berangkat.',
+    ],
+  },
+];
+
+export function lokasiByTipe(tipe: Lokasi['tipe']): Lokasi[] {
+  return daftarLokasi.filter((l) => l.tipe === tipe);
+}
+
+export function lokasiById(id: string): Lokasi | undefined {
+  return daftarLokasi.find((l) => l.id === id);
+}
+
+/** Bangun deep-link Google Maps dari koordinat (membuka app Maps di HP, web di desktop). */
+export function gmapsUrl(l: Lokasi): string {
+  const q = encodeURIComponent(`${l.nama} ${l.kota}`);
+  return `https://www.google.com/maps/search/?api=1&query=${l.koordinat.lat},${l.koordinat.lng}(${q})`;
+}
+```
+
+---
+
+## BAGIAN 3 — Rombak `src/pages/LokasiDetail.tsx`
+
+Ganti placeholder peta jadi **kartu peta yang bisa diklik membuka Google Maps**, dan render semua konten baru. Tetap pakai `PageHeader`, `EmptyState`, dan token warna yang ada. Pertahankan struktur, hanya perkaya isinya.
+
+Aturan tampilan:
+1. **Kartu Peta (klik → Google Maps):** ganti placeholder lama. Buat kartu yang ketika diklik membuka `gmapsUrl(lokasi)` di tab baru (`<a href={...} target="_blank" rel="noopener noreferrer">`). Tetap pakai motif garis diagonal yang ada sebagai latar, tapi tambah label jelas: ikon pin + teks **"Lihat di Google Maps"** dan baris kecil `{kota} · {jarakKm} km dari hotel · koordinat {lat}, {lng}`. Beri efek `active:scale-[0.99]` dan `hover:shadow-drop-soft` seperti kartu lain.
+2. **Header info:** tampilkan `namaArab` (jika ada) di bawah judul dengan font serif/`text-gold` ukuran kecil, rata kanan atau di bawah eyebrow.
+3. **Metadata grid** (Jarak / Kunjungan) — pertahankan seperti sekarang.
+4. **Keutamaan** (jika `keutamaan` ada): kartu dengan heading "Keutamaan & Fakta" berisi list bullet bergaya (pakai titik `text-gold` sebagai marker, bukan bullet default).
+5. **Sejarah:** jika `sejarahSeksi` ada, render tiap seksi sebagai sub-bagian (heading `text-ink font-semibold` + paragraf `text-body leading-relaxed`), dipisah jarak. Jika tidak ada, fallback ke paragraf `sejarah` lama. Beri heading utama "Sejarah".
+6. **Tokoh Bersejarah** (jika `tokoh` ada): kartu "Tokoh Bersejarah" — list nama (`font-semibold text-ink`) + peran (`text-charcoal text-sm`).
+7. **Dalil** (jika `dalil` ada): kartu "Dalil Terkait" — tiap item tampilkan teks terjemahan (italic, `text-body`) lalu sumber (`text-gold font-mono text-xs`, mis. "— QS. At-Taubah: 108").
+8. **Adab Kunjungan** (jika `adab` ada): kartu "Adab & Tips" dengan list bullet.
+9. **Catatan** (jika `catatan` ada): tampilkan sebagai callout lembut di bagian bawah — kotak `border border-hairline bg-surface-bone` dengan ikon kecil dan teks `text-charcoal text-sm`, diawali label **"Catatan:"** `text-gold`. Ini penting untuk meluruskan riwayat lemah (mis. Jabal Rahmah).
+
+Semua kartu pakai pola yang sudah ada: `rounded-md border border-hairline bg-surface-card px-5 py-5 shadow-drop-card`, dengan jarak antar kartu `space-y-4` atau `mb-4`. Jaga agar mobile-first, padding `px-5`, dan ada padding bawah cukup agar konten tidak tertutup bottom-nav (`pb-24` atau sesuai pola halaman lain).
+
+---
+
+## BAGIAN 4 — Update `src/pages/Peta.tsx` (ringan)
+
+1. Placeholder peta atas yang bertuliskan "Peta interaktif — segera hadir": ganti teksnya jadi sesuatu yang tidak janji fitur yang belum ada — misalnya **"Ketuk lokasi untuk lihat detail & Google Maps"**. (Opsional, kalau mudah: jadikan placeholder ini link ke Google Maps area Makkah/Madinah secara umum — tapi jangan dipaksakan kalau menambah kompleksitas.)
+2. Pastikan list & grid tetap menampilkan semua lokasi baru (otomatis karena `lokasiByTipe`). Untuk tab "Tempat Bersejarah" sekarang ada 6 item — pastikan grid desktop dan list mobile rapi.
+3. Jika ada logika "featured" yang hanya mengecek `masjidil-haram`/`masjid-nabawi`, biarkan; tidak perlu diubah.
+
+---
+
+## ATURAN PENTING
+- JANGAN ubah design tokens, warna, font, atau komponen `PageHeader`/`EmptyState`/`icons`.
+- JANGAN tambah dependency baru. Deep-link Google Maps cukup pakai `<a href>` biasa, tidak perlu library map / iframe / API key.
+- JANGAN mengarang konten religius baru di luar yang sudah disediakan di atas. Teks ayat/hadits sudah berupa terjemahan ringkas berbahasa Indonesia; biarkan apa adanya.
+- Pertahankan TypeScript strict — semua field opsional di-handle dengan pengecekan (`lokasi.tokoh?.length`, dll). Pastikan `pnpm run typecheck` lolos tanpa error.
+- Mobile-first; pastikan tidak ada konten yang tertutup bottom navigation.
+
+Setelah selesai, jalankan typecheck, lalu tunjukkan ringkasan file yang diubah.

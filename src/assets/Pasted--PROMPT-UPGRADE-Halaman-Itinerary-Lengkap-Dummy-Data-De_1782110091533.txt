@@ -1,0 +1,130 @@
+# PROMPT UPGRADE — Halaman Itinerary Lengkap + Dummy Data Demo
+
+> Konteks: halaman `/profil/agenda` (`src/pages/AgendaLengkap.tsx`) sudah ada dan sudah terhubung ke database dengan benar. Halaman ini sudah punya: timeline per tanggal, highlight "Hari Ini", format jam, koneksi Supabase. Yang perlu dilakukan: upgrade visual menjadi lebih premium dan immersive seperti itinerary perjalanan sungguhan, plus tambahkan dummy data realistis untuk demo.
+
+## BAGIAN 1 — Upgrade Visual `AgendaLengkap.tsx`
+
+Jangan rebuild dari nol. Upgrade bagian-bagian berikut saja:
+
+### 1a. Header halaman — tambahkan ringkasan perjalanan
+Di bawah `<PageHeader>`, tambahkan "strip info perjalanan" yang menampilkan:
+- Nama travel (dari `tenant.nama_travel`)
+- Rentang tanggal perjalanan (tanggal paling awal s/d paling akhir dari data `agenda_items`)
+- Total hari perjalanan
+- Badge "Hari Ini: Hari ke-{n}" — hitung berapa hari sejak tanggal pertama agenda
+
+Styling: card tipis `bg-white border border-hairline rounded-2xl px-4 py-3 shadow-drop-card`, konten dalam baris horizontal dengan separator titik, font-mono kecil untuk label.
+
+### 1b. Timeline item — lebih visual dan informatif
+Ganti card item yang sekarang (flat card putih) menjadi layout yang lebih immersive:
+
+Tiap item agenda tampilkan:
+- **Jam** — lebih besar, font-mono bold, warna `var(--color-primary)` untuk jam yang akan datang/sekarang, abu-abu untuk yang sudah lewat
+- **Judul** — text-[15px] font-bold
+- **Lokasi** — dengan ikon pin, font-mono kecil
+- **Deskripsi** — text-[13px] text-charcoal, leading-relaxed
+
+Untuk item yang waktunya sudah lewat (jam_mulai < jam sekarang AND tanggal = hari ini, atau tanggal < hari ini): berikan visual "sudah selesai" — opacity sedikit berkurang (0.65), ikon checkmark kecil di kiri jam, judul dengan warna text-charcoal (bukan text-ink).
+
+Untuk item yang sedang berlangsung (jam_mulai <= sekarang < jam_mulai item berikutnya, pada hari ini): berikan highlight — border kiri tebal warna primary, background `primary/5`, badge kecil "Sekarang" di kanan atas.
+
+### 1c. Header per tanggal — lebih informatif
+Ganti dari "Senin, 15 Maret 2026" menjadi format dua baris:
+- Baris atas: "HARI 3" (font-mono 9px uppercase tracking-widest, warna primary jika hari ini, abu jika lain)
+- Baris bawah: "Senin, 15 Maret 2026" (text-[13px] font-semibold)
+
+Untuk menghitung "HARI ke-N": hitung selisih dari tanggal pertama agenda ke tanggal current item (1-indexed).
+
+### 1d. Sticky "Hari Ini" indicator
+Jika halaman punya data lebih dari 3 hari, tambahkan tombol floating "Ke Hari Ini →" yang hanya muncul saat section hari ini tidak terlihat di viewport. Ini opsional dan boleh diimplementasikan sederhana dengan scroll ke `id="hari-ini"` yang di-set pada elemen header tanggal hari ini.
+
+## BAGIAN 2 — Dummy Data Realistis untuk Demo
+
+Buat file baru `src/data/agendaDummy.ts` yang berisi SQL INSERT statements sebagai string, PLUS fungsi helper yang bisa dipanggil dari admin panel atau console untuk meng-insert data demo ke tabel `agenda_items` untuk tenant tertentu.
+
+Data dummy: perjalanan umrah 10 hari realistis, mulai dari **3 hari sebelum hari ini** sampai **7 hari ke depan** (gunakan tanggal relatif dari `new Date()` saat runtime, bukan tanggal hardcoded — supaya demo selalu relevan kapanpun dijalankan).
+
+Isi itinerary realistis:
+
+```
+Hari 1 (H-3 dari sekarang):
+- 08.00 — Persiapan keberangkatan dari Indonesia
+- 13.00 — Boarding pesawat menuju Madinah
+- 23.00 — Tiba di Bandara Prince Mohammad bin Abdulaziz, Madinah
+
+Hari 2:
+- 07.00 — Sarapan di hotel, sholat Subuh berjamaah
+- 09.00 — Ziarah Masjid Nabawi & Raudhah
+- 14.00 — Istirahat siang di hotel
+- 16.00 — Ziarah makam Baqi' & sejarah Uhud
+- 20.00 — Makan malam & persiapan esok hari
+
+Hari 3 (hari ini):
+- 04.30 — Sholat Tahajud & Subuh berjamaah di Masjid Nabawi
+- 08.00 — Kunjungan Masjid Quba (masjid pertama dalam Islam)
+- 11.00 — Ziarah Masjid Qiblatayn
+- 14.00 — Istirahat hotel
+- 16.00 — Persiapan perjalanan ke Makkah
+
+Hari 4:
+- 08.00 — Miqat di Bir Ali — niat ihram umrah
+- 10.00 — Perjalanan bus menuju Makkah
+- 15.00 — Tiba di hotel Makkah, check-in
+- 17.00 — Persiapan tawaf & sa'i
+
+Hari 5:
+- 02.00 — Tawaf qudum & sa'i (waktu terbaik — Masjidil Haram lebih lengang)
+- 06.00 — Istirahat & sarapan
+- 09.00 — Pengarahan pembimbing: tata cara ibadah
+- 14.00 — Waktu bebas — ziarah sekitar Masjidil Haram
+
+Hari 6:
+- 08.00 — Kajian manasik pagi bersama pembimbing
+- 11.00 — Sholat Jumat di Masjidil Haram
+- 14.00 — Istirahat
+- 16.00 — Tawaf sunnah petang
+
+Hari 7:
+- 09.00 — Ziarah sejarah: Jabal Nur & Gua Hira
+- 13.00 — Istirahat hotel
+- 16.00 — Ziarah Jabal Tsur
+- 20.00 — Makan malam & muhasabah perjalanan
+
+Hari 8:
+- 08.00 — Waktu bebas ibadah mandiri di Masjidil Haram
+- 14.00 — Persiapan perjalanan pulang
+- 18.00 — Tawaf wada' (tawaf perpisahan)
+
+Hari 9:
+- 03.00 — Berangkat ke bandara King Abdulaziz, Jeddah
+- 07.00 — Boarding pesawat menuju Indonesia
+
+Hari 10:
+- 15.00 — Tiba di Indonesia (estimasi, sesuai penerbangan)
+- Selamat datang kembali, semoga ibadah mabrur
+```
+
+### Fungsi insert dummy
+
+```ts
+export async function insertAgendaDummy(tenantId: string): Promise<void> {
+  // Gunakan tanggal relatif dari hari ini
+  // hari[0] = 3 hari lalu, hari[2] = hari ini, hari[9] = 7 hari ke depan
+  // Insert semua ke agenda_items dengan tenant_id yang diberikan
+  // Jika sudah ada data (cek dulu dengan count), tanya konfirmasi atau skip
+}
+```
+
+Tambahkan tombol **"Insert Data Demo"** di halaman `AgendaLengkap.tsx` — HANYA tampil jika: (1) `tanggalList.length === 0` (belum ada agenda) DAN (2) ada `?demo=1` di URL query param. Tombol ini memanggil `insertAgendaDummy(tenant.id)` lalu refresh data. Ini memudahkan demo tanpa harus buka admin panel dulu.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Query database dan logic pengelompokan per tanggal — tidak diubah, hanya presentasinya yang di-upgrade.
+- Route `/profil/agenda` dan komponen `PageHeader` — tidak diubah.
+- Komponen lain di project — tidak disentuh.
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error.
+2. `pnpm run build` — sukses.
+3. Buka `/profil/agenda?demo=1` sebagai jamaah tenant yang belum punya agenda → tombol "Insert Data Demo" muncul → klik → halaman refresh dengan 10 hari itinerary lengkap → verifikasi: "Hari Ini" ter-highlight dengan benar sesuai tanggal saat ini, item yang sudah lewat terlihat berbeda dari yang akan datang.

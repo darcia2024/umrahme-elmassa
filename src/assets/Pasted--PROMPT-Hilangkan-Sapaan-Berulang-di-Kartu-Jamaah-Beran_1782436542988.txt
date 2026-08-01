@@ -1,0 +1,52 @@
+# PROMPT: Hilangkan Sapaan Berulang di Kartu Jamaah (Beranda)
+
+**File:** `artifacts/umrahme/src/components/dashboard/TravelCompanionFlow.tsx`
+
+Di Beranda, header utama sudah menyapa jamaah ("Assalamu'alaikum, Budi"). Tapi kartu "Aplikasi Jamaah" di bawahnya MENGULANG sapaan yang sama ("Assalamu'alaikum, {firstName}") — terasa redundan. Kartu ini isinya penting (nomor jamaah, rombongan, paspor, hotel, tombol Kartu), jadi JANGAN dihapus — cukup ganti bagian header kartunya agar tidak mengulang sapaan.
+
+---
+
+## PERBAIKAN — Ganti header kartu jadi identitas, bukan sapaan ulang
+
+Cari blok ini (sekitar baris 70-80):
+```tsx
+<div className="min-w-0 flex-1">
+  <p className="font-mono text-[8.5px] uppercase tracking-[0.28em] text-mute">
+    Aplikasi Jamaah
+  </p>
+  <p className="mt-0.5 text-[13px] font-bold text-primary leading-tight">{namaTravel}</p>
+  <h2 className="mt-0.5 font-display text-[22px] font-bold leading-tight text-ink" style={{ letterSpacing: '-0.5px' }}>
+    Assalamu'alaikum, {firstName}
+  </h2>
+  <p className="font-mono text-[10px] text-ash mt-0.5 tracking-wider">{jamaah.nomorJamaah}</p>
+</div>
+```
+
+Ganti menjadi (judul kartu = nama jamaah lengkap sebagai identitas, label berubah jadi "Kartu Jamaah", buang sapaan):
+```tsx
+<div className="min-w-0 flex-1">
+  <p className="font-mono text-[8.5px] uppercase tracking-[0.28em] text-mute">
+    Kartu Jamaah
+  </p>
+  <h2 className="mt-0.5 font-display text-[20px] font-bold leading-tight text-ink" style={{ letterSpacing: '-0.5px' }}>
+    {jamaah.nama}
+  </h2>
+  <div className="mt-1 flex items-center gap-2">
+    <p className="text-[12px] font-semibold text-primary leading-tight">{namaTravel}</p>
+    <span className="h-3 w-px bg-hairline" />
+    <p className="font-mono text-[10px] text-ash tracking-wider">{jamaah.nomorJamaah}</p>
+  </div>
+</div>
+```
+
+**Hasil:** kartu kini menampilkan nama lengkap jamaah sebagai identitas (berbeda peran dari header yang menyapa dengan nama depan + fase). Nama travel & nomor jamaah jadi satu baris ringkas. Tidak ada lagi sapaan "Assalamu'alaikum" yang dobel.
+
+> Alternatif jika ingin lebih ringkas lagi: gunakan nama lengkap jamaah tapi tanpa menampilkannya sama sekali di header utama — namun karena header memakai nama DEPAN ("Budi") dan kartu memakai nama LENGKAP ("Budi Santoso") untuk konteks identitas/kartu, keduanya kini punya peran berbeda dan tidak terasa mengulang.
+
+---
+
+## ATURAN
+- Jangan hapus kartu atau bagian lain (chips rombongan/paspor, hotel, tombol Kartu tetap ada).
+- Pastikan `firstName` yang tidak lagi dipakai di sini tidak menimbulkan warning "unused variable"; jika ya, hapus deklarasinya bila memang tak terpakai lagi di komponen ini.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

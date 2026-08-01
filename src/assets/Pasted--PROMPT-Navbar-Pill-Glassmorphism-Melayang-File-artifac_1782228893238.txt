@@ -1,0 +1,146 @@
+# PROMPT: Navbar Pill Glassmorphism Melayang
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Ubah navbar dari full-width bar jadi **pill/capsule melayang di tengah atas** dengan efek glassmorphism. Referensi visual: bentuk seperti tombol "Lihat Cara Kerja" di hero (border-radius 999px, ada border tipis, background blur). Jangan ubah logika, scroll behavior, mobile dropdown, atau konten link.
+
+---
+
+## Langkah 1 — Ganti CSS `.lp-nav` dan `.lp-nav-inner`
+
+Cari dan ganti:
+```css
+.lp-nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  transition: background .3s ease, box-shadow .3s ease, backdrop-filter .3s ease;
+}
+.lp-nav-scrolled {
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.06);
+}
+.lp-nav-inner {
+  max-width: 1180px; margin: 0 auto;
+  display: flex; align-items: center;
+  padding: 0 24px; height: 68px;
+}
+```
+
+Dengan:
+```css
+.lp-nav {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+  z-index: 100;
+  width: calc(100% - 48px);
+  max-width: 820px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: background .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+.lp-nav-scrolled {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-color: rgba(0,0,0,0.08);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10), 0 1px 0 rgba(0,0,0,0.04);
+}
+.lp-nav-inner {
+  display: flex; align-items: center;
+  padding: 0 8px 0 16px; height: 52px;
+}
+```
+
+---
+
+## Langkah 2 — Update CSS teks/link yang berubah warna saat scrolled
+
+Karena navbar sekarang selalu di atas hero (di-scroll jadi putih), teks link harus tetap terbaca. CSS sudah ada untuk `.lp-nav-scrolled .lp-nav-link` dan `.lp-nav-scrolled .lp-nav-logo-text` — **pertahankan**, tidak perlu diubah.
+
+Namun karena awalnya background transparan frosted glass (bukan transparan penuh), ubah warna awal link dari `rgba(255,255,255,0.88)` jadi `rgba(255,255,255,0.95)` agar lebih terbaca di atas blur:
+
+Cari:
+```css
+.lp-nav-link {
+  padding: 8px 14px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.88);
+```
+Ganti nilai color:
+```css
+  color: rgba(255,255,255,0.95);
+```
+
+---
+
+## Langkah 3 — Update tombol CTA di navbar
+
+Tombol CTA navbar (`lp-nav-cta-btn`) perlu sedikit disesuaikan agar pas di dalam pill yang lebih kecil:
+
+Cari:
+```css
+.lp-nav-cta-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 999px;
+```
+Ubah padding:
+```css
+  padding: 8px 18px; border-radius: 999px;
+```
+
+---
+
+## Langkah 4 — Hero padding atas disesuaikan
+
+Karena navbar sekarang `top: 16px` dan tingginya `52px` (total ~68px dari atas layar), hero perlu padding atas yang pas. Cari:
+```
+padding: '120px 0 0',
+```
+atau
+```
+padding: '150px 0 0',
+```
+di hero section dan ubah ke:
+```
+padding: '100px 0 0',
+```
+
+Di `@media (max-width: 760px)`:
+```css
+.lp-hero-padding { padding-top: 88px !important; }
+```
+
+---
+
+## Langkah 5 — Update CSS mobile dropdown
+
+Mobile dropdown sekarang posisinya harus menyesuaikan pill, bukan full-width dari `top: 68px`. Cari:
+```css
+.lp-mobile-dropdown {
+  display: none;
+  position: fixed; top: 68px; left: 0; right: 0; z-index: 98;
+```
+Ganti `top: 68px` dan tambahkan border-radius:
+```css
+  position: fixed; top: 80px; left: 24px; right: 24px; z-index: 98;
+  border-radius: 20px;
+```
+Tambahkan juga `border-radius: 20px` pada `.lp-mobile-dropdown` agar dropdown-nya rounded, konsisten dengan pill navbar.
+
+---
+
+## Langkah 6 — Pastikan logo image tetap kelihatan
+
+Logo image di dalam pill saat awal (di atas hero biru) memakai `filter: brightness(0) invert(1)` agar putih. Saat scrolled pakai `filter: none`. Ini sudah ada — pastikan tidak terhapus.
+
+---
+
+## HASIL YANG DIHARAPKAN
+- Di atas hero: navbar berupa pill melayang, background frosted glass transparan dengan tint putih, border tipis, teks putih
+- Saat scroll: pill berubah jadi putih solid (glassmorphism opaque), teks gelap, shadow subtle
+- Mobile: logo di tengah pill, tap buka dropdown rounded
+
+## ATURAN
+- Jangan ubah JSX navbar, link, logo, atau logika scroll/mobile.
+- Jangan ubah section lain.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

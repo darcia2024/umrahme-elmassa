@@ -1,0 +1,17 @@
+Task: Fix the AI itinerary extraction endpoint and switch the model to Claude Sonnet 4.6
+File: api-server/src/routes/ai-extract-agenda.ts
+1. Switch model
+Find this line:
+jsmodel: "google/gemini-flash-1.5",
+Replace with:
+jsmodel: "anthropic/claude-sonnet-4-6",
+2. Fix the "Failed to execute 'json' on 'Response': Unexpected end of JSON input" error
+This error means the frontend tried to parse an empty or non-JSON response body. The most likely causes are: (a) the request body (base64-encoded PDF/image) exceeds the server or proxy's body size limit and the connection gets cut before any response is sent, or (b) the request times out before OpenRouter responds, especially for larger PDFs.
+Please do the following:
+
+Check the Express app's body size limit (likely set via express.json({ limit: ... }) somewhere in the server setup). PDFs and images converted to base64 can easily exceed a default 1mb or 5mb limit. Increase it to at least 25mb to safely handle typical itinerary PDFs/photos.
+Add a server-side timeout safeguard: wrap the fetch call to OpenRouter with an AbortController and a reasonable timeout (e.g. 60 seconds), so if OpenRouter hangs, the server still returns a proper JSON error response instead of letting the connection hang or close abruptly.
+Ensure that even in unexpected failure cases (e.g. uncaught exceptions, proxy/network errors), the route always returns a valid JSON response with an error field — never an empty body. Wrap the entire handler logic in a try/catch that guarantees this if it doesn't already.
+On the frontend (wherever this endpoint is called, likely in src/pages/admin/AdminTenantForm.tsx near the "Susun Itinerary dengan AI" upload handler), add a check before calling .json() on the response — verify response.ok and that the response has content before parsing, and show a clearer error message to the user if parsing fails (e.g. "Gagal memproses file, coba file yang lebih kecil atau format lain.") instead of letting the raw JSON parse error surface.
+
+Test that uploading a multi-page PDF itinerary still works end-to-end after these changes.

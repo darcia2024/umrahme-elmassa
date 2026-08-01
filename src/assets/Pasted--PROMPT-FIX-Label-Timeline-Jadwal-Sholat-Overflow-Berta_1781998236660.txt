@@ -1,0 +1,30 @@
+# PROMPT FIX — Label Timeline Jadwal Sholat Overflow & Bertabrakan
+
+> Konteks: project Umrahme, komponen `PrayerTimeline` di `src/pages/JadwalSholat.tsx`. Label "ISYA" beserta jamnya (20:24) terpotong/pindah baris secara tidak rapi karena posisinya terlalu dekat ke tepi kanan SVG, dan berdempetan dengan label "MAGHRIB" di sebelahnya karena jarak antar titik terlalu sempit untuk dua label penuh.
+
+## MASALAH
+
+Posisi `x` setiap titik sholat dihitung linear dari menit (0–1440) ke pixel, lalu teks label di-render dengan `textAnchor="middle"` tanpa mempertimbangkan: (1) apakah label akan melewati tepi `viewBox` SVG, dan (2) apakah label akan bertabrakan dengan label titik tetangga yang jaraknya sempit. Akibatnya label "ISYA" + "20:24" terlihat terpotong/pindah baris tidak presisi, dan tabrakan dengan "MAGHRIB" di sebelah kirinya.
+
+## PERBAIKAN
+
+Ganti seluruh isi function `PrayerTimeline` di `src/pages/JadwalSholat.tsx` dengan versi pada file `JadwalSholat.tsx` yang dilampirkan (atau terapkan logic berikut bila ingin menulis ulang manual):
+
+1. **Naikkan tinggi SVG** dari `H = 58` menjadi `H = 64` untuk memberi ruang vertikal label baris kedua saat dibutuhkan.
+2. **Hitung dulu semua titik (`points`)** sebelum render — termasuk estimasi setengah-lebar tiap label (`halfWidth`) berdasarkan jumlah karakter pada font monospace fontSize 6.5 (`charWidth ≈ fontSize × 0.6`), diambil dari yang terpanjang antara nama sholat dan jam mulainya.
+3. **Tentukan `textAnchor` per titik secara adaptif**: default `'middle'`; jika posisi label akan melewati tepi kiri track → `'start'` (rata kiri ke `padL`); jika melewati tepi kanan track → `'end'` (rata kanan ke `padL + trackW`).
+4. **Deteksi tabrakan antar titik bertetangga**: bila jarak `x` dua titik berurutan lebih kecil dari jumlah setengah-lebar keduanya + margin 4px (dan keduanya beranchor `'middle'`), geser label titik kedua turun 9px (baris kedua) secara berselang-seling — jangan menggeser dua titik berurutan ke baris yang sama.
+5. Titik (lingkaran) di garis tetap pada posisi `x` aslinya — yang berpindah hanya posisi/anchor teks labelnya, supaya posisi waktu di garis timeline tetap akurat secara presisi.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Logic perhitungan `progressX`, `isSekarang`, `passed` — tidak diubah.
+- Warna, ukuran lingkaran titik, garis track, dan garis penanda posisi saat ini — tidak diubah.
+- Data jam sholat di `src/data/jadwalSholat.ts` — tidak diubah, ini murni perbaikan layout/rendering.
+- Komponen lain di luar `PrayerTimeline` (hero card, list waktu sholat di bawahnya, toggle notifikasi) — tidak disentuh.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan preview halaman Jadwal Sholat dengan kondisi yang sama seperti sebelumnya (Maghrib 18:52 dan Isya 20:24 berdekatan) untuk verifikasi: pastikan label "ISYA" + "20:24" tidak lagi terpotong/pindah baris secara acak, melainkan tergeser rapi ke baris kedua tanpa menabrak label "MAGHRIB" di sebelahnya, dan semua label tetap presisi sejajar dengan titiknya masing-masing.

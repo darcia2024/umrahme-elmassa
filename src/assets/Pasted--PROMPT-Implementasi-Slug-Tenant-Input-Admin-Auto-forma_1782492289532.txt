@@ -1,0 +1,159 @@
+# PROMPT — Implementasi Slug Tenant (Input Admin + Auto-format + Copy Link)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx`
+
+Slug membuat tiap travel punya link login sendiri: `umrahme.app/t/{slug}` — jamaah klik link,
+langsung ke halaman login ber-branding travel, cukup ketik nama (tanpa kode aktivasi).
+
+Yang SUDAH ada (tidak perlu dibuat lagi): route `/t/:slug`, halaman `LoginSlug.tsx`,
+`fetchTenantBySlug()`, login via slug (RPC). Yang KURANG: admin belum bisa MENGISI slug.
+
+Tujuan prompt ini:
+1. Tambah input slug di form admin (Profil), dengan auto-format (lowercase, strip).
+2. Simpan slug ke payload tenant.
+3. Validasi unik (tangani error dari DB) + tampilkan preview link & tombol salin.
+
+> Prasyarat: jalankan `slug-unique-constraint.sql` di Supabase agar slug dijamin unik.
+
+---
+
+## LANGKAH 1 — State slug
+
+Di dekat state lain (sekitar `const [pageTitle, setPageTitle] = useState('');`), tambahkan:
+```ts
+const [slug, setSlug] = useState('');
+```
+
+Saat memuat data tenant (di tempat `setPageTitle(t.page_title)` dll, sekitar baris 250-254),
+tambahkan:
+```ts
+setSlug(t.slug ?? '');
+```
+
+---
+
+## LANGKAH 2 — Helper auto-format slug
+
+Tambahkan fungsi util (di luar komponen, dekat `buildDefaultTitle`):
+```ts
+function formatSlug(input: string): string {
+  return input
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')   // buang karakter selain huruf/angka/spasi/strip
+    .replace(/\s+/g, '-')            // spasi → strip
+    .replace(/-+/g, '-')            // strip ganda → satu
+    .replace(/^-|-$/g, '');         // buang strip di awal/akhir
+}
+```
+
+---
+
+## LANGKAH 3 — Input slug di form (bagian Profil, dekat "Judul Halaman")
+
+Tepat SEBELUM atau SESUDAH blok "Judul Halaman" (sekitar baris 1226-1231), tambahkan:
+```tsx
+<SectionDivider />
+
+{/* Slug / Link Travel */}
+<div className="px-6 py-6" style={cardStyle}>
+  <FieldLabel>Link Khusus Travel (Slug)</FieldLabel>
+  <div className="flex items-center gap-2">
+    <span className="font-mono text-[12px] flex-none" style={{ color: '#9ca3af' }}>umrahme.app/t/</span>
+    <StyledInput
+      type="text"
+      value={slug}
+      onChange={e => setSlug(formatSlug(e.target.value))}
+      placeholder="barakah-mulia"
+      maxLength={50}
+    />
+  </div>
+
+  {slug && (
+    <div className="mt-3 flex items-center gap-2 flex-wrap">
+      <span className="font-mono text-[12px] px-3 py-1.5 rounded-lg" style={{ background: 'rgba(67,56,202,0.06)', color: '#4338ca', border: '1px solid rgba(67,56,202,0.12)' }}>
+        umrahme.app/t/{slug}
+      </span>
+      <button type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(`https://umrahme.app/t/${slug}`);
+          setSlugCopied(true);
+          setTimeout(() => setSlugCopied(false), 1500);
+        }}
+        className="text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+        style={{ color: '#4338ca', border: '1px solid rgba(67,56,202,0.2)' }}>
+        {slugCopied ? 'Tersalin ✓' : 'Salin Link'}
+      </button>
+    </div>
+  )}
+
+  <p className="mt-2 text-[11px]" style={{ color: '#9ca3af' }}>
+    Link yang travel sebarkan ke jamaah. Jamaah cukup klik & isi nama — tanpa kode aktivasi.
+    Gunakan huruf kecil & strip, contoh: <span className="font-mono">barakah-mulia</span>. Kosongkan jika tidak dipakai.
+  </p>
+</div>
+```
+
+Tambahkan state untuk feedback salin (dekat state slug):
+```ts
+const [slugCopied, setSlugCopied] = useState(false);
+```
+
+---
+
+## LANGKAH 4 — Masukkan slug ke payload simpan
+
+Di objek `payload` (sekitar baris 451-459), tambahkan slug. Kirim `null` kalau kosong:
+```ts
+const payload = {
+  nama_travel: namaTravel.trim(),
+  primary_color: primaryColor,
+  primary_deep_color: deepColor,
+  logo_url: logoUrl,
+  hero_image_url: heroImageUrl || null,
+  sertifikat_template_url: sertifikatTemplateUrl || null,
+  page_title: finalTitle,
+  slug: slug.trim() ? slug.trim() : null,   // ← tambah
+};
+```
+
+---
+
+## LANGKAH 5 — Tangani error slug duplikat (validasi unik)
+
+Di blok `try/catch` saat submit (tempat `createTenant`/`updateTenant` dipanggil), perbaiki
+penanganan error agar pesan ramah saat slug bentrok. Cari `catch` submit, sesuaikan:
+```ts
+} catch (err: unknown) {
+  const msg = err instanceof Error ? err.message : 'Gagal menyimpan.';
+  // Deteksi pelanggaran unik slug
+  if (/tenants_slug_unique|duplicate key|unique/i.test(msg)) {
+    setError(`Slug "${slug}" sudah dipakai travel lain. Silakan pilih slug lain.`);
+  } else {
+    setError(msg);
+  }
+  // pastikan loading di-reset jika ada
+}
+```
+
+> Pesan persisnya tergantung struktur catch yang ada. Intinya: kalau error mengandung
+> indikasi unik/duplicate, tampilkan pesan "slug sudah dipakai".
+
+---
+
+## Catatan
+- Auto-format memastikan admin tidak bisa memasukkan spasi/karakter aneh — input langsung
+  dirapikan saat diketik.
+- `formatSlug` juga jadi validasi de-facto: hasilnya selalu URL-safe.
+- Slug bersifat opsional. Travel tanpa slug tetap bisa pakai login kode aktivasi biasa.
+- Unik dijamin DB (unique index). Frontend hanya menampilkan pesan ramah saat bentrok.
+- Link memakai domain `umrahme.app`. Kalau domain produksimu beda, ganti string-nya.
+
+## Verifikasi Setelah Deploy
+- Buka edit tenant → ada field "Link Khusus Travel (Slug)" dengan prefix `umrahme.app/t/`
+- Ketik "Barakah Mulia!!" → otomatis jadi `barakah-mulia`
+- Muncul preview link + tombol "Salin Link" yang berfungsi
+- Simpan → buka `umrahme.app/t/{slug}` → halaman login ber-branding travel muncul
+- Coba pakai slug yang sudah dipakai travel lain → muncul pesan "slug sudah dipakai"
+- Jamaah login via link slug → berhasil masuk (lewat RPC yang sudah aman)

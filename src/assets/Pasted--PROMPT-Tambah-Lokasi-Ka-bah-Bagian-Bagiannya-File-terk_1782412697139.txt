@@ -1,0 +1,91 @@
+# PROMPT: Tambah Lokasi "Ka'bah" + Bagian-Bagiannya
+
+**File terkait:**
+- `artifacts/umrahme/src/types/index.ts` (tambah field `bagian` di interface Lokasi)
+- `artifacts/umrahme/src/data/lokasi.ts` (tambah objek lokasi Ka'bah)
+- `artifacts/umrahme/src/pages/LokasiDetail.tsx` (render section "Bagian-Bagian Ka'bah")
+
+Ka'bah adalah pusat ibadah tapi belum ada pembahasannya. Tambahkan sebagai lokasi dengan sejarah lengkap + rincian bagian-bagiannya (Hajar Aswad, Rukun Yamani, Multazam, Maqam Ibrahim, Hijir Ismail, dll). Pakai escape unicode untuk teks Arab.
+
+---
+
+## LANGKAH 1 — Tambah field `bagian` di interface `Lokasi` (types/index.ts)
+
+```ts
+export interface BagianKabah {
+  nama: string;
+  arab?: string;
+  posisi: string;       // letak/posisi bagian
+  deskripsi: string;
+}
+
+export interface Lokasi {
+  // ... field yang sudah ada ...
+  bagian?: BagianKabah[];   // khusus untuk Ka'bah (atau lokasi dengan rincian bagian)
+}
+```
+
+---
+
+## LANGKAH 2 — Tambah objek lokasi Ka'bah di `data/lokasi.ts`
+
+Salin objek lengkap dari file `lokasi-kabah.ts` ke dalam array `daftarLokasi`. Ringkasannya:
+- id: `kabah`, tipe: `sejarah` (atau buat tampil di tab Makkah), kota: Makkah, koordinat: `{ lat: 21.4225, lng: 39.8262 }`
+- namaArab: `الكعبة المشرفة`
+- Sejarah: Baitullah, kiblat & rumah ibadah pertama. Nama lain: Baitullah, Al-Bait Al-Haram, Al-Bait Al-'Atiq, Bakkah, Qiblah.
+- 3 sub-sejarah: Dibangun Ibrahim & Ismail; Renovasi masa Quraisy (+ kisah Nabi ﷺ menengahi peletakan Hajar Aswad); Kiblat & pusat tawaf.
+- Tokoh: Nabi Ibrahim, Ismail, Muhammad ﷺ.
+- Dalil: QS. Al-Baqarah:127, QS. Ali Imran:96.
+- **bagian[]:** 11 bagian — Hajar Aswad, Rukun Yamani, Multazam, Maqam Ibrahim, Hijir Ismail, Mizab Ar-Rahman, Pintu Ka'bah, Kiswah, Syadzarwan, Rukun Iraqi, Rukun Syami.
+- catatan: penjelasan bahwa mencium Hajar Aswad = sunnah bukan menyembah batu (perkataan Umar bin Khattab).
+
+---
+
+## LANGKAH 3 — Render section "Bagian-Bagian Ka'bah" di `LokasiDetail.tsx`
+
+Hanya tampil jika `lokasi.bagian` ada. Letakkan setelah section Sejarah (sebelum Dalil/Adab). Tampilkan sebagai daftar kartu rapi:
+
+```tsx
+{lokasi.bagian && lokasi.bagian.length > 0 && (
+  <section className="mt-6">
+    <div className="mb-3">
+      <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Rincian</p>
+      <h3 className="mt-0.5 text-[15px] font-bold text-ink">Bagian-Bagian Ka\u2019bah</h3>
+    </div>
+
+    <div className="space-y-2.5">
+      {lokasi.bagian.map((b, i) => (
+        <div key={i} className="rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="text-[14px] font-bold leading-tight text-ink">{b.nama}</h4>
+              <p className="mt-0.5 font-mono text-[10px] uppercase tracking-wider text-gold">{b.posisi}</p>
+            </div>
+            {b.arab && <span className="flex-none font-arab text-[16px] text-gold" dir="rtl">{b.arab}</span>}
+          </div>
+          <p className="mt-2 text-[12.5px] leading-relaxed text-charcoal">{b.deskripsi}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+```
+
+---
+
+## CATATAN AKURASI (penting — sebagai mahasiswa Ushuluddin, harap review)
+- Riwayat Ka'bah dibangun Nabi Adam lalu ditinggikan Ibrahim adalah pendapat sebagian ulama; yang disepakati dari Al-Qur'an adalah peninggian fondasi oleh Ibrahim & Ismail. Redaksi sudah dibuat hati-hati ("menurut riwayat", "sebagian riwayat").
+- Catatan tentang Hajar Aswad mengutip atsar Umar bin Khattab (Bukhari-Muslim) untuk meluruskan bahwa menciumnya adalah ittiba' (mengikuti Nabi), bukan menyembah batu — penting untuk akidah jamaah.
+- Shalat di Hijir Ismail dihukumi seperti shalat di dalam Ka'bah (karena bagian darinya) — ini pendapat masyhur, verifikasi sesuai manhaj Anda.
+- Pastikan posisi sudut (timur/barat daya/utara/barat laut) konsisten; sumber kadang berbeda menyebut "selatan" untuk Rukun Yamani. Yang umum dipakai: Hajar Aswad di sudut timur, Rukun Yamani sudut barat daya/selatan, Rukun Iraqi utara, Rukun Syami barat laut.
+
+---
+
+## ATURAN
+- Jangan ubah lokasi lain.
+- `gambar: ''` (foto Ka'bah bisa pakai foto Masjidil Haram atau foto khusus Ka'bah bila ada).
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.
+
+## ⭐ FOTO (opsional)
+- `kabah.jpg` — foto Ka'bah close-up (bila ada). Bisa juga gunakan foto Masjidil Haram yang sudah ada.

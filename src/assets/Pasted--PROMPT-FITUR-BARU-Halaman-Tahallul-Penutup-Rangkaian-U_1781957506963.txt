@@ -1,0 +1,47 @@
+# PROMPT FITUR BARU — Halaman Tahallul (Penutup Rangkaian Umrah)
+
+> Konteks: project Umrahme. Setelah Counter Sa'i selesai (7/7), ada CTA yang seharusnya mengarah ke panduan tahallul, TAPI saat ini halaman tahallul belum ada sehingga tombol jatuh ke halaman Panduan umum (salah tujuan). Fitur ini membuat halaman Tahallul yang benar + memperbaiki tujuan CTA tersebut. Data doa tahallul SUDAH ADA di `src/data/doaLengkap.ts` (atau `doa.ts`) dengan id `tahallul-doa`.
+
+## KENAPA HALAMAN SENDIRI
+
+Tahallul adalah penanda SELESAINYA rangkaian umrah — momen yang bersifat penutup dan emosional, bukan sekadar langkah teknis di tengah daftar. Karena alur dari Counter Sa'i sudah mengarah ke sini sebagai klimaks rangkaian (Tawaf → Sa'i → Tahallul), halaman ini dibuat tersendiri dengan nuansa "pencapaian/penutup", bukan hanya anchor di dalam Panduan umum.
+
+## HALAMAN
+
+Buat `Tahallul.tsx` di `src/pages/`, rute `/ibadah/tahallul` (sibling dari `/ibadah/tawaf` dan `/ibadah/sai`, di bawah slot Ibadah). Struktur dari atas ke bawah:
+
+1. **Header**: tombol kembali kiri atas (konsisten dengan halaman lain) + judul "Tahallul".
+
+2. **Bagian pembuka (nuansa penutup/pencapaian)**: kalimat hangat yang menandai bahwa jamaah sudah sampai di tahap akhir umrah — mis. "Anda telah menyelesaikan Sa'i. Tahallul adalah langkah terakhir yang menyempurnakan umrah Anda." Boleh diberi sedikit sentuhan visual yang lebih "hidup" dari halaman teknis biasa (ini momen istimewa), tapi tetap dalam design system Umrahme (hitam-pink, mihrab card, tidak berlebihan).
+
+3. **Langkah praktis tahallul** (kartu/list bernomor, jelas dan mudah diikuti):
+   - Untuk laki-laki: disunnahkan mencukur habis (gundul) seluruh rambut kepala (afdhal), atau minimal memendekkan/memotong sebagian — minimal 3 helai.
+   - Untuk perempuan: memotong ujung rambut sekitar seujung jari (sepanjang ruas jari), TIDAK mencukur habis. Minimal memotong 3 helai.
+   - Sebutkan bahwa tahallul dilakukan SETELAH selesai sa'i, dan dengan tahallul ini seluruh larangan ihram menjadi gugur (jamaah kembali halal melakukan hal-hal yang tadinya dilarang saat ihram).
+   - Sampaikan poin-poin ini dengan akurat dan sederhana. Jika ada keraguan soal detail fiqih, gunakan bahasa yang merujuk ke pembimbing ("ikuti arahan pembimbing/muthawwif Anda untuk detailnya") daripada membuat klaim yang terlalu spesifik.
+
+4. **Doa tahallul**: ambil dari `doaById('tahallul-doa')` — tampilkan Arab → Latin → Terjemahan, mengikuti pola tampilan doa yang sudah ada di app (mihrab card, font Arab gold). Beri label "DOA SAAT MENGGUNTING RAMBUT".
+
+5. **State penutup / penyempurna**: di bagian bawah, setelah doa, beri penegasan bahwa rangkaian umrah telah sempurna, dengan CTA mengarah ke halaman **Sertifikat** (`/profil/sertifikat` atau rute sertifikat yang sudah ada) — sehingga alur lengkapnya: Tawaf → Sa'i → Tahallul → Sertifikat. Boleh juga ada CTA sekunder kecil "Kembali ke Beranda".
+
+## PERBAIKAN CTA DI COUNTER SA'I
+
+Perbaiki tujuan tombol/CTA di state "Sa'i Selesai" (7/7) pada Counter Sa'i agar mengarah ke `/ibadah/tahallul` (halaman baru ini), BUKAN ke halaman Panduan umum. Pastikan label CTA-nya jelas, mis. "Lanjut ke Tahallul".
+
+Jika ada link/tombol lain di app yang juga mengarah ke "panduan tahallul" tapi nyasar ke Panduan umum (mis. dari Ritual Navigator jika sudah dibuat, atau dari Tata Cara Umrah), arahkan juga ke `/ibadah/tahallul` ini agar konsisten — tidak ada lagi tombol tahallul yang jatuh ke default Panduan.
+
+## REGISTRASI RUTE & AKSES
+
+- Tambah rute `/ibadah/tahallul` di `App.tsx` (di dalam ProtectedRoute, seperti halaman dalam lainnya).
+- Di halaman hub Ibadah (`Ibadah.tsx`), tambahkan kartu akses ke Tahallul juga (agar bisa dibuka langsung, tidak hanya via CTA setelah Sa'i) — tapi posisikan secara logis sebagai langkah terakhir dalam urutan kartu (setelah Tawaf dan Sa'i), bukan di urutan acak.
+
+## ATURAN
+
+- Design system (hitam-pink, mihrab card, Fraunces/Plus Jakarta Sans, token warna) dipakai persis sama.
+- Mode A (tenang, informatif) untuk bagian langkah & doa — tapi bagian pembuka/penutup boleh sedikit lebih "hangat/perayaan" karena ini momen penyempurna umrah.
+- JANGAN mengubah teks doa tahallul di data — ambil apa adanya via `doaById('tahallul-doa')`.
+- Hormati `prefers-reduced-motion`.
+
+## OUTPUT
+
+Build langsung. Setelah selesai, verifikasi: (1) dari Counter Sa'i state selesai, CTA "Lanjut ke Tahallul" mengarah ke halaman Tahallul yang benar (bukan Panduan umum), (2) halaman Tahallul menampilkan langkah praktis + doa tahallul + CTA ke Sertifikat, (3) halaman bisa juga diakses dari hub Ibadah.

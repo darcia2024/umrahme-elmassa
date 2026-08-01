@@ -1,0 +1,54 @@
+# PROMPT FIX — Sambungkan Login Jamaah ke Database Tenant (Migrasi yang Sempat Terlewat)
+
+> Konteks: Admin panel (`/admin`) sudah berfungsi penuh — bisa membuat tenant baru, generate kode aktivasi, simpan ke tabel `tenants` di Supabase. TAPI halaman Login jamaah (`/login`) BELUM disambungkan ke tabel yang sama — `validasiKode()` di `src/data/jamaah.ts` masih hardcoded hanya menerima kode `"DEMO01"`. Akibatnya: kode aktivasi yang dibuat admin lewat panel TIDAK BISA dipakai login oleh jamaah sungguhan. Ini bukan fitur baru — ini menyambungkan dua bagian yang sudah ada tapi belum terhubung.
+>
+> Tabel `tenants` SUDAH ADA dengan kolom (lihat `src/lib/supabase.ts`, tipe `TenantRow`): `id`, `activation_code`, `nama_travel`, `primary_color`, `primary_deep_color`, `logo_url`, `page_title`, `created_at`. JANGAN ubah skema tabel ini — admin panel sudah bergantung padanya persis seperti ini.
+
+## 1. Ganti `validasiKode()` jadi query database
+
+Di `src/data/jamaah.ts`:
+- Ubah `validasiKode()` dari fungsi sinkron jadi **async**, melakukan query ke Supabase:
+  ```ts
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('activation_code', kode.trim().toUpperCase())
+    .maybeSingle();
+  ```
+- Jika `data` ditemukan: kembalikan `{ ok: true, jamaah, tenant: data }` — field `travel` pada `jamaah` diisi dari `data.nama_travel` (bukan lagi dari konstanta `NAMA_TRAVEL`/`activeTenant` yang lama). Sertakan juga objek `tenant` lengkap (berisi `primary_color`, `primary_deep_color`, `logo_url`, `page_title`) di hasil return, supaya bisa diterapkan ke tema setelah login.
+- Jika tidak ditemukan atau `error`: kembalikan `{ ok: false, error: 'Kode tidak ditemukan, hubungi travel Anda.' }` — pesan error TETAP SAMA seperti sekarang.
+- Pertahankan validasi nama kosong yang sudah ada (`if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' }`) — cek ini SEBELUM melakukan query ke database (hindari query yang tidak perlu).
+- Import `supabase` dari `../lib/supabase` di file ini.
+
+## 2. Update `Login.tsx` untuk menangani validasi async
+
+Di `src/pages/Login.tsx`, `handleSubmit` saat ini memanggil `validasiKode()` secara sinkron di dalam `setTimeout` (sebagai simulasi loading dummy). Ubah menjadi:
+- `handleSubmit` jadi `async function`, `await validasiKode(kode, nama)` (hapus `setTimeout` dummy — loading state sekarang merefleksikan request asli ke database, tidak perlu disimulasikan lagi).
+- Tangani kemungkinan network/database error dengan try-catch — jika request gagal total (bukan sekadar "kode tidak ditemukan"), tampilkan pesan error yang sesuai (mis. `'Tidak dapat terhubung. Periksa koneksi internet Anda.'`), JANGAN biarkan halaman crash atau hang di state loading selamanya.
+
+## 3. Simpan & terapkan data tenant hasil login (gantikan `activeTenant` lama)
+
+Saat ini `Login.tsx`, `Beranda.tsx`, `DesktopSidebar.tsx`, dan `main.tsx` mengimpor `activeTenant` dari `../config/tenants` (sistem lama berbasis `VITE_TENANT_ID` saat build). Ganti seluruhnya menjadi membaca data tenant HASIL LOGIN:
+
+- Di `src/context/AuthContext.tsx`: tambahkan state baru `tenant: TenantRow | null` ke `AuthValue`, dipersist ke localStorage bersamaan dengan `jamaah` (key baru, mis. `umrahme.tenant`). Fungsi `login()` sekarang menerima dua parameter: `login(jamaah: Jamaah, tenant: TenantRow)`.
+- Di `Login.tsx`, setelah `validasiKode()` sukses, panggil `login(hasil.jamaah, hasil.tenant)`.
+- Di `main.tsx`: HAPUS penerapan tema dari `activeTenant` saat startup (karena sekarang belum tahu tenant mana sebelum login). Sebagai gantinya, terapkan CSS variable warna (`--color-primary`, `--color-primary-deep`) dan `document.title` SETELAH login berhasil — taruh logic ini di `AuthContext` (mis. dalam `useEffect` yang berjalan setiap kali `tenant` berubah), bukan lagi di `main.tsx` saat startup. Sebelum ada tenant (belum login / di halaman Login), gunakan warna default netral (`#0ea5e9` / `#0284c7`) sebagai fallback, sudah ada di `:root` CSS variable di `index.css` — pastikan ini tetap sebagai fallback yang valid.
+- Di `DesktopSidebar.tsx` dan `Beranda.tsx`: ganti `activeTenant.namaTravel` / `activeTenant.logoPath` menjadi membaca dari `tenant` yang didapat lewat `useAuth()` (sesuaikan dengan field `nama_travel` dan `logo_url` dari `TenantRow`, BUKAN `namaTravel`/`logoPath` seperti sistem lama).
+
+## 4. Tandai sistem lama sebagai tidak terpakai (jangan dihapus)
+
+- Di `src/config/tenants/index.ts`, tambahkan komentar `@deprecated` di atas `export const activeTenant`, jelaskan bahwa sejak migrasi ini, branding ditentukan oleh kode aktivasi yang divalidasi lewat tabel `tenants` di Supabase saat login, BUKAN lagi `VITE_TENANT_ID` saat build. File-file di `config/tenants/*.ts` boleh dibiarkan ada sebagai referensi sejarah, tapi pastikan TIDAK ADA satupun komponen lain yang masih mengimpornya setelah perubahan ini (cek dengan `grep -rn "activeTenant" src/` di akhir — hasilnya harus kosong, kecuali di file `config/tenants/index.ts` itu sendiri).
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Skema tabel `tenants` di Supabase — TIDAK diubah, admin panel bergantung pada skema persis seperti sekarang.
+- RLS policy yang sudah ada (read publik, write hanya admin) — tidak diubah.
+- Halaman admin panel (`AdminLogin.tsx`, `AdminTenantList.tsx`, `AdminTenantForm.tsx`) — TIDAK disentuh sama sekali, sudah berfungsi dengan baik.
+- Flow form Login (input kode + nama, tombol submit) — struktur UI-nya tidak berubah, hanya logic di baliknya yang berubah dari dummy ke database.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. **Tunjukkan bukti alur penuh end-to-end** (ini yang paling penting): buka `/admin`, buat tenant baru dengan nama dan warna yang jelas berbeda dari yang sudah ada, generate kode aktivasi baru, simpan. Lalu buka `/login` di tab terpisah (atau logout dulu jika sedang login), masukkan kode aktivasi yang BARU SAJA dibuat tadi — tunjukkan bahwa login berhasil dan branding (nama travel, warna) yang muncul di Beranda sesuai dengan yang baru saja diisi di admin panel. Ini pembuktian bahwa kode aktivasi dari admin panel sekarang benar-benar bisa dipakai jamaah, bukan hanya `DEMO01` yang hardcoded.
+4. Konfirmasi juga bahwa kode `DEMO01` yang lama TIDAK LAGI bisa dipakai untuk login (karena sekarang validasi murni dari database) — KECUALI jika `DEMO01` juga sudah ada sebagai salah satu baris di tabel `tenants` (sesuai seed data dari migrasi sebelumnya). Jika `DEMO01` belum ada di tabel, beri tahu agar ditambahkan manual lewat admin panel supaya demo lama tetap bisa dipakai.

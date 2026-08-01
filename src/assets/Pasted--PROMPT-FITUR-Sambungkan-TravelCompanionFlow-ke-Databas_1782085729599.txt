@@ -1,0 +1,89 @@
+# PROMPT FITUR — Sambungkan TravelCompanionFlow ke Database (Bukan Dummy Lagi)
+
+> Prasyarat: prompt "Fix 3 TypeScript Error" sudah selesai dikerjakan (typecheck 0 error) sebelum mengerjakan ini.
+>
+> Konteks: `src/components/dashboard/TravelCompanionFlow.tsx` (4 kartu: Identitas Perjalanan, Fokus Perjalanan, Pengumuman Travel, Kontak Darurat) sudah terpasang dengan baik di Beranda mobile & desktop. TAPI seluruh datanya berasal dari `src/data/travelCompanion.ts` yang HARDCODED — fungsi `getOperationalInfo()` dan `getLatestAnnouncement()`/`getAllAnnouncements()` menerima parameter `tenantId` tapi mengabaikannya (`_tenantId`) dan selalu mengembalikan data dummy yang sama untuk semua tenant. Tujuan prompt ini: setiap travel agency bisa mengisi data operasional dan pengumuman mereka SENDIRI lewat admin panel, dan app jamaah menampilkan data sesuai tenant yang sedang login — bukan dummy lagi.
+
+## 1. Tambah kolom operasional ke tabel `tenants`
+
+```sql
+alter table tenants
+  add column hotel_makkah text,
+  add column hotel_madinah text,
+  add column meeting_point text,
+  add column guide_name text,
+  add column guide_whatsapp text,
+  add column tour_leader_name text,
+  add column tour_leader_whatsapp text,
+  add column emergency_note text;
+```
+
+Semua NULLABLE — tenant yang sudah ada tidak boleh rusak, kolom kosong berarti admin belum mengisi (lihat poin 4 untuk cara fallback-nya di sisi tampilan).
+
+## 2. Tabel baru `travel_announcements`
+
+```sql
+create table travel_announcements (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  label text not null default 'Info',
+  title text not null,
+  content text not null,
+  important boolean not null default false,
+  published_at timestamptz not null default now()
+);
+
+create index idx_travel_announcements_tenant ON travel_announcements (tenant_id, published_at desc);
+```
+
+### RLS untuk `travel_announcements`
+- AKTIFKAN RLS.
+- Policy READ (`select`): publik (`using (true)`) — sama seperti `tenants` dan `agenda_items`, karena dibaca app jamaah yang tidak punya sesi Supabase Auth.
+- Policy WRITE: TIDAK ada policy publik, hanya lewat admin panel dengan sesi Supabase Auth admin.
+
+## 3. Update tipe data di `src/lib/supabase.ts`
+
+Tambahkan ke `TenantRow` (8 field baru dari poin 1, semua `string | null`), dan buat tipe baru:
+```ts
+export type TravelAnnouncementRow = {
+  id: string;
+  tenant_id: string;
+  label: string;
+  title: string;
+  content: string;
+  important: boolean;
+  published_at: string;
+};
+```
+
+## 4. Ganti `travelCompanion.ts` dari dummy jadi query database
+
+Di `src/data/travelCompanion.ts`:
+- `getOperationalInfo(tenant: TenantRow | null)`: ubah signature agar menerima objek `tenant` (bukan `tenantId` string), kembalikan field operasional dari `tenant` jika ada, fallback ke `DEFAULT_OPERATIONAL_INFO` yang sudah ada PER FIELD jika field tersebut null di database (mis. jika admin baru isi `hotel_makkah` tapi belum isi `guide_name`, tetap tampilkan default untuk yang kosong, bukan kosongkan semuanya). Hapus fungsi ini dari yang menerima `_tenantId` yang diabaikan.
+- `getLatestAnnouncement` dan `getAllAnnouncements`: ubah jadi ASYNC, query tabel `travel_announcements` berdasarkan `tenant_id`, urut `published_at` descending. `getLatestAnnouncement` ambil baris pertama saja. Jika tidak ada baris sama sekali untuk tenant tersebut, kembalikan `null` (untuk `getLatestAnnouncement`) atau array kosong (untuk `getAllAnnouncements`) — JANGAN fallback ke `DEFAULT_ANNOUNCEMENTS` dummy, karena pengumuman itu konten yang harus benar-benar berasal dari travel tersebut, kosong itu kondisi valid (lebih baik daripada menampilkan pengumuman travel lain).
+- Komponen pemanggil (`TripIdentityCard`, `EmergencyGuideCard`, `TravelAnnouncementCard`, `Pengumuman.tsx`) yang sekarang memanggil fungsi-fungsi ini secara sinkron perlu disesuaikan untuk menangani versi async (gunakan `useEffect` + `useState` untuk fetch saat mount, mengikuti pola yang sudah dipakai di halaman lain seperti `AgendaLengkap.tsx`).
+
+## 5. Tampilkan state kosong yang jelas (bukan dummy)
+
+- Jika `getLatestAnnouncement` mengembalikan `null`: `TravelAnnouncementCard` tidak perlu ditampilkan sama sekali (return `null` dari komponen) — ini sudah menjadi pola yang ada di kode (`if (!announcement) return null;`), pastikan pola ini tetap berfungsi dengan versi async.
+- Jika field operasional tertentu kosong (mis. `guide_name` null): `EmergencyGuideCard` boleh tetap pakai fallback default yang sudah ada (`DEFAULT_OPERATIONAL_INFO`) untuk field itu SAJA — supaya kartu tidak terlihat rusak/kosong sebelum admin sempat mengisi data lengkap. Ini berbeda dari pengumuman (poin 4) karena kartu kontak darurat lebih baik menampilkan placeholder yang jelas daripada hilang total (kartu ini penting untuk keselamatan).
+
+## 6. Tambah field ini ke Admin Panel (`AdminTenantForm.tsx`)
+
+Tambahkan section baru "Info Operasional" di form tenant (boleh collapsible/accordion jika form sudah terasa panjang), berisi 8 field dari poin 1 (Hotel Makkah, Hotel Madinah, Titik Kumpul, Nama Pembimbing, WhatsApp Pembimbing, Nama Tour Leader, WhatsApp Tour Leader, Catatan Darurat) — semua optional text input, masuk ke payload `insert`/`update` yang sudah ada.
+
+Tambahkan juga section "Pengumuman" (sama seperti pola "Agenda Perjalanan" yang sudah ada — hanya muncul saat EDIT tenant, bukan saat membuat baru): list pengumuman yang sudah ada untuk tenant ini, form tambah baru (Label, Judul, Isi, checkbox Penting), tombol hapus per item. Ikuti pola implementasi yang sama persis dengan "Agenda Perjalanan" yang sudah berfungsi di file ini.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Struktur komponen `TravelCompanionFlow` dan ke-4 kartu di dalamnya (layout, styling, posisi di Beranda) — TIDAK diubah, hanya SUMBER DATA-nya yang berubah dari dummy ke database.
+- Field per-jamaah (`jamaah.hotelMakkah`, `jamaah.pembimbingNama`, dll) yang sudah ada di `Jamaah` type dan logic override-nya (`jamaah.hotelMakkah ?? info.hotelMakkah`) — tidak disentuh, pola ini sudah benar.
+- Tabel `agenda_items` dan field tanggal keberangkatan/kepulangan yang sudah ada — tidak diubah, hanya ditambahkan tabel dan kolom baru.
+- `searchIndex.ts` dan fix dari prompt sebelumnya — tidak disentuh ulang di sini.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan bukti end-to-end: buka admin panel, edit tenant yang sudah ada, isi info operasional (hotel, kontak) dan tambahkan 1-2 pengumuman, simpan. Lalu login sebagai jamaah dengan kode aktivasi tenant tersebut, tunjukkan Beranda menampilkan data operasional dan pengumuman yang BARU SAJA diisi admin — bukan lagi data dummy "Bus 3" / "Hotel Makkah — diisi travel" yang sama untuk semua tenant.
+4. Tunjukkan juga kondisi sebaliknya: tenant LAIN yang belum diisi info operasional/pengumuman sama sekali — pastikan tampilannya tidak rusak (kartu kontak darurat pakai fallback default, kartu pengumuman tidak muncul karena memang belum ada pengumuman).

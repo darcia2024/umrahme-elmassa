@@ -1,0 +1,208 @@
+# PROMPT — Security Frontend: Login Jamaah via RPC + Admin Role Check
+
+## Konteks
+Setelah menjalankan `security-rls-tahap1.sql` di Supabase, tabel `jamaah_accounts` TIDAK
+bisa lagi dibaca anon key. Login jamaah HARUS lewat RPC `validate_jamaah_login`.
+Juga: `AdminProtectedRoute` perlu verifikasi role admin (bukan cuma cek login).
+
+File yang diubah:
+- `artifacts/umrahme/src/data/jamaah.ts` (login jamaah → RPC)
+- `artifacts/umrahme/src/context/AdminAuthContext.tsx` (tambah cek isAdmin)
+- `artifacts/umrahme/src/components/admin/AdminProtectedRoute.tsx` (gate by isAdmin)
+
+> URUTAN: Jalankan SQL di Supabase DULU, baru deploy perubahan ini. Kalau kode di-deploy
+> sebelum SQL, login jamaah akan error (RPC belum ada). Kalau SQL jalan tapi kode belum,
+> login jamaah juga error (masih query tabel langsung yang kini tertutup). Idealnya
+> SQL + deploy ini berdekatan.
+
+---
+
+## BAGIAN 1 — Login Jamaah via RPC (`data/jamaah.ts`)
+
+Ganti isi fungsi `validasiKode` dan `validasiSlug`. Keduanya sekarang memanggil RPC
+`validate_jamaah_login` yang mengembalikan `tenant`, `jamaah`, `keberangkatan` sebagai
+baris penuh — sehingga sisa logika mapping (hitungFaseEfektif, bangun objek Jamaah) tetap sama.
+
+### 1a. Tambah helper mapping (taruh di atas validasiKode, hindari duplikasi)
+
+```ts
+function bangunHasil(
+  tenant: TenantRow,
+  akun: any,
+  kb: KeberangkatanRow | null,
+  kodeAktivasi: string,
+): HasilValidasi {
+  const fase = hitungFaseEfektif(
+    akun.fase_override ?? kb?.fase_override ?? null,
+    kb?.tanggal_keberangkatan ?? tenant.tanggal_keberangkatan,
+    kb?.tanggal_kepulangan ?? tenant.tanggal_kepulangan,
+  );
+
+  const jamaah: Jamaah = {
+    nama: akun.nama,
+    nomorJamaah: akun.nomor_jamaah,
+    travel: tenant.nama_travel,
+    kodeAktivasi,
+    fase,
+    rombongan: akun.rombongan ?? undefined,
+    nomorBus: akun.nomor_bus ?? undefined,
+    nomorKamar: akun.nomor_kamar ?? undefined,
+    nomorPaspor: akun.nomor_paspor ?? undefined,
+    hotelMakkah: (kb?.hotel_makkah ?? tenant.hotel_makkah) ?? undefined,
+    hotelMadinah: (kb?.hotel_madinah ?? tenant.hotel_madinah) ?? undefined,
+    pembimbingNama: (kb?.guide_name ?? tenant.guide_name) ?? undefined,
+    pembimbingWhatsapp: (kb?.guide_whatsapp ?? tenant.guide_whatsapp) ?? undefined,
+  };
+
+  return { ok: true, jamaah, tenant, keberangkatan: kb };
+}
+```
+
+### 1b. Ganti `validasiKode`
+
+```ts
+export async function validasiKode(kode: string, nama: string): Promise<HasilValidasi> {
+  const k = kode.trim().toUpperCase();
+  const n = nama.trim();
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+  if (!k) return { ok: false, error: 'Kode aktivasi wajib diisi.' };
+
+  const { data, error } = await supabase.rpc('validate_jamaah_login', {
+    p_code: k,
+    p_slug: null,
+    p_nama: n,
+  });
+
+  if (error) return { ok: false, error: 'Terjadi kesalahan. Coba lagi.' };
+  if (!data?.ok) return { ok: false, error: data?.error ?? 'Login gagal.' };
+
+  return bangunHasil(data.tenant as TenantRow, data.jamaah, (data.keberangkatan ?? null) as KeberangkatanRow | null, k);
+}
+```
+
+### 1c. Ganti `validasiSlug`
+
+```ts
+export async function validasiSlug(slug: string, nama: string): Promise<HasilValidasi> {
+  const n = nama.trim();
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+
+  const { data, error } = await supabase.rpc('validate_jamaah_login', {
+    p_code: null,
+    p_slug: slug.toLowerCase(),
+    p_nama: n,
+  });
+
+  if (error) return { ok: false, error: 'Terjadi kesalahan. Coba lagi.' };
+  if (!data?.ok) return { ok: false, error: data?.error ?? 'Login gagal.' };
+
+  const tenant = data.tenant as TenantRow;
+  return bangunHasil(tenant, data.jamaah, (data.keberangkatan ?? null) as KeberangkatanRow | null, tenant.activation_code);
+}
+```
+
+> Sekarang `fetchKeberangkatanById` tidak lagi dipakai di login (RPC sudah mengembalikan
+> keberangkatan). Boleh biarkan import-nya kalau dipakai di tempat lain; kalau tidak,
+> hapus import yang tidak terpakai agar tidak ada warning.
+
+---
+
+## BAGIAN 2 — Admin Role Check (`context/AdminAuthContext.tsx`)
+
+Tambah verifikasi: setelah login Supabase, cek apakah user terdaftar di `app_admins`.
+Expose `isAdmin` agar route bisa memakainya.
+
+### 2a. Tambah state `isAdmin` & fungsi cek
+
+Di dalam `AdminAuthProvider`, tambah:
+```ts
+const [isAdmin, setIsAdmin] = useState(false);
+
+async function checkAdmin(userId: string | undefined) {
+  if (!userId) { setIsAdmin(false); return; }
+  const { data, error } = await supabase
+    .from('app_admins')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  setIsAdmin(!error && !!data);
+}
+```
+
+Panggil `checkAdmin` di tempat session di-set:
+```ts
+supabase.auth.getSession().then(async ({ data }) => {
+  setSession(data.session);
+  await checkAdmin(data.session?.user?.id);
+  setLoading(false);
+});
+
+const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
+  setSession(s);
+  await checkAdmin(s?.user?.id);
+});
+```
+
+Di fungsi `login`, setelah signIn berhasil, panggil juga:
+```ts
+const login = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+  await checkAdmin(data.user?.id);
+  // Kalau bukan admin, tolak
+  const { data: adminRow } = await supabase.from('app_admins').select('user_id').eq('user_id', data.user?.id ?? '').maybeSingle();
+  if (!adminRow) {
+    await supabase.auth.signOut();
+    throw new Error('Akun ini tidak memiliki akses admin.');
+  }
+};
+```
+
+### 2b. Tambah `isAdmin` ke context value & interface
+```ts
+interface AdminAuthValue {
+  session: Session | null;
+  email: string | null;
+  isAdmin: boolean;       // ← tambah
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+```
+Dan di provider value:
+```ts
+<AdminAuthContext.Provider value={{ session, email: session?.user?.email ?? null, isAdmin, loading, login, signOut }}>
+```
+
+---
+
+## BAGIAN 3 — Gate Route by isAdmin (`AdminProtectedRoute.tsx`)
+
+Ganti cek `if (!email)` jadi cek admin:
+```tsx
+const { email, isAdmin, loading } = useAdminAuth();
+// ...
+if (!email || !isAdmin) {
+  return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+}
+```
+
+> Dengan ini, walau seorang travel-user berhasil login Supabase, ia TIDAK bisa masuk
+> `/admin` karena tidak ada di `app_admins`. Plus RLS di DB menolak query admin-nya.
+
+---
+
+## Catatan Penting
+- **Dua lapis pertahanan**: (1) RLS di database menolak akses tidak sah di level data;
+  (2) admin role check di frontend mencegah UI admin terbuka. Keduanya saling melengkapi.
+- **Jangan hapus** fungsi `hitungFaseEfektif` — masih dipakai.
+- Pastikan akun admin sudah dimasukkan ke tabel `app_admins` di Supabase (lihat file SQL),
+  kalau belum, kamu sendiri tidak akan bisa login admin setelah perubahan ini.
+- Travel login (`TravelAuthContext`) tidak berubah — sudah aman (scoped via tenant_users).
+
+## Verifikasi Setelah Deploy
+- Login jamaah (kode & slug) tetap berfungsi normal
+- Data jamaah tidak bisa lagi dibaca lewat anon key langsung (coba akses REST tanpa login → tertolak)
+- Login admin hanya berhasil untuk akun yang ada di `app_admins`
+- Travel-user yang coba buka `/admin` → ditolak / redirect ke login
+- Admin & travel tetap bisa kelola data sesuai haknya

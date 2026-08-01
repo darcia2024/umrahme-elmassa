@@ -1,0 +1,110 @@
+# PROMPT: Tambah Animasi Hidup ke Seluruh Landing Page
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Halaman sudah punya `Reveal` (fade+slide on scroll), hero entrance, marquee, FAQ expand. Tugas: tambahkan lapisan animasi agar lebih hidup — stagger reveal yang konsisten, hover micro-interaction di semua card, dan sentuhan halus pada angka/ikon. **Jangan berlebihan** — animasi harus halus dan profesional, bukan ramai. Pakai library yang sudah ada (`framer-motion`). Jangan ubah warna, copy, atau layout.
+
+---
+
+## 1. STAGGER REVEAL pada grid cards
+
+Pastikan setiap grup card muncul berurutan (stagger), bukan barengan. Untuk grid yang pakai `.map`, tambahkan `delay={i * 0.06}` pada `<Reveal>` jika belum ada. Terapkan di:
+- Bento stat cards
+- Pain points cards
+- Features cards (sudah ada `delay={i * 0.035}` — pertahankan)
+- How it works steps
+- (Testimonials jika masih ada)
+
+Stagger membuat mata mengikuti konten masuk satu per satu — terasa hidup.
+
+---
+
+## 2. HOVER MICRO-INTERACTION pada semua card
+
+Tambahkan efek hover halus (angkat + shadow) ke card yang belum punya. Caranya: ubah `<div>` card jadi `<motion.div>` dengan `whileHover`. Contoh pola:
+
+```jsx
+<motion.div
+  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+  style={{ /* style card yang sudah ada */ }}
+>
+```
+
+Terapkan ke:
+- **Bento stat cards** (4 kartu) — `whileHover={{ y: -4 }}`
+- **Pain points cards** — `whileHover={{ y: -3 }}`
+- **Features cards** — sudah ada hover via CSS `.lp-feat-card:hover`; pertahankan, jangan dobel
+- **How it works step cards** — `whileHover={{ y: -4 }}`
+- **Pricing card** — `whileHover={{ y: -3 }}` (halus saja, ini kartu besar)
+
+Jangan tambahkan hover pada elemen yang sudah punya (button, feat-card) agar tidak konflik.
+
+---
+
+## 3. ANGKA STAT — count-up / pop saat muncul (bento)
+
+Pada 4 angka besar di bento (`100%`, `55+`, `12`, `Rp 0`), tambahkan animasi "pop" halus saat masuk viewport. Bungkus angka dengan `motion.div`:
+
+```jsx
+<motion.div
+  initial={{ scale: 0.6, opacity: 0 }}
+  whileInView={{ scale: 1, opacity: 1 }}
+  viewport={{ once: true, margin: '-40px' }}
+  transition={{ type: 'spring', stiffness: 200, damping: 14, delay: 0.1 }}
+  style={{ /* style angka yang sudah ada */ }}
+>
+  100%
+</motion.div>
+```
+Terapkan ke keempat angka. Efek spring pop membuat angka terasa "muncul" dengan energi.
+
+---
+
+## 4. IKON FEATURES — animasi halus saat hover card
+
+Pada kotak ikon di feature card, tambahkan rotasi/scale halus saat card di-hover. Karena hover card pakai CSS, tambahkan di `<style>`:
+```css
+.lp-feat-card .lp-feat-icon { transition: transform .25s ease; }
+.lp-feat-card:hover .lp-feat-icon { transform: scale(1.08) rotate(-3deg); }
+```
+Tambahkan `className="lp-feat-icon"` pada div kotak ikon feature.
+
+---
+
+## 5. EYEBROW & HEADING — fade-in lembut
+
+Eyebrow dan h2 tiap section sudah dibungkus `Reveal`. Pastikan heading punya sedikit delay setelah eyebrow agar berurutan: eyebrow `delay={0}`, heading `delay={0.08}`, sub-heading `delay={0.14}`. Terapkan di semua section yang punya pola eyebrow → h2 → p.
+
+---
+
+## 6. TOMBOL CTA — pulse halus pada tombol utama (opsional, halus)
+
+Pada tombol CTA utama di hero dan pricing ("Coba Gratis Sekarang", "Mulai Sekarang"), tambahkan animasi pulse sangat halus untuk menarik perhatian. Tambahkan ke `<style>`:
+```css
+@keyframes lpPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(0,84,249,0.0); } 50% { box-shadow: 0 0 0 6px rgba(0,84,249,0.08); } }
+.lp-cta-pulse { animation: lpPulse 2.8s ease-in-out infinite; }
+```
+Tambahkan `className="lp-cta-pulse"` ke tombol CTA utama (gabung dengan className yang sudah ada, mis. `className="lp-btn lp-cta-pulse"`). Jangan pasang di semua tombol — cukup 1-2 tombol utama agar tidak ramai.
+
+---
+
+## 7. SCROLL REVEAL untuk gambar/section besar
+
+Pada section White-Label dan CTA box, pastikan kontennya pakai `Reveal` agar slide-in saat di-scroll. Jika belum, bungkus.
+
+---
+
+## PRINSIP & ATURAN
+
+- **Halus, bukan ramai.** Durasi 0.2–0.7s, easing lembut. Hindari bounce berlebihan atau animasi yang mengganggu baca.
+- **`once: true`** pada semua scroll animation — animasi jalan sekali saat pertama masuk viewport, tidak berulang tiap scroll.
+- Gunakan `whileInView` + `viewport={{ once: true }}` untuk elemen yang tidak dibungkus `Reveal`.
+- Hormati pengguna yang prefer reduced motion: tambahkan di `<style>`:
+  ```css
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+  ```
+- Jangan ubah warna, copy, layout, atau struktur data.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+- Test: scroll dari atas ke bawah, pastikan tiap section muncul mulus dan hover card terasa responsif.

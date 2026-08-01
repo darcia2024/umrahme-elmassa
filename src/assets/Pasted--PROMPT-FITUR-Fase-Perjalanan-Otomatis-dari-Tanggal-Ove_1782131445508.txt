@@ -1,0 +1,151 @@
+# PROMPT FITUR — Fase Perjalanan Otomatis dari Tanggal + Override Manual Admin
+
+> Konteks: saat ini `fase` jamaah disimpan di kolom `jamaah_accounts.fase` dan hanya bisa diubah manual oleh admin. Tujuan: fase berubah otomatis berdasarkan `tanggal_keberangkatan` dan `tanggal_kepulangan` dari tabel `tenants`, TAPI admin tetap bisa override manual per-jamaah jika diperlukan (jamaah sakit, situasi khusus, dll).
+
+## 1. Tambah kolom `fase_override` di database
+
+Jalankan SQL ini di Supabase SQL Editor:
+
+```sql
+alter table public.jamaah_accounts
+  add column fase_override text
+    check (fase_override in ('persiapan', 'tanah-suci', 'selesai'))
+    default null;
+```
+
+Kolom ini nullable — jika NULL berarti pakai fase otomatis dari tanggal. Jika diisi, pakai nilai ini (override manual).
+
+Juga update tipe `JamaahAccountRow` di `src/lib/supabase.ts`:
+```ts
+export type JamaahAccountRow = {
+  id: string;
+  tenant_id: string;
+  nama: string;
+  nomor_jamaah: string;
+  rombongan: string | null;
+  nomor_bus: string | null;
+  nomor_kamar: string | null;
+  fase: 'persiapan' | 'tanah-suci' | 'selesai';        // computed/legacy, tetap ada
+  fase_override: 'persiapan' | 'tanah-suci' | 'selesai' | null;  // manual override
+  created_at: string;
+};
+```
+
+## 2. Buat helper `hitungFaseOtomatis` di `src/data/jamaah.ts`
+
+Tambahkan fungsi helper ini (di bawah import, sebelum `validasiKode`):
+
+```ts
+/**
+ * Hitung fase otomatis berdasarkan tanggal tenant.
+ * Prioritas: fase_override (manual) > otomatis dari tanggal > fallback 'persiapan'
+ */
+export function hitungFaseEfektif(
+  faseOverride: string | null,
+  tanggalKeberangkatan: string | null,
+  tanggalKepulangan: string | null,
+): 'persiapan' | 'tanah-suci' | 'selesai' {
+  // Jika admin set override, pakai itu
+  if (faseOverride === 'persiapan' || faseOverride === 'tanah-suci' || faseOverride === 'selesai') {
+    return faseOverride;
+  }
+
+  // Hitung otomatis dari tanggal
+  if (!tanggalKeberangkatan) return 'persiapan'; // belum ada tanggal = persiapan
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const berangkat = new Date(tanggalKeberangkatan + 'T00:00:00');
+  const pulang = tanggalKepulangan
+    ? new Date(tanggalKepulangan + 'T00:00:00')
+    : null;
+
+  if (today < berangkat) return 'persiapan';
+  if (pulang && today > pulang) return 'selesai';
+  return 'tanah-suci';
+}
+```
+
+## 3. Terapkan `hitungFaseEfektif` saat login jamaah
+
+Di `validasiKode()` (atau RPC response handler), saat menyusun objek `jamaah`, ganti:
+```ts
+fase: data.jamaah.fase,
+```
+menjadi:
+```ts
+fase: hitungFaseEfektif(
+  data.jamaah.fase_override ?? null,
+  data.tenant.tanggal_keberangkatan,
+  data.tenant.tanggal_kepulangan,
+),
+```
+
+Ini memastikan fase yang ditampilkan di dashboard selalu mencerminkan kondisi terkini saat login.
+
+## 4. Terapkan juga saat app di-refresh (AuthContext)
+
+Di `src/context/AuthContext.tsx`, saat re-apply jamaah dari localStorage (`useEffect` mount), recalculate fase dari tenant yang tersimpan:
+
+```ts
+// Setelah load jamaah & tenant dari localStorage:
+if (savedJamaah && savedTenant) {
+  const faseEfektif = hitungFaseEfektif(
+    null, // fase_override tidak disimpan di localStorage, pakai otomatis
+    savedTenant.tanggal_keberangkatan,
+    savedTenant.tanggal_kepulangan,
+  );
+  setJamaah({ ...savedJamaah, fase: faseEfektif });
+  setTenant(savedTenant);
+}
+```
+
+Ini penting agar jamaah yang sudah login kemarin tidak stuck di fase lama saat buka app hari ini.
+
+## 5. Update admin panel — tambah dropdown override di daftar jamaah
+
+Di `src/pages/admin/AdminTenantForm.tsx`, bagian tabel daftar jamaah:
+
+Ubah dropdown fase per-baris dari mengupdate kolom `fase` menjadi mengupdate kolom `fase_override`:
+
+```ts
+// SEBELUM:
+await supabase.from('jamaah_accounts').update({ fase }).eq('id', id);
+
+// SESUDAH:
+await supabase.from('jamaah_accounts').update({ fase_override: fase === '' ? null : fase }).eq('id', id);
+```
+
+Tambahkan opsi "Otomatis (dari jadwal)" sebagai pilihan pertama di dropdown (value = `''` atau `null`):
+
+```tsx
+<select onChange={e => handleUpdateFase(j.id, e.target.value)}>
+  <option value="">Otomatis (dari jadwal)</option>
+  <option value="persiapan">Persiapan</option>
+  <option value="tanah-suci">Di Tanah Suci</option>
+  <option value="selesai">Selesai</option>
+</select>
+```
+
+Tampilkan nilai selected saat ini: jika `fase_override` null → pilih "Otomatis", jika ada → pilih sesuai nilainya.
+
+Lakukan hal yang sama di `src/pages/travel/TravelDashboard.tsx` untuk portal travel agency.
+
+## 6. Hapus toggle fase manual di dashboard jamaah
+
+Di `src/pages/Beranda.tsx`, jika masih ada tombol "Ganti fase manual untuk demo" (toggle Persiapan / Di Tanah Suci / Selesai yang terlihat di screenshot), **hapus seluruh elemen UI itu**. Fase tidak lagi diubah dari sisi jamaah — hanya admin yang bisa override.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Tipe `Fase` di `types/index.ts` — tetap `'persiapan' | 'tanah-suci' | 'selesai'`
+- Kolom `fase` lama di `jamaah_accounts` — tidak dihapus (kompatibilitas), tapi tidak lagi dipakai sebagai sumber fase yang ditampilkan
+- Semua halaman yang membaca `jamaah.fase` (`TravelCompanionFlow`, `PhaseBasedActionCard`, dll) — tidak perlu diubah, karena `jamaah.fase` yang masuk ke context sudah berisi nilai yang benar dari `hitungFaseEfektif`
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error
+2. `pnpm run build` — sukses
+3. Bukti: set `tanggal_keberangkatan` tenant = kemarin, `tanggal_kepulangan` = besok → login jamaah → fase otomatis "Di Tanah Suci" muncul tanpa perlu admin set manual
+4. Bukti override: admin set `fase_override = 'persiapan'` untuk satu jamaah → login jamaah itu → tetap "Persiapan" meski tanggal sudah lewat
+5. Bukti reset: admin set override ke "Otomatis" → fase kembali dihitung dari tanggal

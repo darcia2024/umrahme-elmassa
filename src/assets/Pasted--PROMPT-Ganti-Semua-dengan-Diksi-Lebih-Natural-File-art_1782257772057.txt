@@ -1,0 +1,170 @@
+# PROMPT: Ganti Semua "—" dengan Diksi Lebih Natural
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Em dash (—) terasa kaku dan AI-generated. Ganti semua kemunculannya dengan konstruksi kalimat yang lebih natural. Lakukan satu per satu — jangan ganti semua sekaligus dengan karakter lain, tapi rewrite kalimatnya supaya mengalir.
+
+---
+
+Cari dan ganti tiap kemunculan berikut:
+
+**1.**
+```
+Jamaah Anda pegang HP, semua ada — doa, jadwal, panduan ibadah, sampai info hotel.
+```
+Ganti:
+```
+Jamaah Anda pegang HP, semua ada: doa, jadwal, panduan ibadah, sampai info hotel.
+```
+
+**2.**
+```
+Bukan salah tim Anda — memang belum ada sistem yang pas. Sampai sekarang.
+```
+Ganti:
+```
+Bukan salah tim Anda. Memang belum ada sistem yang pas. Sampai sekarang.
+```
+
+**3.**
+```
+Arab, latin, terjemahan — semua ada. Jamaah buka HP, langsung ikuti saat muthowif menjelaskan. Tidak perlu cetak buku lagi.
+```
+Ganti:
+```
+Arab, latin, terjemahan. Semua ada. Jamaah buka HP, langsung ikuti saat muthowif menjelaskan. Tidak perlu cetak buku lagi.
+```
+
+**4.**
+```
+Hitung putaran otomatis, doa muncul sendiri di tiap putaran. Jamaah fokus ibadah, bukan sibuk hitung.
+```
+*(tidak ada dash, skip)*
+
+**5.**
+```
+10 lokasi ziarah lengkap dengan sejarah, tokoh, dalil, dan link Google Maps. Jamaah tidak perlu bertanya arah.
+```
+*(tidak ada dash, skip)*
+
+**6.**
+```
+Isi agenda sekali di portal, jamaah lihat jadwal hari ini otomatis. Tidak ada lagi pertanyaan "hari ini kita ke mana?".
+```
+*(tidak ada dash, skip)*
+
+**7.**
+```
+Lebih murah dari biaya cetak buku doa — langsung balik modal
+```
+Ganti:
+```
+Lebih murah dari biaya cetak buku doa, langsung balik modal
+```
+
+**8.**
+```
+Tanpa biaya setup, tanpa langganan bulanan, tanpa kontrak
+```
+*(tidak ada dash, skip)*
+
+**9.**
+```
+12 fitur premium aktif penuh — tanpa biaya tersembunyi
+```
+Ganti:
+```
+12 fitur premium aktif penuh, tanpa biaya tersembunyi
+```
+
+**10.**
+```
+Aplikasi bermerek travel Anda — perkuat brand di mata jamaah
+```
+Ganti:
+```
+Aplikasi bermerek travel Anda, perkuat brand di mata jamaah
+```
+
+**11.**
+```
+Tingkatkan kepuasan jamaah & dorong referral keberangkatan berikutnya
+```
+*(tidak ada dash, skip)*
+
+**12.**
+```
+Investasi kecil per jamaah yang langsung terbayar dari hemat biaya cetak — dan terus memberi nilai di setiap keberangkatan.
+```
+Ganti:
+```
+Investasi kecil per jamaah yang langsung terbayar dari hemat biaya cetak, dan terus memberi nilai di setiap keberangkatan.
+```
+
+**13.**
+```
+Semua termasuk — tanpa biaya tambahan
+```
+Ganti:
+```
+Semua termasuk, tanpa biaya tambahan
+```
+
+**14.**
+```
+Bayar hanya saat jamaah berangkat
+```
+*(tidak ada dash, skip)*
+
+**15.**
+```
+Logo, nama, dan warna brand Anda — tanpa jejak pihak ketiga
+```
+Ganti:
+```
+Logo, nama, dan warna brand Anda. Tanpa jejak pihak ketiga.
+```
+
+**16.**
+```
+Excel, kertas, WA — tak ada sistem terpadu.
+```
+Ganti:
+```
+Excel, kertas, WA. Tak ada sistem terpadu.
+```
+
+**17.**
+```
+Satu dashboard untuk semua: kelola data jamaah, atur agenda, kirim pengumuman. Semua terkontrol dari satu tempat.
+```
+*(tidak ada dash, skip)*
+
+**18.**
+```
+5 jamaah pertama gratis — kami setup aplikasi bermerek travel Anda dalam menit.
+```
+Ganti:
+```
+5 jamaah pertama gratis. Kami setup aplikasi bermerek travel Anda dalam menit.
+```
+
+**19.**
+```
+Setup dalam menit. Bermerek nama travel Anda. Tanpa komitmen.
+```
+*(tidak ada dash, skip)*
+
+**20. Cari semua sisa kemunculan " — " (spasi dash spasi)** yang belum tercantum di atas dan ganti dengan salah satu dari:
+- `, ` (koma) jika kalimat masih lanjut
+- `. ` (titik) jika ide berganti
+- `: ` (titik dua) jika menjelaskan/merinci
+
+Pilih yang paling natural sesuai konteks kalimatnya.
+
+---
+
+## Aturan
+- Jangan ubah layout, warna, logika, atau teks selain yang disebutkan.
+- Setelah selesai, pastikan tidak ada lagi karakter `—` yang tersisa di seluruh file.
+- Jalankan `pnpm --filter umrahme typecheck` setelah selesai.

@@ -1,0 +1,160 @@
+# PROMPT: Redesign Peta Lokasi + Tambah Destinasi + Google Maps + Detail Lengkap
+
+**File terkait:**
+- `artifacts/umrahme/src/data/lokasi.ts` (tambah data)
+- `artifacts/umrahme/src/pages/Peta.tsx` (redesign list)
+- `artifacts/umrahme/src/pages/LokasiDetail.tsx` (redesign detail + Google Maps)
+
+Tugas besar, kerjakan teliti dan menyeluruh. Tiga bagian: (A) tambah 3 lokasi baru ke data, (B) redesign UI list Peta, (C) redesign halaman detail + pastikan tombol Google Maps berfungsi untuk SEMUA lokasi.
+
+---
+
+## BAGIAN A — TAMBAH 3 LOKASI BARU di `data/lokasi.ts`
+
+Sisipkan 3 objek lokasi berikut ke dalam array `daftarLokasi`. Letakkan `masjid-jin` di kelompok masjid, dan `jannatul-mualla` + `jabal-qubais` di kelompok sejarah. Pastikan struktur sesuai interface `Lokasi` yang sudah ada (field: id, tipe, nama, namaArab, kota, jarakKm, jamKunjungan, ringkas, gambar, koordinat, sejarah, sejarahSeksi[], tokoh[], keutamaan[], dalil[], adab[], catatan?).
+
+**Lokasi 1 — Masjid Jin (Makkah):**
+- id: `masjid-jin`, tipe: `masjid`
+- namaArab: `مسجد الجن`, kota: Makkah, jarakKm: 1.2
+- koordinat: `{ lat: 21.4333, lng: 39.8289 }`
+- ringkas: "Tempat serombongan jin memeluk Islam setelah mendengar bacaan Al-Qur'an Nabi ﷺ."
+- sejarah: Masjid di distrik Ma'la, dekat Jannatul Mu'alla, ~1,2 km utara Masjidil Haram. Menandai peristiwa dalam Surah Al-Jinn — serombongan jin mendengar Nabi ﷺ membaca Al-Qur'an lalu beriman.
+- sejarahSeksi: [(1) "Peristiwa Para Jin Beriman" — rombongan jin berhenti mendengar Al-Qur'an, beriman, kembali berdakwah ke kaumnya; diabadikan dalam Surah Al-Jinn ke-72. (2) "Nama-Nama Lain" — disebut juga Masjid Al-Bai'ah dan Masjid Al-Haras (batas patroli penjaga kota); ada titik "Maudhi' al-Khath".]
+- tokoh: [Nabi Muhammad ﷺ — membaca Al-Qur'an; Abdullah bin Mas'ud رضي الله عنه — sahabat yang diriwayatkan menyertai]
+- keutamaan: [risalah Islam untuk manusia & jin; keagungan Al-Qur'an menggerakkan hati makhluk tak terlihat]
+- dalil: [QS. Al-Jinn: 1–2]
+- adab: [hanya untuk shalat, tak ada ritual khusus; jaga adab & hormati jamaah setempat; ziarah bersifat sunnah bukan wajib umrah]
+- catatan: "Ziarah ke Masjid Jin bersifat opsional (bukan rukun/wajib umrah). Untuk mengambil pelajaran sejarah, bukan ritual tertentu."
+
+**Lokasi 2 — Jannatul Mu'alla (Makkah):**
+- id: `jannatul-mualla`, tipe: `sejarah`
+- namaArab: `جنة المعلاة`, kota: Makkah, jarakKm: 1.5
+- koordinat: `{ lat: 21.4314, lng: 39.8294 }`
+- ringkas: "Pemakaman bersejarah Makkah, tempat dimakamkannya Sayyidah Khadijah رضي الله عنها."
+- sejarah: Pemakaman tua di distrik Al-Hujun, dekat Masjid Jin. Tempat dimakamkan istri pertama Nabi ﷺ, Sayyidah Khadijah binti Khuwailid, beserta kerabat beliau.
+- sejarahSeksi: [(1) "Tempat Peristirahatan Sayyidah Khadijah" — istri pertama Nabi ﷺ & wanita pertama beriman, wafat di Makkah sebelum hijrah; juga makam Abdul Muthalib (kakek Nabi). (2) "Pemakaman Bersejarah Makkah" — seperti Baqi di Madinah; banyak sahabat & tabi'in; doakan ahli kubur dari luar pagar tanpa ritual berlebihan.]
+- tokoh: [Sayyidah Khadijah رضي الله عنها — istri pertama Nabi ﷺ; Abdul Muthalib — kakek Nabi ﷺ]
+- keutamaan: [mengingat pengorbanan Khadijah di masa tersulit; merenungkan kematian & mendoakan muslimin wafat]
+- dalil: [HR. Muslim — doa ziarah kubur "Assalāmu 'alaikum ahlad-diyār..."]
+- adab: [ziarah dari luar pagar, doakan bukan minta kepada ahli kubur; hindari mengusap kuburan; jaga ketertiban]
+- catatan: "Ziarah kubur disyariatkan untuk mengingat akhirat & mendoakan yang wafat. Hindari praktik tidak sesuai tuntunan seperti meminta kepada ahli kubur."
+
+**Lokasi 3 — Jabal Abu Qubais (Makkah):**
+- id: `jabal-qubais`, tipe: `sejarah`
+- namaArab: `جبل أبي قبيس`, kota: Makkah, jarakKm: 0.5
+- koordinat: `{ lat: 21.4231, lng: 39.8305 }`
+- ringkas: "Bukit di sebelah timur Masjidil Haram, saksi mukjizat terbelahnya bulan."
+- sejarah: Bukit tertua di Makkah, timur Masjidil Haram dekat Shafa. Dikaitkan peristiwa mukjizat terbelahnya bulan (syaqqul qamar).
+- sejarahSeksi: [(1) "Mukjizat Terbelahnya Bulan" — Quraisy minta tanda kenabian, atas izin Allah bulan terbelah dua, terlihat di atas Jabal Abu Qubais; disinggung Surah Al-Qamar.]
+- tokoh: [Nabi Muhammad ﷺ — menunjukkan mukjizat atas izin Allah]
+- keutamaan: [pengingat mukjizat besar Nabi ﷺ disaksikan Quraisy]
+- dalil: [QS. Al-Qamar: 1]
+- adab: [ambil pelajaran sejarah, tak ada ritual khusus; sekitarnya kini dikelilingi bangunan modern]
+
+> Teks lengkap tiap field tersedia di file `lokasi-tambahan.ts` (gunakan escape unicode untuk Arab seperti pola objek lokasi yang sudah ada di file).
+
+---
+
+## BAGIAN B — REDESIGN UI LIST di `Peta.tsx`
+
+Pertahankan design system yang ada (warna gold, font-mono eyebrow, hairline border, surface-card). Tapi perkaya tampilan kartu:
+
+### B1. Tambah thumbnail / placeholder gambar di tiap kartu
+Tiap kartu lokasi punya area gambar di kiri (mobile) atau atas (desktop). Jika `l.gambar` ada, tampilkan `<img>`. Jika kosong (`''`), tampilkan placeholder elegan: kotak dengan ikon lokasi + pattern garis diagonal halus (gold/primary opacity rendah), JANGAN kotak abu polos.
+
+Contoh placeholder (mobile, di kiri kartu):
+```jsx
+<div className="relative h-16 w-16 flex-none overflow-hidden rounded-md border border-hairline bg-surface-bone">
+  {l.gambar ? (
+    <img src={l.gambar} alt={l.nama} className="h-full w-full object-cover" />
+  ) : (
+    <>
+      <div className="absolute inset-0 opacity-[0.18]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #d4a24e 0 1px, transparent 1px 8px)' }} aria-hidden />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <IconPeta className="h-5 w-5 text-gold/60" />
+      </div>
+    </>
+  )}
+</div>
+```
+
+### B2. Tambah badge kota berwarna
+Beri badge kecil membedakan Makkah vs Madinah — misal Makkah pakai warna gold, Madinah pakai warna primary/hijau. Badge di pojok atau dekat nama.
+
+### B3. Tampilkan jumlah lokasi per tab
+Di atas list, tampilkan teks kecil: "{jumlah} lokasi" untuk tab aktif, biar terasa kaya konten.
+
+### B4. Tingkatkan keterbacaan kartu mobile
+- Beri sedikit lebih banyak ruang: nama (15px semibold), arab (gold, rtl), ringkas (2 baris, line-clamp-2), lalu baris meta (kota · jarak km · jam kunjungan kalau ada).
+- Tambah micro-interaction: `active:scale-[0.99]` + `hover:shadow-drop-soft` (sudah ada, pertahankan).
+
+### B5. Urutkan lokasi secara logis
+Urutkan dalam tiap tab: lokasi utama dulu (Masjidil Haram, Masjid Nabawi), lalu berdasarkan kota (Makkah dikelompokkan, lalu Madinah). Gunakan urutan array atau sort sederhana.
+
+---
+
+## BAGIAN C — REDESIGN HALAMAN DETAIL di `LokasiDetail.tsx`
+
+### C1. PASTIKAN tombol Google Maps berfungsi untuk SEMUA lokasi
+Pakai koordinat `lokasi.koordinat` untuk generate URL. Tambahkan fungsi helper:
+```ts
+function gmapsUrl(lat: number, lng: number, nama: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${encodeURIComponent(nama)})`;
+}
+```
+Tombol "Buka di Google Maps" yang prominent (warna primary, ikon pin), buka di tab baru (`target="_blank" rel="noopener noreferrer"`). Tampilkan juga koordinat kecil di bawahnya (mis. "21.4225° N, 39.8262° E").
+
+### C2. Hero detail dengan gambar / placeholder
+Bagian atas: area gambar besar (16:9 atau 4:3). Jika `gambar` kosong, tampilkan placeholder elegan (pattern + ikon + nama lokasi besar di tengah), bukan kotak kosong.
+
+### C3. Susun konten detail terstruktur dengan section jelas
+Urutan tampilan:
+1. **Hero** — gambar/placeholder + nama + namaArab + badge kota + jarak + jam kunjungan
+2. **Tombol Google Maps** (prominent, langsung di bawah hero)
+3. **Ringkasan** — `ringkas`
+4. **Sejarah** — `sejarah` (paragraf pembuka) lalu tiap `sejarahSeksi` sebagai sub-bagian (judul + isi), pakai gaya "archive card" dengan nomor atau garis aksen
+5. **Tokoh Terkait** — list `tokoh` (nama + peran), tampilkan sebagai kartu kecil
+6. **Keutamaan** — list `keutamaan` dengan ikon bintang/check
+7. **Dalil** — tiap `dalil` (sumber + teks) dalam kartu bergaya kutipan (border kiri gold, italic, sumber sebagai caption)
+8. **Adab Ziarah** — list `adab` dengan ikon
+9. **Catatan** (jika ada `catatan`) — kotak peringatan halus (kuning lembut) untuk klarifikasi fikih, mis. "ziarah ini opsional/sunnah"
+
+### C4. Tampilkan catatan/disclaimer untuk lokasi tertentu
+Untuk lokasi yang punya field `catatan`, tampilkan di kotak khusus bergaya "info" (bukan error). Ini penting untuk meluruskan pemahaman (mis. napak tilas vs ritual).
+
+### C5. Navigasi antar lokasi (opsional, kalau mudah)
+Di bawah, tombol "Lokasi sebelumnya / berikutnya" dalam tipe yang sama, biar jamaah bisa jelajah berurutan.
+
+---
+
+## ATURAN UMUM
+- Pertahankan design tokens & className Tailwind yang sudah dipakai (gold, primary, hairline, surface-card, surface-bone, font-arab, font-mono, ink, charcoal, mute, ash).
+- Jangan hapus lokasi yang sudah ada.
+- Semua teks Arab pakai escape unicode seperti pola di file lokasi.ts yang sudah ada.
+- Setelah selesai: `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub untuk auto-deploy.
+
+---
+
+## ⭐ DAFTAR FOTO YANG PERLU DILENGKAPI (untuk Daru)
+
+Semua lokasi saat ini field `gambar`-nya kosong (`''`). Untuk tampilan maksimal, lengkapi foto untuk 13 lokasi berikut. Simpan di `artifacts/umrahme/public/lokasi/` lalu isi `gambar: '/lokasi/nama-file.jpg'`.
+
+**MAKKAH:**
+1. **Masjidil Haram** (`masjidil-haram`) — foto Ka'bah & area tawaf
+2. **Jabal Nur / Gua Hira** (`jabal-nur`) — bukit dengan jalur pendakian
+3. **Jabal Tsur** (`jabal-tsur`) — gunung tempat gua Tsur
+4. **Jabal Rahmah** (`jabal-rahmah`) — bukit di Arafah dengan tugu putih
+5. **Masjid Jin** (`masjid-jin`) — fasad masjid (BARU)
+6. **Jannatul Mu'alla** (`jannatul-mualla`) — gerbang pemakaman (BARU)
+7. **Jabal Abu Qubais** (`jabal-qubais`) — bukit timur Haram (BARU)
+8. **Masjid Aisyah / Tan'im** (`masjid-aisyah-tanim`) — masjid miqat
+
+**MADINAH:**
+9. **Masjid Nabawi** (`masjid-nabawi`) — kubah hijau & menara
+10. **Masjid Quba** (`masjid-quba`) — fasad masjid putih
+11. **Jabal Uhud** (`jabal-uhud`) — gunung & area makam syuhada
+12. **Jannatul Baqi** (`jannatul-baqi`) — area pemakaman (foto dari luar)
+13. **Masjid Qiblatain** (`masjid-qiblatain`) — masjid dua kiblat
+
+**Tips foto:** gunakan foto landscape (rasio 4:3 atau 16:9), resolusi minimal 1200px lebar, hindari foto berhak cipta — pakai foto sendiri, stok bebas lisensi (Unsplash/Wikimedia Commons domain publik), atau foto dari travel. Beri nama file sesuai id, contoh: `masjidil-haram.jpg`, `jabal-nur.jpg`.

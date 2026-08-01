@@ -1,0 +1,58 @@
+# PROMPT: Perbaiki Transisi Hero → Section Berikutnya (Smooth)
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+**Masalah:** Transisi bawah hero tidak natural — ada blok warna biru solid yang mendadak putus ke putih, terlihat seperti "tangga warna". Penyebabnya: foto hero punya fade putih bawaan + ada overlay gradient biru yang ditambahkan sebelumnya, sehingga bertumpuk dan tidak mulus.
+
+**Solusi:** Buat foto hero memudar MULUS langsung ke PUTIH (warna section berikutnya), tanpa blok biru di tengah. Satu gradient overlay saja, dari transparan ke putih di bagian bawah.
+
+---
+
+## Langkah 1 — Hapus overlay biru lama (jika ada)
+
+Cari dan HAPUS div overlay gradient biru yang ditambahkan sebelumnya, jika ada — yaitu div dengan style mengandung:
+```
+background: `linear-gradient(180deg, transparent 0%, ${C.blue3} 75%, ${C.blue3} 100%)`
+```
+atau gradient sejenis yang memakai `C.blue3`/warna biru di bagian bawah hero. Hapus seluruh div itu.
+
+## Langkah 2 — Tambahkan SATU overlay fade ke putih
+
+Tepat SETELAH div "dark scrim" (`background: 'rgba(0,0,0,0.18)'`), tambahkan div ini:
+```jsx
+{/* fade mulus ke putih menyambung section berikutnya */}
+<div style={{
+  position: 'absolute', left: 0, right: 0, bottom: 0, height: '38%', pointerEvents: 'none',
+  background: 'linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.6) 55%, rgba(255,255,255,1) 100%)',
+}} />
+```
+
+## Langkah 3 — Pastikan posisi foto
+
+Pada div hero photo, set:
+```
+backgroundPosition: 'center top',
+```
+(supaya bagian bawah foto yang sudah pudar tidak menonjol; fokus ke bagian atas foto yang lebih jelas).
+
+## Langkah 4 — Pastikan section setelah hero berlatar putih
+
+Section langsung setelah hero (Bento "Tentang Umrahme") harus berlatar putih (`background: C.bg` atau tanpa background = putih). Jika section itu sudah putih, transisi foto→putih akan menyambung sempurna tanpa garis. Jangan beri `borderTop` atau warna lain di section tersebut yang bisa membuat garis batas.
+
+## Langkah 5 — Hilangkan padding bawah berlebih di hero
+
+Pastikan hero section tidak punya ruang kosong aneh di bawah. Set padding hero:
+```
+padding: '120px 0 0',
+```
+Foto + fade putih yang akan mengisi bagian bawah, bukan ruang kosong.
+
+---
+
+## Hasil yang diharapkan
+Foto hero terlihat jelas di bagian atas/tengah, lalu memudar HALUS menjadi putih di bagian paling bawah — menyatu mulus dengan section putih berikutnya. Tidak ada blok biru solid, tidak ada garis batas tajam, tidak ada "tangga warna".
+
+## Aturan
+- Hanya satu gradient overlay (ke putih). Jangan ada overlay biru lagi.
+- Jangan ubah warna brand, logika, animasi, atau konten teks.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

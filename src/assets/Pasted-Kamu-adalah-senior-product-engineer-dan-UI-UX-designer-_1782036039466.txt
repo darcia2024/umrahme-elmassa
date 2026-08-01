@@ -1,0 +1,472 @@
+Kamu adalah senior product engineer dan UI/UX designer. Tolong update project Umrahme ini supaya dashboard jamaah terasa seperti aplikasi resmi dari travel yang benar-benar menemani perjalanan umrah jamaah, bukan sekadar aplikasi doa atau menu fitur.
+
+Konteks project:
+
+* App utama ada di `artifacts/umrahme`
+* Dashboard utama jamaah ada di `src/pages/Beranda.tsx`
+* Route utama ada di `src/App.tsx`
+* Auth jamaah ada di `src/context/AuthContext.tsx`
+* Tipe data ada di `src/types/index.ts`
+* Data jamaah/demo login ada di `src/data/jamaah.ts`
+* Agenda lengkap sudah ada di `src/pages/AgendaLengkap.tsx`
+* Dashboard sudah mulai memakai data agenda dari Supabase table `agenda_items`
+* Jangan hapus fitur lama.
+* Jangan rombak total visual lama.
+* Fokus utama: ubah flow dashboard agar terasa seperti travel companion.
+
+Tujuan utama:
+Dashboard harus menjawab 5 pertanyaan jamaah:
+
+1. Saya ikut travel apa?
+2. Saya sekarang di fase perjalanan apa?
+3. Hari ini saya harus ngapain?
+4. Ada pengumuman penting apa dari travel?
+5. Kalau bingung atau tersesat, saya harus hubungi siapa?
+
+Formula dashboard baru:
+
+IDENTITAS → ARAHAN HARI INI → INFO PENTING → BANTUAN → IBADAH
+
+Bukan:
+
+MENU → MENU → MENU → MENU
+
+==================================================
+FLOW DASHBOARD BARU
+===================
+
+Urutan dashboard mobile harus menjadi:
+
+1. Header travel + sapaan jamaah
+2. Info rombongan jamaah
+3. Status/fase perjalanan
+4. Fokus perjalanan hari ini
+5. Agenda hari ini
+6. Pengumuman penting dari travel
+7. Kontak pembimbing / bantuan cepat
+8. Kartu jamaah digital
+9. Shortcut ibadah sesuai fase
+10. Progress persiapan/checklist
+11. Fitur tambahan seperti doa, panduan, peta, jurnal, sertifikat
+
+Dashboard jangan langsung menampilkan grid fitur sebagai konten utama. Fitur ibadah tetap ada, tapi posisinya setelah informasi operasional travel.
+
+==================================================
+FLOW BERDASARKAN FASE
+=====================
+
+Jika `jamaah.fase === 'persiapan'`, dashboard harus menonjolkan:
+
+* Checklist persiapan
+* Dokumen
+* Barang bawaan
+* Doa safar
+* Panduan ihram
+* Jadwal keberangkatan
+* Kontak travel
+
+CTA utama:
+“Lengkapi Persiapan”
+
+Jika `jamaah.fase === 'tanah-suci'`, dashboard harus menonjolkan:
+
+* Agenda hari ini
+* Jam kumpul
+* Titik kumpul
+* Kontak pembimbing
+* Counter tawaf
+* Counter sa’i
+* Doa tawaf
+* Panduan tahallul
+* Kartu jamaah
+
+CTA utama:
+“Mulai Ibadah”
+
+Jika `jamaah.fase === 'selesai'`, dashboard harus menonjolkan:
+
+* Jurnal perjalanan
+* Sertifikat
+* Doa pulang
+* Kenangan perjalanan
+* Tempat ziarah
+
+CTA utama:
+“Simpan Kenangan”
+
+==================================================
+KOMPONEN YANG HARUS DITAMBAHKAN
+===============================
+
+Buat komponen baru:
+
+`src/components/dashboard/TravelCompanionFlow.tsx`
+
+Isi komponen ini dengan beberapa section/card:
+
+1. `TripIdentityCard`
+   Menampilkan:
+
+* Nama jamaah
+* Nama travel
+* Nomor jamaah
+* Rombongan
+* Nomor bus
+* Nomor kamar
+* Hotel Makkah
+* Hotel Madinah
+
+Contoh copy:
+“Assalamu’alaikum, Ahmad”
+“Barakah Travel”
+“Rombongan A · Bus 3 · Kamar 804”
+
+2. `TripFocusCard`
+   Menampilkan fokus perjalanan berdasarkan fase.
+
+Contoh fase persiapan:
+“Persiapkan keberangkatan”
+“Lengkapi checklist, dokumen, perlengkapan, dan pahami tata cara umrah sebelum berangkat.”
+
+Contoh fase tanah suci:
+“Fokus ibadah hari ini”
+“Ikuti arahan pembimbing, buka panduan ibadah, dan gunakan counter saat tawaf atau sa’i.”
+
+Contoh fase selesai:
+“Jaga kenangan perjalanan”
+“Lengkapi jurnal, simpan sertifikat, dan terus jaga amal setelah pulang.”
+
+3. `TravelAnnouncementCard`
+   Menampilkan pengumuman penting dari travel.
+
+Contoh:
+“Pengumuman Penting”
+“Besok kumpul jam 04.30 di lobby hotel. Gunakan seragam putih dan bawa tas kecil.”
+
+Untuk tahap ini data boleh dummy dari file lokal. Nanti disambungkan ke Supabase/admin.
+
+4. `EmergencyGuideCard`
+   Menampilkan kontak pembimbing.
+
+Isi:
+
+* Nama pembimbing
+* Role pembimbing
+* Tombol WhatsApp
+* Tombol Telepon
+* Titik kumpul
+
+Contoh:
+“Ust. Fulan”
+“Pembimbing Rombongan”
+“Butuh bantuan? Hubungi pembimbing.”
+
+5. `DigitalJamaahCardPreview`
+   Menampilkan preview kartu jamaah digital.
+
+Isi:
+
+* Nama jamaah
+* Travel
+* Rombongan
+* Bus
+* Kamar
+* Button: “Buka Kartu Jamaah”
+
+Klik button ke route:
+`/profil/kartu`
+
+==================================================
+FILE DATA DUMMY
+===============
+
+Buat file:
+
+`src/data/travelCompanion.ts`
+
+Isi data dan helper untuk:
+
+* operational info
+* announcement
+* focus berdasarkan fase
+* whatsapp link
+
+Data minimal:
+
+```ts
+import type { Fase } from '../types';
+
+export type TravelOperationalInfo = {
+  groupCode: string;
+  busNumber: string;
+  roomNumber: string;
+  hotelMakkah: string;
+  hotelMadinah: string;
+  meetingPoint: string;
+  guideName: string;
+  guideRole: string;
+  guideWhatsapp: string;
+  travelWhatsapp: string;
+  emergencyNote: string;
+};
+
+export type TravelAnnouncement = {
+  id: string;
+  label: string;
+  title: string;
+  content: string;
+  important?: boolean;
+  publishedAt: string;
+};
+
+const DEFAULT_OPERATIONAL_INFO: TravelOperationalInfo = {
+  groupCode: 'Rombongan A',
+  busNumber: 'Bus 3',
+  roomNumber: '804',
+  hotelMakkah: 'Hotel Makkah — diisi travel',
+  hotelMadinah: 'Hotel Madinah — diisi travel',
+  meetingPoint: 'Lobby hotel / titik kumpul dari pembimbing',
+  guideName: 'Ust. Pembimbing',
+  guideRole: 'Pembimbing Rombongan',
+  guideWhatsapp: '6281234567890',
+  travelWhatsapp: '6281234567890',
+  emergencyNote: 'Jika tersesat, tetap tenang. Hubungi pembimbing dan tunjukkan Kartu Jamaah Digital.',
+};
+
+const DEFAULT_ANNOUNCEMENTS: TravelAnnouncement[] = [
+  {
+    id: 'announcement-1',
+    label: 'Penting',
+    title: 'Perhatikan titik kumpul hari ini',
+    content:
+      'Jamaah dimohon berkumpul sesuai arahan pembimbing. Bawa sandal, tas kecil, kartu jamaah, dan tetap bersama rombongan.',
+    important: true,
+    publishedAt: new Date().toISOString(),
+  },
+];
+
+export function getOperationalInfo(_tenantId?: string | null): TravelOperationalInfo {
+  return DEFAULT_OPERATIONAL_INFO;
+}
+
+export function getLatestAnnouncement(_tenantId?: string | null): TravelAnnouncement | null {
+  return DEFAULT_ANNOUNCEMENTS[0] ?? null;
+}
+
+export function getFocusByFase(fase: Fase) {
+  if (fase === 'tanah-suci') {
+    return {
+      title: 'Fokus ibadah hari ini',
+      description:
+        'Ikuti arahan pembimbing, buka panduan ibadah, dan gunakan counter saat tawaf atau sa’i.',
+      ctaLabel: 'Mulai Ibadah',
+      ctaTo: '/ibadah/navigator',
+    };
+  }
+
+  if (fase === 'selesai') {
+    return {
+      title: 'Jaga kenangan perjalanan',
+      description:
+        'Lengkapi jurnal, simpan sertifikat, dan terus jaga amal setelah pulang.',
+      ctaLabel: 'Buka Jurnal',
+      ctaTo: '/profil/jurnal',
+    };
+  }
+
+  return {
+    title: 'Persiapkan keberangkatan',
+    description:
+      'Lengkapi checklist, dokumen, perlengkapan, dan pahami tata cara umrah sebelum berangkat.',
+    ctaLabel: 'Lengkapi Persiapan',
+    ctaTo: '/profil/persiapan',
+  };
+}
+
+export function whatsappLink(
+  phone: string,
+  message = 'Assalamu’alaikum, saya butuh bantuan selama perjalanan umrah.'
+): string {
+  const clean = phone.replace(/\D/g, '');
+  const normalized = clean.startsWith('0') ? `62${clean.slice(1)}` : clean;
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+}
+```
+
+==================================================
+UPDATE TIPE JAMAah
+==================
+
+Update interface `Jamaah` di `src/types/index.ts` agar mendukung data operasional travel:
+
+```ts
+export interface Jamaah {
+  nama: string;
+  nomorJamaah: string;
+  travel: string;
+  kodeAktivasi: string;
+  fase: Fase;
+
+  rombongan?: string;
+  nomorBus?: string;
+  nomorKamar?: string;
+  hotelMakkah?: string;
+  hotelMadinah?: string;
+  pembimbingNama?: string;
+  pembimbingWhatsapp?: string;
+}
+```
+
+Jangan sampai perubahan ini merusak data lama. Field tambahan harus optional.
+
+==================================================
+UPDATE DATA LOGIN DEMO
+======================
+
+Update `src/data/jamaah.ts`.
+
+Saat membuat object `jamaah`, tambahkan data operasional demo:
+
+```ts
+const jamaah: Jamaah = {
+  nama: n,
+  nomorJamaah: `UMR-${tahun}-${String(nomorUrut++).padStart(4, '0')}`,
+  travel: data.nama_travel,
+  kodeAktivasi: k,
+  fase: 'persiapan',
+
+  rombongan: 'Rombongan A',
+  nomorBus: 'Bus 3',
+  nomorKamar: '804',
+  hotelMakkah: 'Hotel Makkah — diisi travel',
+  hotelMadinah: 'Hotel Madinah — diisi travel',
+  pembimbingNama: 'Ust. Pembimbing',
+  pembimbingWhatsapp: '6281234567890',
+};
+```
+
+==================================================
+BUAT HALAMAN KARTU JAMAAH DIGITAL
+=================================
+
+Buat file:
+
+`src/pages/KartuJamaah.tsx`
+
+Isi halaman ini dengan:
+
+* Header: “Kartu Jamaah”
+* Card besar bergaya premium
+* Nama jamaah
+* Nama travel
+* Nomor jamaah
+* Kode aktivasi
+* Rombongan
+* Bus
+* Kamar
+* Hotel Makkah
+* Hotel Madinah
+* Titik kumpul
+* Nama pembimbing
+* Tombol WhatsApp pembimbing
+* Tombol Telepon pembimbing
+* Catatan: “Simpan halaman ini atau screenshot kartu jamaah agar mudah ditunjukkan saat dibutuhkan.”
+
+Route halaman:
+`/profil/kartu`
+
+==================================================
+UPDATE ROUTE
+============
+
+Update `src/App.tsx`.
+
+Tambahkan import:
+
+```ts
+import KartuJamaah from './pages/KartuJamaah';
+```
+
+Tambahkan route:
+
+```tsx
+<Route path="/profil/kartu" element={<KartuJamaah />} />
+```
+
+Letakkan dekat route profil lain.
+
+==================================================
+UPDATE DASHBOARD
+================
+
+Update `src/pages/Beranda.tsx`.
+
+Import komponen baru:
+
+```ts
+import { TravelCompanionFlow } from '../components/dashboard/TravelCompanionFlow';
+```
+
+Pasang komponen ini di mobile dashboard setelah kartu utama/fokus utama, tapi sebelum chip akses cepat dan grid fitur.
+
+Urutan mobile final:
+
+1. Hero/header jamaah existing
+2. Kartu fokus utama existing
+3. `<TravelCompanionFlow />`
+4. Agenda hari ini existing
+5. Chip akses cepat existing
+6. Checklist persiapan existing
+7. Grid fitur existing
+8. Sertifikat existing
+
+Untuk desktop, tampilkan versi compact dari `TravelCompanionFlow` atau card-card yang sama dalam grid 3 kolom setelah stats strip dan sebelum bento grid.
+
+==================================================
+DESIGN REQUIREMENTS
+===================
+
+Ikuti style visual existing project:
+
+* Mobile-first
+* Card rounded besar
+* Soft shadow
+* Border hairline
+* Warna primary travel
+* Font yang sudah dipakai project
+* Jangan pakai warna norak
+* Jangan membuat desain terlalu ramai
+* UI harus cocok untuk jamaah muda dan lansia
+
+Ukuran tombol minimal nyaman di mobile.
+Emergency/WhatsApp harus jelas dan mudah ditekan.
+
+==================================================
+ACCEPTANCE CRITERIA
+===================
+
+Perubahan dianggap berhasil jika:
+
+1. Dashboard langsung terasa sebagai aplikasi travel.
+2. Jamaah melihat nama travel dan identitas perjalanan.
+3. Jamaah melihat rombongan, bus, kamar, hotel.
+4. Jamaah melihat fokus perjalanan sesuai fase.
+5. Jamaah melihat pengumuman penting dari travel.
+6. Jamaah bisa langsung WhatsApp/telepon pembimbing.
+7. Jamaah bisa membuka kartu jamaah digital.
+8. Fitur lama tetap ada dan tidak rusak.
+9. Route `/profil/kartu` bisa dibuka.
+10. App tetap bisa build tanpa TypeScript error.
+11. Jalankan `npm run build` dan perbaiki error sampai berhasil.
+
+==================================================
+CATATAN PENTING
+===============
+
+Jangan mulai dari database/admin dulu. Untuk tahap ini buat flow dashboard hidup dengan data lokal/fallback dulu. Setelah UI dan flow terasa benar, nanti baru disambungkan ke Supabase dan admin travel.
+
+Prioritas pengalaman:
+Jamaah buka app → langsung tahu ini aplikasi dari travelnya → tahu agenda/fokus hari ini → tahu pengumuman penting → tahu siapa yang harus dihubungi → bisa buka panduan ibadah.
+
+Jangan jadikan dashboard hanya kumpulan menu.
+Jadikan dashboard sebagai pusat komando perjalanan jamaah.

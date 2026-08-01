@@ -1,0 +1,61 @@
+# PROMPT — FAB Ibadah Warna Ngikut Tema Tenant
+
+## Konteks
+File: `artifacts/umrahme/src/components/BottomNav.tsx`
+
+FAB (tombol bulat tengah) Ibadah di bottom nav pakai warna biru hardcoded:
+- `#0ea5e9` dan `#0284c7`
+
+Padahal warna tenant sudah di-apply ke CSS variable `--color-primary` dan `--color-primary-deep`
+di `AuthContext.tsx` saat login. Jadi kita tinggal pakai CSS variable itu — tanpa prop drilling.
+
+---
+
+## Perubahan — `BottomNav.tsx`
+
+Cari bagian FAB center (tombol Ibadah), yaitu blok `style` yang isinya warna `#0ea5e9` / `#0284c7`:
+
+```tsx
+style={{
+  marginTop: '-28px',
+  background: isActive
+    ? 'linear-gradient(145deg, #0284c7 0%, #0369a1 100%)'
+    : 'linear-gradient(145deg, #0ea5e9 0%, #0284c7 100%)',
+  boxShadow: '0 4px 16px rgba(14,165,233,0.40), 0 1px 4px rgba(0,0,0,0.16)',
+}}
+```
+
+Ganti jadi:
+
+```tsx
+style={{
+  marginTop: '-28px',
+  background: isActive
+    ? 'linear-gradient(145deg, var(--color-primary-deep) 0%, var(--color-primary) 100%)'
+    : 'linear-gradient(145deg, var(--color-primary) 0%, var(--color-primary-deep) 100%)',
+  boxShadow: '0 4px 16px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 1px 4px rgba(0,0,0,0.16)',
+}}
+```
+
+---
+
+## Perubahan — Warna active icon & label nav item lain
+
+Cari class untuk nav item non-center saat active:
+
+```tsx
+<span className={`flex h-9 w-9 items-center justify-center rounded-2xl transition-all ${isActive ? 'bg-primary/10' : 'group-active:bg-surface-bone'}`}>
+  <Icon className={`h-[20px] w-[20px] transition-colors duration-200 ${isActive ? 'text-primary' : 'text-ash'}`} />
+</span>
+<span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-primary' : 'text-ash'}`}>
+```
+
+Ini sudah pakai `text-primary` dan `bg-primary/10` yang mengacu ke `--color-primary` — **tidak perlu diubah**.
+
+---
+
+## Catatan
+- `--color-primary` dan `--color-primary-deep` sudah di-set di `AuthContext.tsx` saat login
+- `color-mix()` didukung semua browser modern (Chrome 111+, Safari 16.2+, Firefox 113+)
+- Tidak perlu ubah file lain, tidak perlu prop drilling, tidak perlu import apapun
+- Pastikan tidak ada perubahan lain di luar yang disebutkan

@@ -1,0 +1,174 @@
+# PROMPT: Jadikan PWA — Offline (Konten Statis) + Installable
+
+**Tujuan:** Umrahme bisa dipakai OFFLINE untuk konten statis (doa, manasik, tata cara, ihram, peta lokasi, miqat, glosarium, FAQ) — penting saat tanpa sinyal di tanah suci — DAN bisa di-install ke home screen (Add to Home Screen) seperti aplikasi native.
+
+Saat ini app BELUM PWA (tidak ada service worker/manifest). Gunakan **vite-plugin-pwa** (Workbox) — standar & otomatis.
+
+**File terkait:**
+- `artifacts/umrahme/package.json` (tambah dependency)
+- `artifacts/umrahme/vite.config.ts` (daftarkan plugin PWA)
+- `artifacts/umrahme/public/` (icon PWA — dari `pwa-icons.zip`)
+- `artifacts/umrahme/index.html` (meta theme-color, dll — opsional, plugin bisa inject)
+- (Opsional) komponen kecil indikator offline & tombol install
+
+Kerjakan bertahap, commit per tahap. Test build tiap tahap.
+
+---
+
+## LANGKAH 1 — Pasang icon
+
+Ekstrak `pwa-icons.zip` ke `artifacts/umrahme/public/`. Isinya:
+- `icon-192.png`
+- `icon-512.png`
+- `icon-maskable-512.png`
+
+---
+
+## LANGKAH 2 — Install dependency
+
+```bash
+pnpm --filter umrahme add -D vite-plugin-pwa
+```
+
+---
+
+## LANGKAH 3 — Konfigurasi `vite.config.ts`
+
+Tambahkan import dan plugin VitePWA ke array `plugins`:
+```ts
+import { VitePWA } from 'vite-plugin-pwa';
+
+// di dalam plugins: [ ... , tambahkan: ]
+VitePWA({
+  registerType: 'autoUpdate',
+  includeAssets: ['favicon.png', 'favicon.svg', 'logo.png'],
+  manifest: {
+    name: 'Umrahme — Pendamping Umrah',
+    short_name: 'Umrahme',
+    description: 'Pendamping ibadah umrah: doa, manasik, peta lokasi, dan panduan lengkap.',
+    theme_color: '#9E3C58',
+    background_color: '#f9f7f3',
+    display: 'standalone',
+    orientation: 'portrait',
+    start_url: '/',
+    scope: '/',
+    icons: [
+      { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+    ],
+  },
+  workbox: {
+    // Precache semua aset hasil build (JS, CSS, HTML) → app shell jalan offline
+    globPatterns: ['**/*.{js,css,html,woff2,woff,ttf}'],
+    // Jangan precache foto besar; cache saat diakses (runtime)
+    runtimeCaching: [
+      {
+        // Foto lokasi & gambar di /lokasi/ dan aset gambar lain → cache-first
+        urlPattern: ({ url }) => url.pathname.startsWith('/lokasi/') || /\.(?:png|jpg|jpeg|svg|avif|webp)$/.test(url.pathname),
+        handler: 'CacheFirst',
+        options: {
+          cacheName: 'umrahme-images',
+          expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 60 }, // 60 hari
+        },
+      },
+      {
+        // Font (Google Fonts dll) → cache-first
+        urlPattern: ({ url }) => url.origin.includes('fonts.g'),
+        handler: 'CacheFirst',
+        options: { cacheName: 'umrahme-fonts', expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 } },
+      },
+      {
+        // API Supabase → network-first (data dinamis: tampilkan terbaru, fallback cache jika offline)
+        urlPattern: ({ url }) => url.origin.includes('supabase'),
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'umrahme-api',
+          networkTimeoutSeconds: 4,
+          expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 }, // 1 hari
+        },
+      },
+    ],
+    // SPA fallback: rute apa pun yang tidak ada di cache → index.html (app shell)
+    navigateFallback: '/index.html',
+    navigateFallbackDenylist: [/^\/api/, /supabase/],
+  },
+  // devOptions: { enabled: true }, // aktifkan kalau mau test SW saat dev
+}),
+```
+
+> Catatan: `globPatterns` mem-precache app shell + seluruh kode (termasuk data statis doa/manasik/dll yang ter-bundle dalam JS). Jadi begitu app dibuka sekali & SW terpasang, semua konten statis langsung jalan offline.
+
+---
+
+## LANGKAH 4 — Registrasi service worker (entry point)
+
+Jika pakai `registerType: 'autoUpdate'`, vite-plugin-pwa biasanya auto-inject registrasi. Untuk memastikan, tambahkan di `src/main.tsx` (paling atas setelah import):
+```ts
+import { registerSW } from 'virtual:pwa-register';
+registerSW({ immediate: true });
+```
+Jika TypeScript mengeluh soal modul `virtual:pwa-register`, tambahkan ke `src/vite-env.d.ts`:
+```ts
+/// <reference types="vite-plugin-pwa/client" />
+```
+
+---
+
+## LANGKAH 5 (Opsional, disarankan) — Indikator Offline
+
+Buat komponen kecil yang menampilkan banner saat koneksi hilang, agar jamaah paham mereka sedang offline (data dinamis mungkin tidak terbaru):
+```tsx
+// components/OfflineBanner.tsx
+import { useEffect, useState } from 'react';
+export default function OfflineBanner() {
+  const [offline, setOffline] = useState(!navigator.onLine);
+  useEffect(() => {
+    const on = () => setOffline(false);
+    const off = () => setOffline(true);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, []);
+  if (!offline) return null;
+  return (
+    <div className="fixed inset-x-0 top-0 z-50 bg-ink/90 px-4 py-1.5 text-center font-mono text-[11px] text-white backdrop-blur">
+      Mode Offline — konten panduan & doa tetap bisa diakses
+    </div>
+  );
+}
+```
+Render `<OfflineBanner />` di root (mis. App.tsx, di atas layout).
+
+---
+
+## LANGKAH 6 (Opsional) — Tombol "Install Aplikasi"
+
+Tangkap event `beforeinstallprompt` untuk tampilkan tombol install kustom (mis. di Profil):
+```tsx
+const [deferred, setDeferred] = useState<any>(null);
+useEffect(() => {
+  const h = (e: any) => { e.preventDefault(); setDeferred(e); };
+  window.addEventListener('beforeinstallprompt', h);
+  return () => window.removeEventListener('beforeinstallprompt', h);
+}, []);
+// tombol: if (deferred) { deferred.prompt(); }
+```
+iOS Safari tidak mendukung `beforeinstallprompt` — untuk iOS tampilkan instruksi manual ("Tap Share → Add to Home Screen").
+
+---
+
+## TES OFFLINE (wajib sebelum yakin)
+1. Build production: `pnpm --filter umrahme build` lalu preview, ATAU deploy ke Vercel (SW hanya aktif di production/preview, bukan dev kecuali devOptions diaktifkan).
+2. Buka app di browser, biarkan termuat penuh sekali (SW terpasang & precache).
+3. Buka DevTools → Network → centang "Offline" (atau matikan wifi HP).
+4. Reload & navigasi: Beranda, Doa, Manasik, Peta Lokasi, Panduan → HARUS tetap terbuka & foto yang sudah pernah diakses tetap muncul.
+5. Bagian dinamis (jadwal/pengumuman/jurnal dari Supabase) → menampilkan data terakhir yang ter-cache atau pesan tidak tersedia; ini wajar untuk tahap ini.
+
+---
+
+## CATATAN
+- Cakupan tahap ini: KONTEN STATIS offline (doa, manasik, tata cara, ihram, peta, miqat, glosarium, FAQ) + app installable. Data Supabase pakai network-first (tampil saat online, versi cache saat offline).
+- Foto lokasi ter-cache saat pertama diakses online — sarankan jamaah membuka halaman Peta Lokasi sekali saat masih ada sinyal (mis. di hotel) agar fotonya tersimpan.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub tiap tahap.

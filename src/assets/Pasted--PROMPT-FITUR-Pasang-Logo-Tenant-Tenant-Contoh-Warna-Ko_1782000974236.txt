@@ -1,0 +1,44 @@
+# PROMPT FITUR — Pasang Logo Tenant + Tenant Contoh Warna Kontras
+
+> Konteks: fondasi white-label Level 1 sudah selesai (`src/config/tenants/*`, `activeTenant`, CSS variable warna). Yang BELUM dikerjakan: `activeTenant.logoPath` ada di config tapi tidak pernah dirender ke UI manapun — sidebar desktop, hero mobile, dan halaman Login saat ini masih menampilkan teks/inisial, bukan logo. Selain itu, kedua tenant yang ada (`default` dan `barakah-mulia`) kebetulan punya warna primary yang SAMA PERSIS (`#0ea5e9`), sehingga belum ada bukti visual bahwa sistem warna per-tenant benar-benar berfungsi.
+
+## BAGIAN 1 — Pasang logo di 3 titik
+
+### 1a. Sidebar desktop (`src/components/DesktopSidebar.tsx`)
+Di bagian "Brand" (atas sidebar, sebelum kartu jamaah), tambahkan elemen `<img src={activeTenant.logoPath} alt={activeTenant.namaTravel} className="h-8 w-auto mb-2" />` di atas teks nama tenant yang sudah ada (`{activeTenant.namaTravel}`). Logo dan teks nama TETAP keduanya tampil — logo di atas, nama tenant di bawahnya seperti sekarang. Jika `activeTenant.logoPath` gagal dimuat (404), pastikan tidak merusak layout — boleh tambahkan `onError` sederhana yang menyembunyikan elemen img jika gambar gagal load.
+
+### 1b. Hero Beranda mobile (`src/pages/Beranda.tsx`, bagian `<div className="lg:hidden">`)
+Di area hero foto masjid, pada pojok kanan atas yang saat ini menampilkan kaligrafi Arab (`السَّلَامُ عَلَيْكُمْ`), tambahkan logo tenant KECIL (`h-6 w-auto` atau serupa, dengan filter `brightness-0 invert` agar terlihat putih di atas foto gelap) DI ATAS kaligrafi tersebut — bukan menggantikan, kaligrafi Arab tetap ada di bawahnya. Posisi: pojok kanan atas, sejajar dengan `top: max(1.2rem, env(safe-area-inset-top))` yang sudah dipakai kaligrafi saat ini.
+
+### 1c. Halaman Login (`src/pages/Login.tsx`)
+Cari area hero/atas halaman Login (sebelum form kode aktivasi). Tambahkan logo tenant (`activeTenant.logoPath`) di posisi yang masuk akal secara visual — jika ada area judul/sapaan di atas form, logo ditempatkan di atas judul tersebut, ukuran proporsional (`h-10` hingga `h-14`, sesuaikan dengan tata letak yang ada). Jika halaman Login sudah pernah diredesign (kemungkinan strukturnya berbeda dari versi awal), sesuaikan penempatan logo dengan struktur AKTUAL yang ada di file ini saat prompt dijalankan — jangan asumsikan struktur lama.
+
+## BAGIAN 2 — Tenant contoh dengan warna kontras
+
+Buat `src/config/tenants/contoh-hijau.ts` mengikuti pola tenant lain yang sudah ada, dengan warna BERBEDA jauh dari biru sky (`#0ea5e9`) supaya kontrasnya jelas terlihat — gunakan hijau emerald:
+```ts
+{
+  id: 'contoh-hijau',
+  namaTravel: 'Zamzam Barokah Travel',
+  theme: {
+    primary: '#059669',
+    primaryDeep: '#047857',
+  },
+  logoPath: '/logos/contoh-hijau.svg',
+  pageTitle: 'Zamzam Barokah Travel — Pendamping Umrah Anda',
+}
+```
+Daftarkan di `src/config/tenants/index.ts` (tambahkan import + entri registry, mengikuti pola `barakah-mulia` yang sudah ada). Buat juga `public/logos/contoh-hijau.svg` (placeholder sederhana, boleh teks "ZBT" atau inisial, warna isi mengikuti hijau di atas).
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Struktur `TenantConfig`/`TenantTheme` di `tenant.types.ts` — tidak ditambah field baru, logo & warna sudah cukup dengan field yang ada.
+- Tenant `default` dan `barakah-mulia` yang sudah ada — TIDAK diubah, hanya ditambahkan satu tenant baru (`contoh-hijau`).
+- Logic resolver `activeTenant` di `tenants/index.ts` — hanya ditambah satu baris import + satu entri registry, tidak diubah logic fallback-nya.
+- Bagian lain dari `DesktopSidebar.tsx`, `Beranda.tsx`, `Login.tsx` di luar penempatan logo yang disebutkan — tidak disentuh.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Build tiga kali berturut-turut dengan `VITE_TENANT_ID` berbeda (`default`, `barakah-mulia`, `contoh-hijau`) — pastikan ketiganya sukses build.
+3. Tunjukkan screenshot/preview sidebar desktop, hero Beranda mobile, dan halaman Login untuk SETIDAKNYA dua kondisi: `VITE_TENANT_ID=barakah-mulia` (biru) dan `VITE_TENANT_ID=contoh-hijau` (hijau) — supaya perbedaan warna dan logo benar-benar terlihat berdampingan sebagai bukti sistem theming bekerja, bukan cuma diklaim dari kode.

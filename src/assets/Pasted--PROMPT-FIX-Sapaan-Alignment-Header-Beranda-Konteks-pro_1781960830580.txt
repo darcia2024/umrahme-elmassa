@@ -1,0 +1,34 @@
+# PROMPT FIX — Sapaan & Alignment Header Beranda
+
+> Konteks: project Umrahme, bagian header paling atas halaman Beranda (sebelum row akses cepat lingkaran/ikon). Saat ini hanya menampilkan nama jamaah ("Dar") tanpa kalimat sapaan, dan teks Arab "السلام عليكم" di pojok kanan atas posisinya terlihat ditempel begitu saja, tidak presisi/align dengan elemen lain di section ini.
+
+## MASALAH 1 — TIDAK ADA SAPAAN
+
+Saat ini header hanya menampilkan nama besar ("Dar") tanpa kalimat pembuka apapun di atasnya, terasa dingin/kurang ramah untuk halaman pertama yang dilihat jamaah.
+
+**Perbaikan**: tambahkan kalimat sapaan singkat sebelum/di atas nama, dengan nuansa hangat dan islami sesuai karakter Umrahme (Claude Design bebas memilih kalimat yang paling pas, beberapa contoh arah yang bisa dipertimbangkan: "Assalamu'alaikum," sebagai pembuka lalu nama di baris/ukuran besar di bawahnya, atau "Selamat datang kembali," — pilih yang paling natural mengikuti pola tipografi yang sudah ada). Sapaan ini ukurannya harus jelas lebih kecil dari nama (nama tetap jadi elemen paling besar/dominan di header, sapaan adalah pengantar kecil di atasnya), mengikuti hierarki yang sudah diterapkan di label-label lain (mis. badge "FASE PERSIAPAN" yang juga kecil dan secondary terhadap nama).
+
+## MASALAH 2 — TEKS ARAB TIDAK presisi/RATA
+
+Teks Arab "السلام عليكم" (atau kaligrafi serupa) di pojok kanan atas saat ini terlihat melayang bebas tanpa alignment yang jelas terhadap elemen lain di section header (nama, badge fase, dsb).
+
+**Perbaikan**: 
+- Rapikan posisi teks Arab ini agar memiliki garis alignment yang JELAS dan disengaja terhadap elemen lain di section — pilih SALAH SATU pendekatan presisi berikut (Claude Design pilih yang menghasilkan komposisi paling rapi):
+  - **Rata kanan terhadap tepi container/padding section** (bukan posisi acak di dalam area kosong) — sehingga tepi kanan teks Arab sejajar lurus dengan tepi kanan elemen lain di section ini (mis. sejajar dengan tepi kanan card/container header).
+  - **Sejajar secara vertikal (baseline atau center)** dengan nama atau sapaan di sisi kiri — sehingga ada hubungan horizontal yang jelas antara teks Arab dan teks Indonesia di baris yang sama, bukan dua elemen yang independen satu sama lain.
+- Pastikan jarak (padding/margin) teks Arab ke tepi container KONSISTEN dengan jarak elemen-elemen lain ke tepi yang sama (mis. jika nama punya padding-left 24px dari tepi kiri container, teks Arab idealnya punya padding-right yang setara dari tepi kanan container — supaya terasa seimbang/framed, bukan sembarang nempel).
+- Ukuran teks Arab juga ditinjau ulang agar proporsional terhadap besar section header secara keseluruhan — tidak terlalu besar sehingga mendominasi, tidak terlalu kecil sehingga terlihat seperti tempelan.
+
+## PRINSIP UMUM YANG DIMINTA
+
+Hasil akhir section header ini harus terasa seperti SATU KOMPOSISI YANG DIRANCANG SENGAJA — semua elemen (sapaan, nama, badge fase, teks Arab) punya hubungan alignment yang jelas satu sama lain (baik itu rata kiri bersama, rata kanan bersama, atau center yang konsisten), BUKAN kumpulan elemen yang masing-masing ditempel di posisi yang terasa kebetulan/acak.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Konten/data yang ditampilkan (nama jamaah dari state, fase perjalanan) — tidak berubah, hanya presentasi visualnya.
+- Token warna, font, dan elemen design system lain — tidak berubah.
+- Row akses cepat lingkaran (Doa, Ihram, Tawaf, Sa'i, Peta, Sholat) dan elemen di bawah header — tidak disentuh oleh fix ini.
+
+## OUTPUT
+
+Build langsung — ini perbaikan terbatas pada satu section (header Beranda). Setelah selesai, tunjukkan area header saja untuk verifikasi: ada kalimat sapaan yang jelas di atas nama, dan teks Arab memiliki alignment yang presisi & disengaja terhadap elemen lain di section (bukan melayang bebas).

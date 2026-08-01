@@ -1,0 +1,130 @@
+# PROMPT: Tambah Bagian "Dam (Denda Pelanggaran Ihram)" di Panduan Ihram
+
+**File terkait:**
+- `artifacts/umrahme/src/data/ihram.ts` (tambah data dam)
+- `artifacts/umrahme/src/pages/PanduanIhram.tsx` (render section baru)
+
+Daftar larangan ihram sudah ada di app, tapi BELUM ada penjelasan **dam (denda)** — konsekuensi hukum bila melanggar. Ini bagian paling krusial secara fikih. Tambahkan section "Dam" di halaman Panduan Ihram (di bawah section Larangan).
+
+---
+
+## LANGKAH 1 — Tambah data di `data/ihram.ts`
+
+Tambahkan interface & data berikut (tambahkan tipe baru di `types/index.ts` jika perlu, atau definisikan inline di ihram.ts):
+
+```ts
+export interface JenisDam {
+  id: string;
+  nama: string;
+  untukPelanggaran: string;   // pelanggaran apa yang kena dam ini
+  bentuk: string;             // bentuk tebusan
+  catatan?: string;
+}
+
+export const jenisDam: JenisDam[] = [
+  {
+    id: 'dam-tartib-takdir',
+    nama: 'Dam Tartib & Takdir',
+    untukPelanggaran: 'Meninggalkan salah satu wajib umrah/haji — mis. tidak ihram dari miqat (melewati miqat tanpa ihram), tidak mabit, tidak melempar jumrah (haji).',
+    bentuk: 'Menyembelih 1 ekor kambing. Jika tidak mampu, berpuasa 10 hari (3 hari saat haji + 7 hari setelah pulang).',
+    catatan: 'Disebut "tartib" karena harus berurutan (sembelih dulu, puasa jika tak mampu) dan "takdir" karena kadarnya sudah ditentukan.',
+  },
+  {
+    id: 'dam-takhyir-takdir',
+    nama: 'Dam Takhyir & Takdir',
+    untukPelanggaran: 'Melanggar larangan ihram seperti: mencukur/memotong rambut, memotong kuku, memakai wewangian, memakai pakaian berjahit (pria), atau menutup kepala (pria).',
+    bentuk: 'Boleh memilih (takhyir) salah satu: menyembelih 1 kambing, ATAU memberi makan 6 orang miskin (tiap orang ½ sha\u2019 \u2248 1,5 kg makanan pokok), ATAU berpuasa 3 hari.',
+    catatan: 'Disebut "takhyir" karena boleh memilih, dan "takdir" karena kadarnya tertentu. Dasar: QS. Al-Baqarah: 196 (fidyah Ka\u2019ab bin Ujrah).',
+  },
+  {
+    id: 'dam-jima',
+    nama: 'Dam karena Jima\u2019 (Hubungan Suami-Istri)',
+    untukPelanggaran: 'Berhubungan suami-istri sebelum tahallul. Ini pelanggaran terberat yang dapat MERUSAK ibadah umrah/haji.',
+    bentuk: 'Untuk umrah: menyembelih 1 kambing & umrahnya batal (wajib qadha/mengulang). Untuk haji (sebelum tahallul awal): menyembelih seekor unta/sapi, haji batal, wajib qadha tahun depan.',
+    catatan: 'Pelanggaran paling berat. Jauhi segala pendahuluan jima\u2019 selama masih berihram.',
+  },
+  {
+    id: 'dam-berburu',
+    nama: 'Dam karena Berburu',
+    untukPelanggaran: 'Membunuh atau memburu hewan darat liar yang halal dimakan selama ihram.',
+    bentuk: 'Menyembelih hewan ternak yang sebanding dengan hewan buruan, ATAU memberi makan orang miskin senilai itu, ATAU berpuasa.',
+    catatan: 'Dasar: QS. Al-Ma\u2019idah: 95. Hewan di tanah haram dilindungi.',
+  },
+];
+
+export const damPengantar =
+  'Dam adalah denda atau tebusan yang wajib ditunaikan ketika seseorang melanggar larangan ihram atau meninggalkan salah satu wajib umrah/haji. Tujuannya menutup kekurangan ibadah. Jenis dan kadar dam berbeda tergantung jenis pelanggaran.';
+```
+
+---
+
+## LANGKAH 2 — Render section "Dam" di `PanduanIhram.tsx`
+
+Setelah section "Larangan Ihram", tambahkan section baru. Pakai komponen `Section` yang sudah ada (accordion) atau kartu, sesuai pola halaman. Contoh:
+
+```tsx
+{/* Dam (denda pelanggaran) */}
+<section className="mt-6">
+  <h2 className="mb-2.5 font-mono text-[11px] uppercase tracking-widest text-mute">
+    Dam (Denda Pelanggaran)
+  </h2>
+  <p className="mb-3 text-[13px] leading-relaxed text-charcoal">{damPengantar}</p>
+
+  <div className="space-y-2.5">
+    {jenisDam.map((d) => (
+      <div key={d.id} className="rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft">
+        <div className="flex items-start gap-2.5">
+          <div className="mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg bg-gradient-to-br from-gold/20 to-gold/5">
+            <span className="font-mono text-[13px] font-bold text-gold">\u0631</span>
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[14px] font-bold leading-tight text-ink">{d.nama}</h3>
+          </div>
+        </div>
+        <div className="mt-2.5 space-y-2 text-[12.5px] leading-snug">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-wider text-mute">Pelanggaran</p>
+            <p className="mt-0.5 text-charcoal">{d.untukPelanggaran}</p>
+          </div>
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-wider text-mute">Bentuk Dam</p>
+            <p className="mt-0.5 text-charcoal">{d.bentuk}</p>
+          </div>
+          {d.catatan && (
+            <div className="rounded-lg border border-gold/20 bg-gold/5 px-3 py-2">
+              <p className="text-[12px] leading-snug text-gold">{d.catatan}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {/* Catatan penutup */}
+  <div className="mt-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+    <p className="text-[12.5px] leading-relaxed text-primary">
+      Penyembelihan dam dilakukan di tanah haram dan dagingnya dibagikan kepada fakir miskin di sana. Jika ragu tentang kewajiban dam atas kasus tertentu, tanyakan kepada pembimbing/muthowif atau ulama yang terpercaya.
+    </p>
+  </div>
+</section>
+```
+
+Jangan lupa import data baru:
+```tsx
+import { niatIhram, larganganIhram, tataCaraMemakaiIhram, jenisDam, damPengantar } from '../data/ihram';
+```
+
+---
+
+## CATATAN AKURASI (penting — sebagai mahasiswa Ushuluddin, harap review)
+- Pembagian dam (tartib-takdir, takhyir-takdir, dll) mengikuti pembahasan fikih mazhab Syafi'i yang umum dipakai di Indonesia. Klasifikasi & istilah bisa berbeda antar mazhab.
+- Dam takhyir-takdir untuk pelanggaran larangan (cukur rambut dll) dasarnya QS. Al-Baqarah: 196 dan hadis Ka'ab bin Ujrah (Bukhari-Muslim): pilihan puasa 3 hari / memberi makan 6 miskin / sembelih kambing.
+- Untuk kasus spesifik, app sebaiknya mengarahkan jamaah bertanya ke pembimbing/ulama (sudah dimasukkan di catatan penutup) — hindari memberi fatwa pasti untuk kasus rumit.
+- TOLONG VERIFIKASI bagian fikih ini sebelum produksi, terutama detail kadar & klasifikasi, agar sesuai manhaj yang Anda anut.
+
+---
+
+## ATURAN
+- Jangan ubah section niat, larangan, atau cara pakai ihram yang sudah ada.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

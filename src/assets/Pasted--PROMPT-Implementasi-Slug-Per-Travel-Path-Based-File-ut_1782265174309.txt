@@ -1,0 +1,236 @@
+# PROMPT: Implementasi Slug Per Travel (Path-Based)
+
+**File utama:** `artifacts/umrahme/src/` (beberapa file)
+
+Tujuan: tiap travel punya URL branded sendiri, contoh `umrahme.app/t/temanumrah`. Saat jamaah buka URL ini, halaman login otomatis tahu travel-nya (nama + logo + warna tampil), jamaah cukup masukkan nama tanpa perlu kode aktivasi. Tetap pertahankan login lama via kode aktivasi sebagai fallback.
+
+---
+
+## LANGKAH 1 — Tambah kolom `slug` di Supabase
+
+Jalankan di Supabase SQL Editor:
+```sql
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS slug text UNIQUE;
+
+-- Isi slug untuk tenant yang sudah ada
+UPDATE tenants SET slug = 'temanumrah' WHERE activation_code = 'TEMAN01';
+UPDATE tenants SET slug = 'alfajr' WHERE activation_code = 'DEMO01';
+```
+
+---
+
+## LANGKAH 2 — Tambah type `slug` di `lib/supabase.ts`
+
+Pada `type TenantRow`, tambahkan field:
+```ts
+slug: string | null;
+```
+
+Tambahkan fungsi fetch tenant by slug (letakkan dekat `fetchTenant`):
+```ts
+export async function fetchTenantBySlug(slug: string): Promise<TenantRow | null> {
+  const { data, error } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('slug', slug.toLowerCase())
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data as TenantRow | null;
+}
+```
+
+---
+
+## LANGKAH 3 — Tambah fungsi validasi login by slug di `data/jamaah.ts`
+
+Tambahkan fungsi baru (mirip `validasiKode` tapi pakai slug, tanpa perlu kode):
+```ts
+export async function validasiSlug(slug: string, nama: string): Promise<HasilValidasi> {
+  const n = nama.trim();
+  if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
+
+  const { data: tenant, error: tenantErr } = await supabase
+    .from('tenants')
+    .select('*')
+    .eq('slug', slug.toLowerCase())
+    .maybeSingle();
+
+  if (tenantErr || !tenant) {
+    return { ok: false, error: 'Travel tidak ditemukan.' };
+  }
+
+  const { data: akun, error: akunErr } = await supabase
+    .from('jamaah_accounts')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .ilike('nama', n)
+    .maybeSingle();
+
+  if (akunErr || !akun) {
+    return { ok: false, error: 'Nama tidak ditemukan. Pastikan sesuai yang didaftarkan travel Anda.' };
+  }
+
+  const jamaah: Jamaah = {
+    nama: akun.nama,
+    nomorJamaah: akun.nomor_jamaah,
+    travel: tenant.nama_travel,
+    kodeAktivasi: tenant.activation_code,
+    fase: hitungFaseEfektif(
+      akun.fase_override ?? null,
+      tenant.tanggal_keberangkatan,
+      tenant.tanggal_kepulangan,
+    ),
+    rombongan: akun.rombongan ?? undefined,
+    nomorBus: akun.nomor_bus ?? undefined,
+    nomorKamar: akun.nomor_kamar ?? undefined,
+    hotelMakkah: tenant.hotel_makkah ?? undefined,
+    hotelMadinah: tenant.hotel_madinah ?? undefined,
+    pembimbingNama: tenant.guide_name ?? undefined,
+    pembimbingWhatsapp: tenant.guide_whatsapp ?? undefined,
+  };
+
+  return { ok: true, jamaah, tenant };
+}
+```
+
+---
+
+## LANGKAH 4 — Tambah route slug di `App.tsx`
+
+Tambahkan route SEBELUM route `/login`:
+```jsx
+<Route path="/t/:slug" element={<LoginSlug />} />
+```
+
+Import di atas:
+```jsx
+import LoginSlug from './pages/LoginSlug';
+```
+
+---
+
+## LANGKAH 5 — Buat halaman `pages/LoginSlug.tsx`
+
+Buat file baru. Halaman ini: ambil `slug` dari URL param, fetch tenant, tampilkan nama travel + logo + warna brand, dan form hanya minta NAMA (tanpa kode). Pakai `validasiSlug`.
+
+```tsx
+import { useState, useEffect, type FormEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { validasiSlug } from '../data/jamaah';
+import { fetchTenantBySlug, type TenantRow } from '../lib/supabase';
+
+export default function LoginSlug() {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { login } = useAuth(); // sesuaikan dengan nama fungsi login di AuthContext
+
+  const [tenant, setTenant] = useState<TenantRow | null>(null);
+  const [tenantLoading, setTenantLoading] = useState(true);
+  const [nama, setNama] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!slug) return;
+    fetchTenantBySlug(slug)
+      .then((t) => setTenant(t))
+      .catch(() => setTenant(null))
+      .finally(() => setTenantLoading(false));
+  }, [slug]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!slug) return;
+    setLoading(true);
+    setError('');
+    const hasil = await validasiSlug(slug, nama);
+    if (hasil.ok && hasil.jamaah && hasil.tenant) {
+      login(hasil.jamaah, hasil.tenant); // sesuaikan dengan signature login di AuthContext
+      navigate('/beranda', { replace: true });
+    } else {
+      setError(hasil.error ?? 'Gagal masuk.');
+      setLoading(false);
+    }
+  }
+
+  if (tenantLoading) {
+    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Memuat...</div>;
+  }
+
+  if (!tenant) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, textAlign: 'center' }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Travel tidak ditemukan</h1>
+        <p style={{ color: '#666', fontSize: 14 }}>Periksa kembali link yang Anda terima dari travel Anda.</p>
+      </div>
+    );
+  }
+
+  const brandColor = tenant.primary_color || '#111111';
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#f5f5f5' }}>
+      <div style={{ width: '100%', maxWidth: 380, background: '#fff', borderRadius: 24, padding: 32, boxShadow: '0 8px 40px rgba(0,0,0,0.08)' }}>
+        {/* Logo travel jika ada */}
+        {tenant.logo_url && (
+          <img src={tenant.logo_url} alt={tenant.nama_travel} style={{ height: 48, objectFit: 'contain', marginBottom: 16, display: 'block' }} />
+        )}
+        <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: brandColor, marginBottom: 6 }}>Aplikasi Jamaah</p>
+        <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>{tenant.nama_travel}</h1>
+        <p style={{ fontSize: 14, color: '#666', marginBottom: 24 }}>Masukkan nama Anda untuk masuk</p>
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            value={nama}
+            onChange={(e) => setNama(e.target.value)}
+            placeholder="Nama sesuai paspor"
+            style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: '1px solid #e0e0e0', fontSize: 15, marginBottom: 12, boxSizing: 'border-box' }}
+          />
+          {error && <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 12 }}>{error}</p>}
+          <button
+            type="submit"
+            disabled={loading || !nama}
+            style={{
+              width: '100%', padding: '14px', borderRadius: 12, border: 'none',
+              background: loading || !nama ? 'rgba(0,0,0,0.18)' : brandColor,
+              color: '#fff', fontSize: 15, fontWeight: 700, cursor: loading || !nama ? 'default' : 'pointer',
+            }}
+          >
+            {loading ? 'Memproses...' : 'Masuk'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+```
+
+**CATATAN:** Sesuaikan `login()` / `setJamaah` / `setTenant` dengan implementasi AuthContext yang sebenarnya. Cek dulu `context/AuthContext.tsx` untuk nama fungsi yang benar (lihat bagaimana `Login.tsx` lama melakukannya), lalu samakan.
+
+---
+
+## LANGKAH 6 — (Opsional) Tampilkan link slug di Travel Dashboard
+
+Di `pages/travel/TravelDashboard.tsx`, tampilkan URL slug travel agar travel bisa copy & bagikan ke jamaah:
+```
+https://umrahme-umrahme.vercel.app/t/{slug}
+```
+Tambahkan tombol "Salin Link" untuk kemudahan.
+
+---
+
+## ATURAN
+- Login lama via kode aktivasi (`/login`) TETAP berfungsi — jangan dihapus.
+- Cek `context/AuthContext.tsx` dan `pages/Login.tsx` untuk memastikan cara set jamaah & tenant yang benar, lalu samakan di `LoginSlug.tsx`.
+- Cek `TenantRow` apakah ada field `logo_url` dan `primary_color` — kalau nama beda, sesuaikan.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+- Setelah selesai, commit & push ke GitHub untuk auto-deploy Vercel.
+
+## TEST
+Setelah deploy, akses:
+```
+umrahme-umrahme.vercel.app/t/temanumrah
+```
+Harus muncul halaman login bermerek Temanumrah, cukup masukkan nama "Demo" untuk masuk.

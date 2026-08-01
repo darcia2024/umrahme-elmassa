@@ -1,0 +1,175 @@
+# PROMPT: Sinkronkan Jurnal ke Supabase (Teks) — Lintas Device
+
+**Masalah:** Jurnal disimpan di `localStorage` (`umrahme.jurnal`), jadi terkunci per-device. Tulis di HP tidak muncul di komputer. Solusi: simpan TEKS jurnal ke Supabase, terhubung ke jamaah (tenant_id + nomor_jamaah), agar sinkron di semua device.
+
+**Catatan:** FOTO untuk sekarang TETAP lokal (tidak ikut disinkronkan) — menghindari beban DB & risiko storage. Bisa ditambahkan nanti.
+
+**File terkait:**
+- SQL Supabase (tabel `jurnal_entries`)
+- `artifacts/umrahme/src/lib/supabase.ts` (fungsi CRUD jurnal)
+- `artifacts/umrahme/src/pages/Jurnal.tsx` (ganti sumber data: localStorage → Supabase)
+
+Kerjakan bertahap.
+
+---
+
+## LANGKAH 1 — SQL (Supabase SQL Editor)
+Jalankan isi file `setup-jurnal.sql`. Membuat tabel `jurnal_entries` (id, tenant_id, nomor_jamaah, tanggal, judul, isi, lokasi, timestamps) + index + RLS.
+
+---
+
+## LANGKAH 2 — Fungsi CRUD di `lib/supabase.ts`
+
+```ts
+export type JurnalRow = {
+  id: string;
+  tenant_id: string;
+  nomor_jamaah: string;
+  tanggal: string;
+  judul: string | null;
+  isi: string;
+  lokasi: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchJurnal(tenantId: string, nomorJamaah: string): Promise<JurnalRow[]> {
+  const { data, error } = await supabase
+    .from('jurnal_entries')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .eq('nomor_jamaah', nomorJamaah)
+    .order('tanggal', { ascending: false });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function createJurnal(
+  tenantId: string,
+  nomorJamaah: string,
+  payload: { tanggal: string; judul?: string | null; isi: string; lokasi?: string | null }
+): Promise<JurnalRow> {
+  const { data, error } = await supabase
+    .from('jurnal_entries')
+    .insert({ tenant_id: tenantId, nomor_jamaah: nomorJamaah, ...payload })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return data as JurnalRow;
+}
+
+export async function deleteJurnal(id: string): Promise<void> {
+  const { error } = await supabase.from('jurnal_entries').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+}
+```
+
+---
+
+## LANGKAH 3 — Ubah `Jurnal.tsx` agar pakai Supabase
+
+### 3a. Ambil identitas jamaah dari AuthContext
+```tsx
+import { useAuth } from '../context/AuthContext';
+// ...
+const { jamaah, tenant } = useAuth();
+const tenantId = tenant?.id;
+const nomorJamaah = jamaah?.nomorJamaah;
+```
+
+### 3b. Load dari Supabase (ganti `loadEntries()` localStorage)
+```tsx
+const [entries, setEntries] = useState<JurnalEntry[]>([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  if (!tenantId || !nomorJamaah) { setLoading(false); return; }
+  (async () => {
+    try {
+      const rows = await fetchJurnal(tenantId, nomorJamaah);
+      setEntries(rows.map(r => ({
+        id: r.id,
+        tanggal: r.tanggal,
+        judul: r.judul ?? undefined,
+        isi: r.isi,
+        lokasi: r.lokasi ?? undefined,
+        fotoDataUrl: loadFotoLokal(r.id), // foto tetap lokal (lihat 3e)
+      })));
+    } catch (e) {
+      console.error('Gagal memuat jurnal', e);
+    } finally {
+      setLoading(false);
+    }
+  })();
+}, [tenantId, nomorJamaah]);
+```
+Tampilkan indikator loading saat `loading === true`.
+
+### 3c. Simpan entri baru ke Supabase
+```tsx
+const handleSave = useCallback(async (data: Omit<JurnalEntry, 'id'>) => {
+  if (!tenantId || !nomorJamaah) return;
+  try {
+    const row = await createJurnal(tenantId, nomorJamaah, {
+      tanggal: data.tanggal,
+      judul: data.judul ?? null,
+      isi: data.isi,
+      lokasi: data.lokasi ?? null,
+    });
+    // foto disimpan lokal terpisah, dikaitkan ke id baris Supabase
+    if (data.fotoDataUrl) saveFotoLokal(row.id, data.fotoDataUrl);
+    setEntries(prev => [{ ...data, id: row.id }, ...prev]);
+    setFormOpen(false);
+  } catch (e) {
+    alert('Gagal menyimpan jurnal. Coba lagi.');
+  }
+}, [tenantId, nomorJamaah]);
+```
+
+### 3d. Hapus entri
+```tsx
+const handleDelete = useCallback(async (id: string) => {
+  try {
+    await deleteJurnal(id);
+    removeFotoLokal(id);
+    setEntries(prev => prev.filter(e => e.id !== id));
+  } catch (e) {
+    alert('Gagal menghapus. Coba lagi.');
+  }
+}, []);
+```
+
+### 3e. Foto tetap lokal (helper)
+Karena foto belum disinkronkan, simpan base64 foto di localStorage dengan key per-id, dipisah dari teks:
+```tsx
+const FOTO_PREFIX = 'umrahme.jurnal.foto.';
+function loadFotoLokal(id: string): string | undefined {
+  try { return localStorage.getItem(FOTO_PREFIX + id) ?? undefined; } catch { return undefined; }
+}
+function saveFotoLokal(id: string, dataUrl: string) {
+  try { localStorage.setItem(FOTO_PREFIX + id, dataUrl); } catch { /* penuh */ }
+}
+function removeFotoLokal(id: string) {
+  try { localStorage.removeItem(FOTO_PREFIX + id); } catch { /* noop */ }
+}
+```
+> Konsekuensi yang harus diberitahukan ke user: teks jurnal kini sinkron di semua device, tetapi FOTO hanya tersimpan di device tempat foto itu ditambahkan. Tambahkan catatan kecil di UI form jurnal, mis.: "Catatan teks tersimpan & tersinkron. Foto saat ini hanya tersimpan di perangkat ini."
+
+### 3f. Hapus pemakaian `loadEntries`/`saveEntries` lama (localStorage teks)
+Hapus `LS_KEY`, `loadEntries`, `saveEntries`, dan `useEffect`/`saveEntries(entries)` yang menyimpan seluruh entri ke localStorage — sudah digantikan Supabase. (Foto pakai helper baru di 3e.)
+
+### 3g. Migrasi data lama (opsional)
+Jika ingin tidak kehilangan jurnal lama yang sudah ada di localStorage: saat pertama load & Supabase kosong, baca `umrahme.jurnal` lama, upload tiap entri ke Supabase via `createJurnal`, lalu hapus key lama. Opsional — boleh dilewati jika data lama tidak penting (early/demo).
+
+---
+
+## STATE KOSONG (belum login)
+Jika `tenantId`/`nomorJamaah` tidak ada (belum login), tampilkan pesan ramah "Masuk untuk menulis jurnal" daripada error.
+
+---
+
+## ATURAN
+- Setiap query jurnal WAJIB memfilter `tenant_id` + `nomor_jamaah` (keamanan data antar jamaah).
+- Teks sinkron via Supabase; foto tetap lokal (beri tahu user).
+- Jangan ubah tampilan/timeline/gallery — hanya sumber datanya.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

@@ -1,0 +1,80 @@
+# PROMPT #5 — Verifikasi Onboarding Travel (Sudah Otomatis) + Polish
+
+## Kabar Baik
+Setelah dicek ulang, **onboarding travel SUDAH otomatis** — bukan manual seperti dugaan awal.
+Di admin form sudah ada tab **"Akun Travel"** yang memanggil `createTravelAccount()` →
+edge function `create-travel-user` → otomatis: buat akun login + map ke tenant.
+
+Jadi prompt ini BUKAN membuat fitur baru, melainkan **memastikan onboarding berjalan mulus**
++ sedikit polish. Sebagian besar adalah pengecekan (bukan ubah kode).
+
+---
+
+## BAGIAN A — Pengecekan Konfigurasi (di Supabase, bukan kode)
+
+Pastikan hal-hal ini sudah benar agar tombol "Buat Akun Travel" berfungsi:
+
+1. **Edge function ter-deploy**: `create-travel-user` harus sudah di-deploy di Supabase.
+   Cek: Supabase → Edge Functions → harus ada `create-travel-user`.
+   Kalau belum: `supabase functions deploy create-travel-user`.
+
+2. **Env edge function ter-set** (Supabase → Edge Functions → Secrets):
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_ROLE_KEY` (service role — JANGAN pernah taruh di frontend)
+   - `SUPER_ADMIN_EMAIL` = email admin kamu (yang sama dengan akun di `app_admins`).
+     Edge function menolak pemanggilan kalau email pemanggil ≠ SUPER_ADMIN_EMAIL.
+
+3. **Uji alur**: login admin → buka tenant → tab "Akun Travel" → isi email & password
+   (min 8 karakter) → "Buat Akun" → harus muncul pesan sukses, lalu travel bisa login di `/travel/login`.
+
+---
+
+## BAGIAN B — Polish Kecil (kode, opsional tapi disarankan)
+
+### B1. Saran password aman otomatis (mempermudah admin)
+Di tab "Akun Travel" (`AdminTenantForm.tsx`), tambahkan tombol "Buat Password" yang mengisi
+password acak kuat, agar admin tak perlu memikirkannya.
+
+State (dekat `taPassword`):
+```ts
+// (tidak perlu state baru; cukup set taPassword)
+```
+Fungsi util (di luar komponen):
+```ts
+function generatePassword(len = 14): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%';
+  return Array.from(crypto.getRandomValues(new Uint32Array(len)))
+    .map((n) => chars[n % chars.length]).join('');
+}
+```
+Tombol (di dekat input password):
+```tsx
+<button type="button" onClick={() => setTaPassword(generatePassword())}
+  className="text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+  style={{ color: '#4338ca', border: '1px solid rgba(67,56,202,0.2)' }}>
+  Buat Password
+</button>
+```
+
+### B2. Tampilkan kredensial agar mudah disalin/dikirim ke travel
+Setelah akun berhasil dibuat, pesan sukses sebaiknya menyertakan email + password yang
+diketik, dengan tombol salin, agar admin bisa langsung kirim ke travel via WA. Contoh
+penyesuaian pesan sukses (`taSuccess`):
+```ts
+setTaSuccess(`Akun dibuat. Kirim ke travel — Email: ${savedEmail} | Password: ${taPassword} | Login di: /travel/login`);
+```
+> Catatan privasi: password tampil sekali ini untuk disalin. Setelah itu sebaiknya tidak
+> disimpan di mana pun. Travel disarankan ganti password setelah login pertama (kalau fitur
+> ganti password sudah ada; kalau belum, ini bisa jadi backlog).
+
+---
+
+## Verifikasi
+- Tab "Akun Travel" bisa membuat akun → travel login di `/travel/login` berhasil
+- Travel yang login hanya melihat tenant miliknya (scoping sudah aman dari audit sebelumnya)
+- (Kalau B1/B2 diterapkan) tombol "Buat Password" mengisi password kuat; kredensial mudah disalin
+
+## Catatan Penutup
+Karena onboarding sudah otomatis, ini bukan blocker untuk pitching. Yang penting:
+pastikan BAGIAN A (config Supabase) sudah benar agar saat demo, kamu bisa menunjukkan
+"membuat akun travel baru" secara langsung — ini poin jualan yang kuat saat presentasi.

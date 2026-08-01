@@ -1,0 +1,102 @@
+# PROMPT: Tambah Daftar 14 Syuhada Badr ke Lokasi Makam Syuhada Badr
+
+**File terkait:**
+- `artifacts/umrahme/src/types/index.ts` (tambah tipe syuhada)
+- `artifacts/umrahme/src/data/lokasi.ts` (isi data di objek `makam-syuhada-badr`)
+- `artifacts/umrahme/src/pages/LokasiDetail.tsx` (render daftar syuhada)
+
+Tambahkan daftar 14 syuhada (sahabat yang gugur) Perang Badr ke lokasi **`makam-syuhada-badr`**, dengan konteks singkat tiap nama. Sumber: Sirah Ibnu Hisyam, Ibnu Ishaq, Ibnu Katsir.
+
+**PENTING karakter:** tulis ﷺ, ’, — sebagai karakter LANGSUNG. JANGAN pakai `\uXXXX` atau `\\uXXXX` (bikin teks ngawur). File `syuhada-badr.ts` sudah memakai karakter benar.
+
+---
+
+## LANGKAH 1 — Tambah tipe di `types/index.ts`
+
+```ts
+export interface SyuhadaItem {
+  nama: string;
+  golongan: string;     // 'Muhajirin' | 'Anshar (Aus)' | 'Anshar (Khazraj)'
+  konteks: string;
+}
+
+export interface Lokasi {
+  // ... field yang sudah ada ...
+  syuhadaPengantar?: string;
+  syuhada?: SyuhadaItem[];
+}
+```
+
+---
+
+## LANGKAH 2 — Isi data di objek `id: 'makam-syuhada-badr'` (data/lokasi.ts)
+
+Tambahkan field `syuhadaPengantar` dan `syuhada` (14 item) dari file `syuhada-badr.ts`. Ringkasan:
+
+**Pengantar:** "Dalam Perang Badr (17 Ramadhan 2 H / 624 M), 14 sahabat gugur sebagai syuhada — 6 dari Muhajirin dan 8 dari Anshar (2 Aus, 6 Khazraj). Berikut nama-nama mereka menurut riwayat ulama sirah seperti Ibnu Hisyam, Ibnu Ishaq, dan Ibnu Katsir."
+
+**14 Syuhada:**
+- **Muhajirin (6):** Ubaidah bin Al-Harits, Umair bin Abi Waqqash, Dzusy Syimalain (Umair bin Abdu Amr), Aqil bin Al-Bukair, Mihja’ bin Shalih, Shafwan bin Baidha’.
+- **Anshar–Aus (2):** Sa’ad bin Khaitsamah, Mubasysyir bin Abdul Mundzir.
+- **Anshar–Khazraj (6):** Yazid bin Al-Harits (Ibnu Fushum), Umair bin Al-Humam, Rafi’ bin Al-Mu’alla, Haritsah bin Suraqah, Auf bin Al-Harits, Muawwidz bin Al-Harits.
+
+> Teks konteks lengkap tiap nama ada di file `syuhada-badr.ts` — salin apa adanya (sudah pakai karakter Arab/tanda baca yang benar).
+
+---
+
+## LANGKAH 3 — Render daftar syuhada di `LokasiDetail.tsx`
+
+Tampilkan hanya jika `lokasi.syuhada` ada. Letakkan setelah Sejarah/Keutamaan. Kelompokkan visual berdasarkan golongan (badge), tampil sebagai daftar baris ringkas dalam satu kartu.
+
+```tsx
+{lokasi.syuhada && lokasi.syuhada.length > 0 && (
+  <section className="mt-6">
+    <div className="mb-3">
+      <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Mengenang</p>
+      <h3 className="mt-0.5 text-[15px] font-bold text-ink">14 Syuhada Badr</h3>
+    </div>
+
+    {lokasi.syuhadaPengantar && (
+      <p className="mb-3 text-[13px] leading-relaxed text-charcoal">{lokasi.syuhadaPengantar}</p>
+    )}
+
+    <div className="rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft">
+      <div className="divide-y divide-hairline">
+        {lokasi.syuhada.map((s, i) => (
+          <div key={i} className="py-2.5 first:pt-0 last:pb-0">
+            <div className="flex items-baseline justify-between gap-3">
+              <h4 className="text-[13px] font-bold text-ink">{i + 1}. {s.nama}</h4>
+              <span className={`flex-none rounded-full px-2 py-0.5 font-mono text-[8.5px] uppercase tracking-wider ${
+                s.golongan.startsWith('Muhajirin') ? 'bg-gold/15 text-gold' : 'bg-primary/10 text-primary'
+              }`}>
+                {s.golongan}
+              </span>
+            </div>
+            <p className="mt-0.5 text-[12px] leading-snug text-charcoal">{s.konteks}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+    <p className="mt-2 text-center font-mono text-[9px] uppercase tracking-wider text-mute">
+      Sumber: Sirah Ibnu Hisyam, Ibnu Ishaq, Ibnu Katsir
+    </p>
+  </section>
+)}
+```
+
+---
+
+## CATATAN AKURASI (review sebagai mahasiswa Ushuluddin)
+- Jumlah 14 syuhada (6 Muhajirin + 8 Anshar) adalah pendapat masyhur dari Ibnu Hisyam & Ibnu Katsir. Ada sedikit perbedaan ejaan/nisbah nama antar kitab — redaksi sudah dibuat sesuai yang umum.
+- Beberapa nama punya kisah masyhur (Umair bin Al-Humam dgn kurma, Haritsah bin Suraqah dgn Firdaus tertinggi, Mihja’ sebagai syahid pertama) — sudah disertakan ringkas. Verifikasi bila ingin menambah detail.
+- Tambahkan ﷺ hanya untuk Nabi Muhammad; sahabat pakai "radhiyallahu 'anhu" bila ingin (opsional, agar tidak terlalu panjang di UI bisa dihilangkan).
+
+---
+
+## CATATAN PENTING soal file lokasi.ts
+File `lokasi.ts` di repo (versi yang ada) masih mengandung escape `\\uXXXX` yang tampil ngawur. PASTIKAN sudah mengganti `lokasi.ts` dengan versi FIXED (yang karakternya sudah benar) SEBELUM/SAAT menambahkan data syuhada ini, agar konsisten. Jangan menambahkan data baru dengan pola `\\u`.
+
+## ATURAN
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

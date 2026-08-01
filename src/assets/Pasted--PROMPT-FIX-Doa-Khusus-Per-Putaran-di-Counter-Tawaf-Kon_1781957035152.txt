@@ -1,0 +1,38 @@
+# PROMPT FIX — Doa Khusus Per Putaran di Counter Tawaf
+
+> Konteks: project Umrahme, halaman Counter Tawaf. Data doa per putaran SUDAH ADA di `src/data/doaLengkap.ts` (atau `doa.ts`) dengan id `tawaf-putaran-1` sampai `tawaf-putaran-7`, masing-masing berisi doa khusus yang BERBEDA per putaran. Juga ada `tawaf-rabbana-atina` (doa "Rabbana atina" yang dibaca di antara Rukun Yamani dan Hajar Aswad, SAMA untuk semua putaran).
+
+## MASALAH SAAT INI
+
+Counter Tawaf saat ini menampilkan doa "Rabbana atina" (`tawaf-rabbana-atina`) di SEMUA putaran — terlihat di putaran ke-3 yang seharusnya menampilkan doa khusus putaran ke-3, tapi malah menampilkan "Rabbana atina fid-dunya...". Artinya komponen masih hardcode mengambil satu doa yang sama (kemungkinan `doaById('tawaf-rabbana-atina')` atau id lama) alih-alih mengambil doa sesuai putaran yang sedang berjalan.
+
+## PERBAIKAN
+
+Counter Tawaf harus menampilkan DUA doa pada setiap putaran, dengan susunan:
+
+1. **Doa utama putaran (BERGANTI tiap putaran)** — ditampilkan sebagai bagian UTAMA/atas:
+   - Ambil dengan `doaById('tawaf-putaran-' + putaranSaatIni)`, di mana `putaranSaatIni` adalah angka putaran yang sedang berjalan (1-7).
+   - Saat putaran ke-1 → tampilkan `tawaf-putaran-1`, putaran ke-2 → `tawaf-putaran-2`, dst sampai ke-7.
+   - Beri label kecil di atas teks Arab: "DOA PUTARAN KE-[N]" (mis. "DOA PUTARAN KE-3"), bukan label "dibaca antara rukun yamani & hajar aswad" yang sekarang salah tempat.
+   - Tampilkan: label → Arab → Latin (→ terjemahan boleh di accordion/collapsible agar kartu tidak terlalu panjang saat ibadah berjalan).
+
+2. **Doa "Rabbana atina" (SAMA tiap putaran)** — ditampilkan sebagai bagian SEKUNDER/bawah, sebagai penutup putaran:
+   - Ambil dengan `doaById('tawaf-rabbana-atina')`.
+   - Beri label kecil pemisah yang jelas: "DIBACA ANTARA RUKUN YAMANI & HAJAR ASWAD" (label ini memang milik doa Rabbana atina, jadi sekarang ditempatkan dengan benar di bawah, bukan di doa utama).
+   - Secara visual dibedakan dari doa utama: boleh dengan divider tipis, atau ukuran teks Arab sedikit lebih kecil, atau ditaruh dalam sub-kartu terpisah — supaya jamaah paham ini doa kedua (penutup tiap putaran), bukan kelanjutan doa utama.
+
+## DETAIL PENTING
+
+- **Indexing putaran**: pastikan logika cocok antara "jumlah tap" dan "doa yang ditampilkan". Saat jamaah berada DI putaran ke-N (sedang berjalan menuju penyelesaian putaran ke-N), tampilkan doa putaran ke-N. Perhatikan off-by-one: jika counter menyimpan "putaran selesai = 2" berarti jamaah sedang menjalani putaran ke-3 → tampilkan `tawaf-putaran-3`. Sesuaikan dengan cara state counter saat ini menghitung (cek apakah state menyimpan "putaran selesai" atau "putaran sedang berjalan", lalu petakan ke doa yang benar).
+- **Batas atas**: setelah putaran ke-7 selesai (7/7), masuk ke state "Tawaf Selesai" yang sudah ada — jangan coba mengambil `tawaf-putaran-8` (tidak ada). Pastikan tidak error saat mencapai putaran terakhir.
+- **Jika `doaById` mengembalikan undefined** untuk suatu id (misal data belum lengkap), tampilkan fallback yang aman (mis. teks "Doa untuk putaran ini belum tersedia") — JANGAN biarkan halaman crash.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Desain keseluruhan Counter Tawaf (tombol TAP raksasa, progress dots, angka besar X/7, tombol reset, layout) — TIDAK berubah, ini hanya perbaikan SUMBER doa yang ditampilkan dan penambahan struktur dua-doa.
+- Filosofi Mode B (satu layar satu tugas, fokus, tenang) tetap dijaga — penambahan doa kedua jangan sampai membuat kartu jadi terlalu ramai/panjang; gunakan collapsible untuk terjemahan jika perlu agar tetap ringkas.
+- Counter Sai (jika sudah ada) menerapkan pola yang SAMA: doa utama lintasan (`sai-putaran-N`, berganti) + jika relevan doa lampu hijau sebagai sekunder — tapi fokus fix ini di Tawaf dulu; terapkan pola serupa ke Sai jika strukturnya sejajar.
+
+## OUTPUT
+
+Build langsung — ini perbaikan terbatas pada logika pengambilan doa di Counter Tawaf. Setelah selesai, verifikasi dengan menunjukkan: putaran ke-1 menampilkan doa `tawaf-putaran-1` (bukan Rabbana atina) sebagai doa utama, dan Rabbana atina muncul terpisah di bawah sebagai penutup. Konfirmasi juga putaran ke-3 dan ke-7 menampilkan doa utama yang berbeda sesuai putarannya.

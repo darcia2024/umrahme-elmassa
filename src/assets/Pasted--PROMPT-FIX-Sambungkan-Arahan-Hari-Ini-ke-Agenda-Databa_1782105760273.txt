@@ -1,0 +1,64 @@
+# PROMPT FIX — Sambungkan "Arahan Hari Ini" ke Agenda Database
+
+> Konteks: card `TodayInstructionCard` di `src/components/dashboard/TravelCompanionFlow.tsx` saat ini menampilkan data hardcoded dummy dari `getTodayInstruction()` di `src/data/travelCompanion.ts` — jam kumpul, titik kumpul, pakaian, dan barang dibawa selalu sama untuk semua tenant dan semua hari. Tujuan: card ini menampilkan agenda hari ini dari tabel `agenda_items` yang sudah ada di database (diisi admin per-tenant), dan kalau diklik membawa jamaah ke halaman itinerary lengkap `/profil/agenda`.
+
+## 1. Ganti `TodayInstructionCard` di `src/components/dashboard/TravelCompanionFlow.tsx`
+
+Ubah dari sync (baca `getTodayInstruction()`) menjadi async (query Supabase):
+
+```ts
+export function TodayInstructionCard() {
+  const { tenant } = useAuth();
+  const [todayItems, setTodayItems] = useState<AgendaItemRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!tenant?.id) { setLoading(false); return; }
+    const today = new Date().toISOString().split('T')[0];
+    supabase
+      .from('agenda_items')
+      .select('*')
+      .eq('tenant_id', tenant.id)
+      .eq('tanggal', today)
+      .order('jam_mulai', { ascending: true })
+      .order('urutan', { ascending: true })
+      .then(({ data }) => {
+        setTodayItems((data as AgendaItemRow[]) ?? []);
+        setLoading(false);
+      });
+  }, [tenant?.id]);
+}
+```
+
+### Tampilan saat loading
+Skeleton 2 baris dengan `animate-pulse` (ikuti pola `src/components/Skeleton.tsx`).
+
+### Tampilan saat ada agenda hari ini
+Tampilkan list — tiap item: jam (`HH:MM` atau "—"), judul (bold), lokasi (font-mono kecil + ikon pin), deskripsi (kecil, italic). Batasi maksimal 3 item. Jika lebih, tampilkan "+{n} agenda lainnya". Di bawah card, tambahkan link "Lihat Semua Agenda →" ke `/profil/agenda`.
+
+### Tampilan saat tidak ada agenda hari ini
+Return `null` — card tidak muncul sama sekali. Jangan tampilkan state kosong.
+
+## 2. Import yang diperlukan di `TravelCompanionFlow.tsx`
+```ts
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { supabase, type AgendaItemRow } from '../lib/supabase';
+```
+
+## 3. Tandai `getTodayInstruction` sebagai deprecated
+Di `src/data/travelCompanion.ts`:
+```ts
+/** @deprecated Digantikan oleh query agenda_items di TodayInstructionCard. */
+export function getTodayInstruction(_tenantId?: string | null): DailyInstruction {
+```
+
+## YANG TIDAK BOLEH BERUBAH
+- `AgendaLengkap.tsx` — tidak disentuh.
+- Komponen lain di `TravelCompanionFlow.tsx` — tidak diubah.
+- Style visual card (warna hijau emerald, ikon clipboard) — pertahankan, hanya kontennya yang berubah.
+
+## OUTPUT
+1. `pnpm run typecheck` — 0 error.
+2. `pnpm run build` — sukses.
+3. Bukti: tambah agenda hari ini di admin panel → login sebagai jamaah → card tampil data dari database (bukan dummy). Jamaah tenant tanpa agenda hari ini → card tidak muncul.

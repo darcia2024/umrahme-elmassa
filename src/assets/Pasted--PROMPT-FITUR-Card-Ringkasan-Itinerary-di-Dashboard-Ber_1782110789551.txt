@@ -1,0 +1,91 @@
+# PROMPT FITUR — Card Ringkasan Itinerary di Dashboard Beranda
+
+> Konteks: halaman `/profil/agenda` (`AgendaLengkap.tsx`) sudah ada dan terhubung ke database. Dashboard Beranda sudah punya `KartuAgendaHariIni` (muncul hanya jika ada agenda hari ini). Yang diminta: tambahkan card baru "Itinerary Perjalanan" yang SELALU muncul (tidak tergantung ada agenda hari ini atau tidak), menampilkan progress perjalanan dan link ke halaman lengkap.
+
+## Buat komponen `KartuItinerary` di `src/pages/Beranda.tsx`
+
+Tambahkan fungsi komponen baru di area komponen helper (dekat `KartuAgendaHariIni` yang sudah ada):
+
+```tsx
+function KartuItinerary({ tenantId }: { tenantId: string }) {
+  // Query: ambil semua agenda_items milik tenant ini
+  // Hitung: total hari perjalanan, hari ini hari ke berapa, item berikutnya hari ini
+}
+```
+
+### Data yang perlu di-fetch (1 query, ringan)
+```ts
+supabase
+  .from('agenda_items')
+  .select('tanggal, judul, jam_mulai')
+  .eq('tenant_id', tenantId)
+  .order('tanggal', { ascending: true })
+  .order('jam_mulai', { ascending: true })
+```
+
+Dari data ini, hitung:
+- `tanggalPertama` — tanggal paling awal dari semua agenda
+- `tanggalTerakhir` — tanggal paling akhir
+- `totalHari` — jumlah tanggal unik
+- `hariKe` — selisih hari dari `tanggalPertama` ke hari ini + 1 (1-indexed). Jika hari ini sebelum `tanggalPertama`, tampilkan "Belum dimulai". Jika setelah `tanggalTerakhir`, tampilkan "Selesai".
+- `itemBerikutnya` — item pertama dari hari ini yang jam_mulai-nya >= jam sekarang (atau item pertama hari berikutnya jika hari ini sudah habis)
+
+### Tampilan card
+
+```
+┌─────────────────────────────────────────┐
+│ 📅  ITINERARY PERJALANAN          [→]   │
+│ ─────────────────────────────────────── │
+│                                         │
+│  Hari 3 dari 10                         │
+│  ████████░░░░░░░░░░░░  30%             │
+│                                         │
+│  Berikutnya:                            │
+│  16.00 · Persiapan perjalanan ke Makkah │
+└─────────────────────────────────────────┘
+```
+
+Spesifikasi visual:
+- Header: label `"ITINERARY PERJALANAN"` (font-mono uppercase kecil) + ikon kalender kiri + link arrow kanan (→ `/profil/agenda`)
+- Progress bar: `bg-surface-bone` sebagai track, `bg-primary` sebagai fill, tinggi `h-1.5`, rounded-full — lebar fill = `(hariKe / totalHari) * 100%`
+- Teks progress: `"Hari {hariKe} dari {totalHari}"` — font-display bold besar (`text-[22px]`)
+- Item berikutnya: jika ada, tampilkan label `"Berikutnya"` (font-mono 9px) + `"{jam} · {judul}"` (text-[13px] font-semibold text-ink). Jika tidak ada item berikutnya (semua sudah lewat hari ini), tampilkan `"Semua agenda hari ini selesai"` dengan checkmark kecil.
+- Warna card: `bg-white border border-hairline rounded-2xl shadow-drop-card`
+- Seluruh card bisa diklik (bungkus dengan `<Link to="/profil/agenda">`) — tapi header arrow juga tetap ada sebagai affordance visual
+
+### Kondisi khusus
+- Jika `totalHari === 0` (belum ada agenda di database sama sekali): **jangan tampilkan card** (return `null`) — tidak ada gunanya menampilkan progress 0/0
+- Jika `hariKe` di luar range (sebelum mulai atau setelah selesai): tetap tampilkan card tapi teks progress ganti jadi `"Belum dimulai"` atau `"Perjalanan selesai"`, progress bar 0% atau 100%
+
+## Sisipkan card di `Beranda.tsx` mobile section
+
+Posisi: **setelah `KartuAgendaHariIni` dan sebelum `TravelCompanionFlow`**
+
+```tsx
+{/* Agenda hari ini */}
+{todayAgenda.length > 0 && (
+  <KartuAgendaHariIni items={todayAgenda.slice(0, 3)} total={todayAgenda.length} />
+)}
+
+{/* Itinerary ringkasan — BARU, selalu muncul jika ada data */}
+{tenant?.id && <KartuItinerary tenantId={tenant.id} />}
+
+{/* Travel companion cards */}
+<TravelCompanionFlow />
+```
+
+Lakukan hal yang sama untuk **desktop section** — sisipkan di posisi yang setara (setelah agenda hari ini, sebelum `TravelCompanionFlow desktop`).
+
+## YANG TIDAK BOLEH BERUBAH
+
+- `KartuAgendaHariIni` yang sudah ada — tidak diubah, tetap ada di atasnya
+- `AgendaLengkap.tsx` — tidak disentuh
+- Semua komponen lain di Beranda — tidak diubah
+- Tidak ada perubahan ke database/tabel
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error.
+2. `pnpm run build` — sukses.
+3. Bukti: login sebagai jamaah yang tenantnya sudah punya agenda demo (dari prompt sebelumnya) → card "Itinerary Perjalanan" muncul di dashboard dengan progress bar yang benar (mis. "Hari 3 dari 10") dan item berikutnya yang relevan → klik card → masuk ke `/profil/agenda`.
+4. Bukti kondisi kosong: jamaah dari tenant yang belum punya agenda → card tidak muncul sama sekali (tidak ada elemen kosong/error).

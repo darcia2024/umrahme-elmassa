@@ -1,0 +1,254 @@
+# PROMPT — Fix Bug Agenda + AI Penyusun Itinerary (OCR dari File Apapun)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx`,
+`artifacts/umrahme/src/pages/travel/TravelDashboard.tsx`,
+`artifacts/umrahme/src/lib/supabase.ts`, `api/ai-extract-agenda.ts` (baru)
+
+Dua hal:
+1. **FIX BUG**: error `invalid input syntax for type uuid: ""` saat tambah agenda — terjadi
+   karena agenda ditambah padahal `selectedKeberangkatan` masih kosong.
+2. **FITUR BARU**: tombol "Susun Itinerary dengan AI" — upload file apapun (Excel, PDF,
+   gambar/foto jadwal), AI ekstrak jadi daftar agenda, admin review, lalu simpan massal.
+
+---
+
+## BAGIAN A — FIX BUG (WAJIB, kerjakan dulu)
+
+### A1. Guard di handler tambah agenda (AdminTenantForm.tsx & TravelDashboard.tsx)
+
+Sebelum memanggil `createAgenda`, pastikan ada keberangkatan terpilih. Cari handler tambah
+agenda (yang memanggil `createAgenda(id!, selectedKeberangkatan, {...})`), tambahkan guard
+di awalnya:
+```ts
+if (!selectedKeberangkatan) {
+  setAgError('Pilih atau buat keberangkatan dulu sebelum menambah agenda.');
+  return;
+}
+```
+
+### A2. Disable tombol & form agenda kalau belum ada keberangkatan
+
+Di UI tab Agenda, kalau `keberangkatanList.length === 0` atau `!selectedKeberangkatan`,
+tampilkan empty state alih-alih form:
+```tsx
+{!selectedKeberangkatan ? (
+  <div className="rounded-2xl px-6 py-8 text-center" style={cardStyle}>
+    <p className="text-[13px]" style={{ color: '#6b7280' }}>
+      Belum ada keberangkatan dipilih. Buat keberangkatan dulu di tab <strong>Keberangkatan</strong>,
+      lalu pilih untuk mengelola agenda.
+    </p>
+  </div>
+) : (
+  /* ... form & daftar agenda yang sudah ada ... */
+)}
+```
+
+> Terapkan guard yang sama untuk tambah Pengumuman & Jamaah kalau belum ada (mencegah
+> error uuid serupa di tab lain). Pola sama: cek `selectedKeberangkatan` dulu.
+
+### A3. Pastikan selector keberangkatan terlihat di tab Agenda
+
+Kalau belum ada, tambahkan dropdown pemilih keberangkatan di atas konten tab Agenda
+(dan Jamaah, Pengumuman) supaya admin tahu sedang mengelola batch yang mana:
+```tsx
+{keberangkatanList.length > 0 && (
+  <select value={selectedKeberangkatan} onChange={e => setSelectedKeberangkatan(e.target.value)}
+    className="mb-4 text-[12px] rounded-lg px-3 py-2" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+    {keberangkatanList.map(kb => <option key={kb.id} value={kb.id}>{kb.nama_batch}</option>)}
+  </select>
+)}
+```
+
+---
+
+## BAGIAN B — FITUR AI: Susun Itinerary dari File
+
+### B1. Fungsi bulk insert agenda (lib/supabase.ts)
+
+Kalau belum ada `bulkInsertAgenda`, pastikan ada (mirip pola lmain). Versi aman dengan
+keberangkatan_id:
+```ts
+export async function bulkInsertAgenda(tenantId: string, keberangkatanId: string, items: object[]): Promise<{ inserted: number }> {
+  if (!keberangkatanId) throw new Error('Keberangkatan belum dipilih.');
+  const rows = items.map((it) => ({ ...it, tenant_id: tenantId, keberangkatan_id: keberangkatanId }));
+  const { data, error } = await supabase.from('agenda_items').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return { inserted: (data ?? []).length };
+}
+```
+
+### B2. API Endpoint `api/ai-extract-agenda.ts`
+
+Buat file baru, pola sama seperti `ai-ocr.ts` & `ai-extract-jamaah.ts`. Dua mode:
+`excel` (kirim rows hasil parse SheetJS) & `pdf`/gambar (kirim base64 ke vision model).
+**Sertakan verifikasi auth** seperti endpoint AI lain (cek admin/travel login).
+
+```ts
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// (Salin fungsi verifyCaller dari ai-ocr.ts / ai-extract-jamaah.ts — wajib auth)
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const caller = await verifyCaller(req);
+  if (!caller.ok) return res.status(401).json({ error: 'Unauthorized. Login sebagai admin/travel.' });
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'OPENROUTER_API_KEY belum dikonfigurasi.' });
+
+  const { mode, fileBase64, mimeType, rows } = req.body as {
+    mode: 'excel' | 'pdf'; fileBase64?: string; mimeType?: string; rows?: unknown[][];
+  };
+
+  const schema = `Format JSON WAJIB (HANYA JSON, tanpa penjelasan):
+{
+  "agenda": [
+    { "tanggal": "YYYY-MM-DD", "jam_mulai": "HH:MM" | null, "judul": string, "lokasi": string | null, "deskripsi": string | null }
+  ]
+}
+Aturan:
+- Ekstrak SEMUA item jadwal/itinerary yang ditemukan, urut kronologis.
+- "tanggal" WAJIB format YYYY-MM-DD. Kalau hanya ada hari/urutan (mis. "Hari 1"), perkirakan
+  tanggal relatif jika ada tanggal mulai; kalau tidak ada, biarkan tanggal sama persis seperti
+  tertulis dan beri catatan di deskripsi.
+- "jam_mulai" format 24 jam HH:MM, null kalau tidak ada.
+- Abaikan baris kosong/header/footer.`;
+
+  let messages;
+  if (mode === 'excel') {
+    if (!rows) return res.status(400).json({ error: 'rows wajib untuk mode excel.' });
+    messages = [{ role: 'user', content:
+      `Kamu sistem penyusun itinerary umrah dari spreadsheet.\nData mentah Excel/CSV (array baris):\n\n${JSON.stringify(rows).slice(0, 12000)}\n\nPetakan ke daftar agenda.\n${schema}` }];
+  } else {
+    if (!fileBase64 || !mimeType) return res.status(400).json({ error: 'fileBase64 & mimeType wajib untuk mode pdf/gambar.' });
+    messages = [{ role: 'user', content: [
+      { type: 'text', text: `Kamu sistem penyusun itinerary umrah. Baca dokumen jadwal ini (PDF/foto/gambar) & ekstrak itinerary.\n${schema}` },
+      { type: 'image_url', image_url: { url: `data:${mimeType};base64,${fileBase64}` } },
+    ] }];
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'X-Title': 'Umrahme Itinerary' },
+      body: JSON.stringify({ model: 'google/gemini-flash-1.5', messages, max_tokens: 4000, temperature: 0.1 }),
+    });
+    if (!response.ok) return res.status(502).json({ error: `OpenRouter error: ${await response.text()}` });
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content ?? '';
+    const extracted = JSON.parse(content.replace(/```json|```/g, '').trim());
+    return res.status(200).json({ ok: true, agenda: extracted.agenda ?? [] });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
+  }
+}
+```
+
+### B3. UI di tab Agenda (AdminTenantForm.tsx & TravelDashboard.tsx)
+
+Tambahkan tombol "Susun Itinerary dengan AI" (hanya muncul kalau `selectedKeberangkatan` ada).
+Polanya sama PERSIS seperti fitur import jamaah AI (file picker → ekstrak → tabel review
+editable → konfirmasi simpan). Bedanya endpoint `/api/ai-extract-agenda` & field agenda.
+
+State:
+```ts
+const [agImportOpen, setAgImportOpen] = useState(false);
+const [agImportLoading, setAgImportLoading] = useState(false);
+const [agImportPreview, setAgImportPreview] = useState<Array<{ tanggal: string; jam_mulai: string; judul: string; lokasi: string; deskripsi: string }>>([]);
+const [agImportSaving, setAgImportSaving] = useState(false);
+const [agImportError, setAgImportError] = useState('');
+const agImportFileRef = useRef<HTMLInputElement>(null);
+```
+
+Handler pilih file (kirim auth header seperti fitur AI lain):
+```ts
+async function handleAgImportFile(e: ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  if (!selectedKeberangkatan) { setAgImportError('Pilih keberangkatan dulu.'); return; }
+  setAgImportError(''); setAgImportLoading(true); setAgImportPreview([]);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const authHeader: Record<string, string> = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let result: any[] = [];
+
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+      const resp = await fetch('/api/ai-extract-agenda', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader }, body: JSON.stringify({ mode: 'excel', rows }) });
+      const json = await resp.json(); if (!resp.ok) throw new Error(json.error); result = json.agenda;
+    } else {
+      const base64 = await new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(file); });
+      const resp = await fetch('/api/ai-extract-agenda', { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader }, body: JSON.stringify({ mode: 'pdf', fileBase64: base64, mimeType: file.type }) });
+      const json = await resp.json(); if (!resp.ok) throw new Error(json.error); result = json.agenda;
+    }
+
+    const preview = (result || []).map((a: any) => ({
+      tanggal: String(a.tanggal ?? '').trim(),
+      jam_mulai: String(a.jam_mulai ?? '').trim(),
+      judul: String(a.judul ?? '').trim(),
+      lokasi: String(a.lokasi ?? '').trim(),
+      deskripsi: String(a.deskripsi ?? '').trim(),
+    })).filter((a) => a.judul);
+    if (preview.length === 0) throw new Error('Tidak ada agenda terbaca. Cek file.');
+    setAgImportPreview(preview);
+  } catch (err: unknown) {
+    setAgImportError(err instanceof Error ? err.message : 'Gagal memproses file.');
+  } finally {
+    setAgImportLoading(false);
+    if (agImportFileRef.current) agImportFileRef.current.value = '';
+  }
+}
+```
+
+Handler simpan:
+```ts
+async function confirmAgImport() {
+  if (agImportPreview.length === 0 || !selectedKeberangkatan) return;
+  const invalid = agImportPreview.some(a => !a.judul.trim() || !a.tanggal.trim());
+  if (invalid) { setAgImportError('Setiap agenda wajib punya tanggal & judul.'); return; }
+  setAgImportSaving(true); setAgImportError('');
+  try {
+    const payload = agImportPreview.map(a => ({
+      tanggal: a.tanggal.trim(),
+      jam_mulai: a.jam_mulai.trim() || null,
+      judul: a.judul.trim(),
+      lokasi: a.lokasi.trim() || null,
+      deskripsi: a.deskripsi.trim() || null,
+      urutan: 0,
+    }));
+    const { inserted } = await bulkInsertAgenda(id!, selectedKeberangkatan, payload);
+    setAgImportPreview([]); setAgImportOpen(false); await loadAgenda();
+    alert(`${inserted} agenda berhasil ditambahkan.`);
+  } catch (err: unknown) {
+    setAgImportError(err instanceof Error ? err.message : 'Gagal menyimpan.');
+  } finally { setAgImportSaving(false); }
+}
+```
+
+UI: tombol + panel review. Salin pola panel review dari fitur import jamaah AI, ganti kolom
+jadi: Tanggal, Jam, Judul, Lokasi, Deskripsi (semua input editable + tombol hapus baris).
+Accept file: `accept=".xlsx,.xls,.csv,application/pdf,image/png,image/jpeg,image/webp"`.
+
+> Di TravelDashboard, `bulkInsertAgenda` dipanggil dengan `tenant!.id` (bukan `id!`).
+
+---
+
+## Catatan
+- **Bug fix (Bagian A) adalah prioritas** — tanpa itu, tab Agenda error untuk tenant tanpa keberangkatan.
+- Fitur AI memakai pola yang SUDAH terbukti (import jamaah). Konsisten = sedikit bug.
+- Endpoint baru WAJIB pakai `verifyCaller` (auth) seperti endpoint AI lain — jangan biarkan terbuka.
+- Review WAJIB sebelum simpan — AI bisa salah baca tanggal, admin mengoreksi dulu.
+- File apapun didukung: Excel/CSV (parse lokal + AI mapping), PDF & foto/gambar (AI vision).
+- Privasi: itinerary umumnya bukan data sensitif, tapi tetap lewat OpenRouter — wajar untuk fitur ini.
+
+## Verifikasi Setelah Deploy
+- Tambah agenda tanpa keberangkatan → muncul pesan ramah, BUKAN error uuid
+- Buat keberangkatan → pilih → tambah agenda manual → berhasil
+- Klik "Susun Itinerary dengan AI" → upload PDF/foto/Excel jadwal → tabel review muncul
+- Edit/hapus baris di review → simpan → agenda bertambah sesuai keberangkatan terpilih
+- Tanpa login (anon) tidak bisa memakai endpoint `/api/ai-extract-agenda`

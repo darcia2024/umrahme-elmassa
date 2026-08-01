@@ -1,0 +1,55 @@
+# PROMPT FITUR BARU — Smart Packing Checklist
+
+> Konteks: project Umrahme sudah punya halaman "Persiapan" dengan checklist 4 kategori (Dokumen, Kesehatan, Barang bawaan, Mental/ibadah) dalam state lokal React. Fitur ini MENGGANTIKAN/MENGUPGRADE bagian checklist barang bawaan yang sudah ada agar menyesuaikan profil jamaah (Laki-laki/Perempuan/Lansia), bukan menambah halaman baru terpisah.
+
+## APA INI
+
+Sebelum melihat checklist barang bawaan, jamaah memilih kategori dirinya (Laki-laki, Perempuan, atau Lansia — boleh pilih lebih dari satu jika relevan, misal "Perempuan" + "Lansia"). Checklist yang muncul lalu menyesuaikan: item umum tetap tampil untuk semua, ditambah item spesifik sesuai kategori yang dipilih.
+
+## STRUKTUR DATA
+
+Update interface `ChecklistItem` di `src/types/index.ts` (atau buat baru jika field ini belum ada):
+```
+interface ChecklistItem {
+  id: string;
+  kategori: 'dokumen' | 'kesehatan' | 'barang-bawaan' | 'mental-ibadah';
+  judul: string;
+  selesai: boolean;
+  untukKategori?: ('laki-laki' | 'perempuan' | 'lansia')[]; // jika kosong/undefined = untuk semua
+}
+```
+
+Isi data tambahan di `src/data/checklist.ts` (atau file data yang sudah ada untuk checklist) khusus kategori `barang-bawaan`, dengan rincian item yang akurat dan masuk akal:
+
+**Item umum (untuk semua, tidak perlu `untukKategori`)**: paspor & visa (salinan), uang riyal, ihram cadangan, sandal jepit, tas kecil/selempang untuk dibawa saat ibadah, obat-obatan pribadi, power bank, adaptor colokan.
+
+**Khusus `laki-laki`**: kain ihram (2 set), ikat pinggang ihram (tanpa jahitan), sabuk kantong untuk ihram.
+
+**Khusus `perempuan`**: mukena/gamis ihram (longgar, tidak menutup wajah & telapak tangan), pembalut/perlengkapan menstruasi (untuk antisipasi, dengan catatan kecil mengingatkan ketentuan ibadah terkait), peniti/jarum pentul untuk kerudung, perlengkapan mandi tambahan.
+
+**Khusus `lansia`**: obat-obatan rutin dengan jumlah cukup + salinan resep dokter, kursi roda lipat kecil/tongkat bantu jalan (jika dibutuhkan), bantal leher untuk perjalanan panjang, kacamata baca cadangan, catatan kontak darurat keluarga yang mudah diakses.
+
+Tambahkan field `dalil`/catatan TIDAK relevan di sini (ini bukan konten ibadah, jadi tidak perlu verifikasi keagamaan) — tapi tetap akurat secara praktis, bukan asal isi.
+
+## PERUBAHAN DI HALAMAN PERSIAPAN
+
+1. **Tambahkan langkah onboarding kecil di awal**, sebelum checklist barang bawaan ditampilkan: card/section kecil bertanya "Siapa yang berangkat?" dengan pilihan toggle/chip multi-select (Laki-laki / Perempuan / Lansia). Pilihan ini disimpan di state (boleh juga localStorage mengikuti pola yang sudah ada di `CounterTawaf.tsx`, agar tidak hilang saat reload).
+2. Setelah kategori dipilih, checklist kategori "Barang bawaan" menampilkan: semua item umum + item khusus sesuai kategori yang dipilih, digabung dalam satu list (bukan dipisah sub-section, agar tetap terasa sebagai satu checklist utuh) — TAPI beri badge kecil pada item yang spesifik kategori (misal label kecil "Lansia" di pojok item terkait) agar jamaah paham kenapa item itu muncul.
+3. Jika user belum memilih kategori sama sekali, tampilkan SEMUA item (umum + semua kategori) sebagai default — JANGAN kosongkan checklist hanya karena onboarding belum diisi, itu kontraproduktif (lebih baik kelebihan info daripada kekurangan).
+4. Sediakan cara mengubah pilihan kategori kembali (tombol kecil "Ubah" di dekat section onboarding), untuk kasus jamaah yang ingin melihat checklist dari sudut pandang berbeda (misal mendampingi orang tua lansia).
+
+## DESAIN
+
+- Onboarding kategori: chip/toggle button dengan style konsisten design system (border gold tipis saat aktif, mengikuti treatment elemen aktif yang sudah ada di nav).
+- Tidak perlu halaman terpisah — ini tetap bagian dari `Persiapan.tsx` yang sudah ada, hanya logic dan tampilan kategori "Barang bawaan" yang diperkaya.
+- Pertahankan progress bar keseluruhan dan perilaku "kategori collapse otomatis saat selesai" yang sudah ada dari desain Persiapan sebelumnya.
+
+## ATURAN
+
+- Tidak ada perubahan pada 3 kategori lain (Dokumen, Kesehatan, Mental/ibadah) — hanya kategori "Barang bawaan" yang menjadi pintar/menyesuaikan.
+- Item-item baru di atas adalah saran praktis berdasarkan kebutuhan umum perjalanan — bukan konten ibadah, jadi tidak perlu disclaimer verifikasi ulama, tapi tetap masuk akal dan tidak mengada-ada.
+- Mobile-first, ikuti pola layout desktop yang sudah diterapkan di halaman lain.
+
+## OUTPUT
+
+Build langsung tanpa perlu konfirmasi rencana panjang — cukup pastikan integrasi dengan `Persiapan.tsx` yang sudah ada berjalan mulus, tidak merombak 3 kategori lain yang sudah berfungsi baik.

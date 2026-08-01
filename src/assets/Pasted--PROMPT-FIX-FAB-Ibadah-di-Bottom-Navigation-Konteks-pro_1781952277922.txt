@@ -1,0 +1,30 @@
+# PROMPT FIX — FAB "Ibadah" di Bottom Navigation
+
+> Konteks: project Umrahme, bottom navigation mobile dengan 5 slot (Beranda, Panduan, Ibadah, Doa, Profil). Slot tengah "Ibadah" seharusnya jadi FAB (Floating Action Button) rose-600 yang menonjol mengikuti spesifikasi dari revisi sebelumnya, tapi hasil saat ini keluar sebagai lingkaran hitam pekat polos tanpa warna brand, kurang besar, dan terlihat seperti placeholder belum selesai di-styling — bukan FAB yang dirancang.
+
+CATATAN: warna active-state pada item nav lain (mis. "Beranda" yang oranye/merah) TIDAK termasuk bug — itu memang sesuai permintaan sebelumnya dan TIDAK BOLEH diubah oleh fix ini. Fix ini HANYA untuk FAB "Ibadah".
+
+## MASALAH PERSISNYA
+
+Lihat referensi screenshot kondisi saat ini: FAB "Ibadah" tampil sebagai lingkaran solid warna hitam/abu sangat gelap tanpa gradient, tanpa glow, tanpa border — hanya terlihat sedikit lebih besar dari ikon nav lain dan posisinya mengambang di atas garis nav. Tidak ada elemen visual yang menandakan ini tombol PALING PENTING di nav (yang seharusnya jadi pintu masuk Counter Tawaf).
+
+## PERBAIKAN YANG DIMINTA
+
+1. **Warna FAB**: ganti dari hitam/abu polos menjadi `rose-600` (#C2185B) sebagai warna dasar lingkaran, BUKAN gradient ke warna lain yang tidak ada di token — solid `rose-600` sudah cukup kuat asalkan kontrasnya benar terhadap background `ink-950`.
+2. **Glow/shadow**: tambahkan box-shadow lembut berwarna `rose-400` (#E91E8C) dengan opacity rendah di sekeliling FAB, agar terasa "menyala" dan menarik perhatian — mengikuti instruksi awal "shadow/glow rose-400 yang lebih kuat" dari prompt redesign FAB sebelumnya. Pastikan glow ini tetap terlihat jelas tapi tidak berlebihan/norak — efeknya halus, bukan neon tebal.
+3. **Ukuran**: FAB harus signifikan lebih besar dari 4 ikon nav lainnya — targetkan diameter sekitar 64-72px (dibanding ikon biasa yang sekitar 24-28px), dengan ikon di dalamnya (kubus/ibadah) proporsional terhadap ukuran lingkaran (jangan ikon kecil mengambang di tengah lingkaran besar yang kosong — isi ruang dengan proporsi yang pas, ikon sekitar 40-45% dari diameter lingkaran).
+4. **Posisi mengambang**: pastikan FAB benar-benar "mengambang" jelas di atas garis nav bar (negative margin-top yang cukup, sehingga sebagian besar lingkaran berada DI ATAS permukaan nav bar, bukan rata/terbenam di dalamnya seperti kondisi sekarang).
+5. **Ikon di dalam FAB**: ikon (saat ini kubus/box outline) warnanya harus kontras jelas terhadap `rose-600` — gunakan `parchment-100` (putih gading) untuk ikon, bukan warna gelap yang nyaris tidak terlihat.
+6. **Label "IBADAH"**: pertahankan label teks di bawah FAB (mengikuti pola 4 nav item lain yang juga punya label di bawahnya) — tapi pastikan jaraknya proporsional terhadap FAB yang sekarang lebih besar, jangan sampai label terlalu dekat/menempel ke lingkaran.
+7. **Spacing terhadap 4 item nav lain**: setelah FAB membesar, cek ulang jarak antar semua 5 item nav agar tetap merata secara visual (tidak ada item yang terlalu mepet ke FAB dibanding item lainnya) — sesuaikan padding/gap container nav jika perlu.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Warna active-state 4 ikon nav lain (Beranda/Panduan/Doa/Profil) — biarkan seperti yang sudah ada sekarang, termasuk warna oranye/merah pada Beranda.
+- Posisi dan urutan 5 slot nav (Beranda, Panduan, Ibadah, Doa, Profil) — tidak berubah.
+- Fungsi FAB tetap mengarah ke Counter Tawaf (`/ibadah/tawaf`) seperti yang sudah ditentukan sebelumnya — fix ini murni soal tampilan visual, bukan fungsi/routing.
+- Touch target FAB tetap minimal 64px (sudah confirmed di poin ukuran di atas, jangan dikecilkan lagi demi alasan apapun).
+
+## OUTPUT
+
+Fix ini cukup spesifik dan terbatas pada satu komponen (FAB di bottom navigation) — build langsung tanpa perlu konfirmasi rencana panjang. Setelah selesai, tunjukkan area bottom nav saja (tidak perlu render ulang seluruh halaman) untuk memastikan FAB sudah sesuai: warna rose-600 solid, glow rose-400 halus, ukuran 64-72px, ikon parchment-100 kontras, mengambang jelas di atas nav bar.

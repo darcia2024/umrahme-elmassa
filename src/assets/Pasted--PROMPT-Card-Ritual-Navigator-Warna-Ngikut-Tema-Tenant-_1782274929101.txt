@@ -1,0 +1,68 @@
+# PROMPT — Card Ritual Navigator Warna Ngikut Tema Tenant
+
+## Konteks
+File: `artifacts/umrahme/src/pages/Ibadah.tsx`
+
+Card "Ritual Navigator" (komponen `NavigatorHero`) pakai warna navy hardcoded.
+Ganti jadi pakai CSS variable `--color-primary` dan `--color-primary-deep` yang sudah di-set AuthContext.
+Juga hapus dekorasi `radial-gradient` di dalam card (dua div lingkaran blur).
+
+---
+
+## Perubahan di komponen `NavigatorHero`
+
+### 1. Ganti background gradient (2 tempat — border wrapper & inner div)
+
+Cari (ada 2x, di `style` wrapper dan inner div):
+```tsx
+background: 'linear-gradient(145deg, #0d1f3c 0%, #0f3460 50%, #1a4a7a 100%)',
+```
+
+Ganti keduanya jadi:
+```tsx
+background: 'linear-gradient(145deg, var(--color-primary-deep) 0%, var(--color-primary) 100%)',
+```
+
+### 2. Hapus dua div dekorasi radial-gradient
+
+Hapus seluruh dua blok ini:
+```tsx
+<div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full"
+  style={{ background: 'radial-gradient(circle, rgba(14,165,233,0.12) 0%, transparent 70%)' }} />
+<div className="pointer-events-none absolute -bottom-16 left-1/2 h-40 w-40 rounded-full"
+  style={{ background: 'radial-gradient(circle, rgba(99,179,237,0.08) 0%, transparent 70%)' }} />
+```
+
+### 3. Ganti warna badge dot & teks
+
+Cari:
+```tsx
+<span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
+<span className="font-mono text-[9px] uppercase tracking-[0.3em] text-sky-300/70">Panduan Utama</span>
+```
+
+Ganti jadi:
+```tsx
+<span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: 'rgba(255,255,255,0.6)' }} />
+<span className="font-mono text-[9px] uppercase tracking-[0.3em]" style={{ color: 'rgba(255,255,255,0.55)' }}>Panduan Utama</span>
+```
+
+### 4. Ganti warna icon Navigator
+
+Cari:
+```tsx
+<IconNavigator className="h-5 w-5 text-sky-300" />
+```
+
+Ganti jadi:
+```tsx
+<IconNavigator className="h-5 w-5 text-white/70" />
+```
+
+---
+
+## Catatan
+- Tidak perlu ubah file lain
+- `--color-primary` dan `--color-primary-deep` sudah di-set otomatis oleh AuthContext saat login
+- Temanumrah → merah maroon, travel lain → warna brand mereka
+- Tidak ada perubahan lain di luar yang disebutkan di atas

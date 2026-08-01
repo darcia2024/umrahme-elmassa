@@ -1,0 +1,113 @@
+# PROMPT — Landing Page Desktop: Perbesar & Rapikan (FINAL, Mobile Aman)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Di desktop/monitor lebar, teks terlihat kecil dan beberapa section (white-label, compare)
+terasa "ngambang" di tengah dengan banyak ruang kosong. Perbaiki KHUSUS desktop tanpa
+menyentuh mobile.
+
+Arsitektur: inline style = dasar (desktop), di-override mobile via `@media (max-width)`
+dengan `!important`. Maka kita tambah blok `@media (min-width: 1024px)` (juga `!important`)
+— blok ini TIDAK pernah aktif di HP, jadi **mobile dijamin tidak berubah**.
+
+> CATATAN: pastikan blok ini benar-benar tersimpan & ter-deploy. (Sebelumnya perubahan
+> serupa belum masuk ke kode — cek lagi setelah Replit menyelesaikan.)
+
+---
+
+## LANGKAH 1 — `className="lp-inner"` di kontainer hero
+Cari div kontainer hero (baris ~554):
+```tsx
+<div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+```
+Jadikan:
+```tsx
+<div className="lp-inner" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+```
+
+## LANGKAH 2 — Beri class pada 2 section yang "ngambang"
+Agar bisa dilebarkan proporsional di desktop:
+
+- **White-label** (baris ~812): `<div className="lp-wl" style={{ maxWidth: 680, ... }}>`
+  → tambahkan class jadi `className="lp-wl lp-wl-box"`.
+- **Compare** (baris ~862): `<div className="lp-compare" style={{ ... maxWidth: 860, ... }}>`
+  (sudah punya class `lp-compare`, cukup ditarget di CSS).
+
+## LANGKAH 3 — Tambah blok CSS desktop
+Di dalam `<style>{`...`}</style>`, TEPAT SEBELUM penutup backtick `` ` ``, tambahkan:
+
+```css
+/* ═══ DESKTOP POLISH ≥1024px — mobile tidak tersentuh ═══ */
+@media (min-width: 1024px) {
+  /* Kontainer & ritme */
+  .lp-inner { max-width: 1240px !important; }
+  .lp-section { padding-top: 88px !important; padding-bottom: 88px !important; }
+
+  /* HERO dominan */
+  .lp-hero-padding { padding-top: 132px !important; padding-bottom: 120px !important; }
+  .lp-hero-padding h1 { font-size: clamp(52px, 5.4vw, 74px) !important; line-height: 1.04 !important; max-width: 960px !important; margin-bottom: 24px !important; }
+  .lp-hero-padding p  { font-size: 18px !important; max-width: 620px !important; margin-bottom: 32px !important; line-height: 1.75 !important; }
+  .lp-hero-btns .lp-btn { padding: 16px 34px !important; font-size: 16px !important; }
+
+  /* Heading & sub-teks */
+  .lp-h2 { font-size: clamp(34px, 3.4vw, 44px) !important; }
+  .lp-inner > p { font-size: 16px !important; line-height: 1.7 !important; }
+
+  /* Kartu fitur */
+  .lp-feat-card { padding: 22px !important; border-radius: 14px !important; }
+  .lp-feat-card h3 { font-size: 16.5px !important; margin-bottom: 6px !important; }
+  .lp-feat-card p  { font-size: 14px !important; line-height: 1.55 !important; }
+  .lp-feat-card .lp-feat-icon { width: 44px !important; height: 44px !important; }
+  .lp-feat-grid { gap: 16px !important; }
+
+  /* Bento / about */
+  .lp-bento { gap: 16px !important; }
+  .lp-bento h3 { font-size: 17px !important; }
+  .lp-bento p  { font-size: 14px !important; line-height: 1.55 !important; }
+
+  /* Pain cards */
+  .lp-pain-grid h3 { font-size: 16px !important; }
+  .lp-pain-grid p  { font-size: 14px !important; line-height: 1.55 !important; }
+
+  /* Steps */
+  .lp-steps h3 { font-size: 17px !important; }
+  .lp-steps p  { font-size: 14.5px !important; line-height: 1.6 !important; }
+
+  /* === Section "ngambang" → lebarkan proporsional === */
+  .lp-wl-box  { max-width: 880px !important; }       /* white-label: 680 → 880 */
+  .lp-compare { max-width: 1040px !important; gap: 22px !important; }  /* compare: 860 → 1040 */
+  .lp-wl-list li { font-size: 15px !important; }
+  .lp-wl h2 { font-size: clamp(34px, 3.4vw, 44px) !important; }
+
+  /* Harga & testimoni */
+  .lp-price-card p, .lp-price-wrap p, .lp-price-wrap li { font-size: 14.5px !important; }
+  .lp-testi-grid p { font-size: 14.5px !important; line-height: 1.6 !important; }
+}
+
+/* Monitor sangat lebar / proyektor */
+@media (min-width: 1440px) {
+  .lp-inner { max-width: 1300px !important; }
+  .lp-section { padding-top: 100px !important; padding-bottom: 100px !important; }
+  .lp-hero-padding h1 { font-size: 78px !important; }
+  .lp-hero-padding p { font-size: 19px !important; }
+  .lp-wl-box { max-width: 920px !important; }
+  .lp-compare { max-width: 1080px !important; }
+}
+```
+
+---
+
+## Yang TIDAK Boleh Diubah
+- JANGAN sentuh blok `@media (max-width: ...)` (mobile/tablet).
+- JANGAN ubah nilai inline dasar, teks/copy, struktur, warna, atau animasi.
+- JANGAN ubah navbar/dropdown/phone-mockup mobile.
+
+## Verifikasi Setelah Deploy
+- **Mobile (≤760px)**: resize sempit / buka HP → SAMA PERSIS seperti sebelumnya.
+- **Desktop (≥1024px)**: teks lebih besar & terbaca; hero dominan; section white-label
+  & compare lebih lebar & berisi (tidak ngambang); jarak antar-section lega.
+- **≥1440px (proyektor)**: makin besar & seimbang.
+- Cek section "Bandingkan": dua kartu (Cara Lama & Cara Baru) tetap sejajar 2 kolom,
+  lebar proporsional (tidak melar/tidak ngambang).
+- Kalau masih ada teks spesifik yang mungil, beri class lalu target di blok desktop.

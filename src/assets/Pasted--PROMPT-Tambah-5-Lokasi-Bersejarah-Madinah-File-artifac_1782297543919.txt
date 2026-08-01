@@ -1,0 +1,78 @@
+# PROMPT: Tambah 5 Lokasi Bersejarah Madinah
+
+**File:** `artifacts/umrahme/src/data/lokasi.ts`
+
+Tambahkan 5 lokasi bersejarah Madinah ke array `daftarLokasi`. Madinah saat ini kurang terwakili — ini melengkapinya. Semua koordinat sudah diverifikasi via riset untuk deep-link Google Maps.
+
+Letakkan masjid (`masjid-ghamamah`, `masjid-abu-bakar`, `masjid-ali`, `sabu-masajid`) di kelompok masjid, dan `jabal-sala` di kelompok sejarah. Struktur sesuai interface `Lokasi` yang ada. Pakai escape unicode untuk teks Arab seperti pola objek yang sudah ada di file.
+
+---
+
+## 5 LOKASI BARU
+
+**1. Masjid Ghamamah** (`masjid-ghamamah`, masjid, Madinah)
+- namaArab: `مسجد الغمامة`, jarakKm: 0.3, koordinat: `{ lat: 24.4681, lng: 39.6097 }`
+- ringkas: "Tempat Rasulullah ﷺ pertama kali memimpin shalat Id dan shalat Istisqa (minta hujan)."
+- Sejarah: ~300m barat daya Masjid Nabawi, dulu tanah lapang (al-Mushalla). Nama "Ghamamah" = awan, merujuk turunnya hujan setelah shalat Istisqa.
+- sejarahSeksi: (1) Shalat Istisqa & turunnya hujan (riwayat Bukhari dari Abdullah bin Zaid), (2) Tempat shalat Id pertama (~2 H); bangunan sekarang peninggalan Utsmaniyah direnovasi era Raja Fahd.
+- tokoh: Nabi ﷺ (memimpin Istisqa & Id pertama); Umar bin Khattab رضي الله عنه (membangun masjid di tempat shalat Nabi).
+- keutamaan: ijabah doa minta hujan; shalat Id pertama; dekat Nabawi.
+- dalil: HR. Bukhari (Abdullah bin Zaid).
+- adab: shalat tahiyyatul masjid bila dibuka; tak ada ritual khusus; tidak selalu dibuka.
+
+**2. Masjid Abu Bakar Ash-Shiddiq** (`masjid-abu-bakar`, masjid, Madinah)
+- namaArab: `مسجد أبي بكر الصديق`, jarakKm: 0.33, koordinat: `{ lat: 24.4676, lng: 39.6101 }`
+- ringkas: "Masjid bersejarah dekat Masjid Nabawi, dikaitkan dengan Khalifah Abu Bakar رضي الله عنه."
+- Sejarah: ~330m barat daya Nabawi; tempat Abu Bakar pernah memimpin shalat Id, dinisbahkan kepada beliau.
+- tokoh: Abu Bakar Ash-Shiddiq رضي الله عنه.
+- dalil: QS. At-Taubah: 40 (tentang Abu Bakar menemani Nabi saat hijrah).
+- adab: umumnya terkunci, ziarah dari luar; tak ada ritual khusus.
+
+**3. Masjid Ali bin Abi Thalib** (`masjid-ali`, masjid, Madinah)
+- namaArab: `مسجد علي بن أبي طالب`, jarakKm: 0.3, koordinat: `{ lat: 24.4679, lng: 39.6094 }`
+- ringkas: "Masjid bersejarah dekat Masjid Nabawi, dinisbahkan kepada Ali bin Abi Thalib رضي الله عنه."
+- Sejarah: ~300m barat Nabawi, kawasan masjid tua bersama Ghamamah & Abu Bakar; pernah dipakai shalat Id.
+- tokoh: Ali bin Abi Thalib رضي الله عنه (sepupu & menantu Nabi, Khalifah keempat).
+- dalil: (kosongkan array)
+- adab: shalat sunnah bila dibuka; tak ada ritual khusus.
+
+**4. Sab'u Masajid (Tujuh Masjid)** (`sabu-masajid`, masjid, Madinah)
+- namaArab: `المساجد السبعة`, jarakKm: 3, koordinat: `{ lat: 24.4847, lng: 39.6028 }`
+- ringkas: "Kompleks masjid kecil bersejarah di lokasi Perang Khandaq (Perang Parit)."
+- Sejarah: kompleks masjid kecil di barat Gunung Sala', terkait Perang Khandaq (5 H/627 M) saat muslimin menggali parit melawan pasukan gabungan (Al-Ahzab).
+- sejarahSeksi: (1) Perang Khandaq — usul Salman Al-Farisi gali parit, berhasil tahan musuh, (2) Masjid dalam kompleks — Al-Fath (terbesar), Salman Al-Farisi, Abu Bakar, Umar, Ali, Fatimah; ditambah Qiblatain jadi "tujuh".
+- tokoh: Salman Al-Farisi رضي الله عنه (pengusul parit); Nabi ﷺ (berdoa di Masjid Al-Fath).
+- dalil: QS. Al-Ahzab: 9.
+- adab: ambil pelajaran sejarah; Al-Fath dibuka, lainnya kadang terkunci; ziarah bersifat anjuran bukan rukun.
+- catatan: "Keutamaan khusus shalat di masjid-masjid ini tidak berdasar hadis sahih tertentu. Ziarah cukup untuk mengenang sejarah Perang Khandaq, bukan mencari keberkahan khusus dari tempatnya."
+
+**5. Jabal Sala' (Gunung Sala)** (`jabal-sala`, sejarah, Madinah)
+- namaArab: `جبل سلع`, jarakKm: 1.5, koordinat: `{ lat: 24.4772, lng: 39.6053 }`
+- ringkas: "Gunung di pusat Madinah, titik strategis pertahanan dalam Perang Khandaq."
+- Sejarah: gunung di dalam Kota Madinah dekat Sab'u Masajid; benteng alami pertahanan muslimin saat Perang Khandaq.
+- sejarahSeksi: (1) Benteng alami Perang Khandaq — muslimin posisikan Jabal Sala' di belakang, parit di sisi terbuka.
+- tokoh: Nabi ﷺ.
+- dalil: (kosongkan array)
+- adab: ambil pelajaran sejarah; tak ada ritual khusus.
+
+> Teks lengkap tiap field tersedia di file `lokasi-madinah-tambahan.ts` (gunakan langsung, sudah pakai escape unicode yang benar).
+
+---
+
+## ATURAN
+- Jangan hapus/ubah lokasi yang sudah ada.
+- Field `gambar: ''` untuk kelima lokasi (foto menyusul).
+- Pastikan struktur cocok interface `Lokasi`.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.
+
+---
+
+## ⭐ FOTO BARU YANG PERLU DILENGKAPI (5 lokasi)
+- `masjid-ghamamah.jpg` — Masjid Ghamamah (kubah putih, dinding batu hitam)
+- `masjid-abu-bakar.jpg` — Masjid Abu Bakar Ash-Shiddiq
+- `masjid-ali.jpg` — Masjid Ali bin Abi Thalib
+- `sabu-masajid.jpg` — kompleks Tujuh Masjid / Masjid Al-Fath
+- `jabal-sala.jpg` — Gunung Sala di pusat Madinah
+
+Simpan di `public/lokasi/`, lalu isi field `gambar: '/lokasi/{id}.jpg'`.

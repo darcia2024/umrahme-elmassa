@@ -1,0 +1,96 @@
+# PROMPT — Koreksi Koordinat Google Maps Lokasi Bersejarah
+
+## Konteks
+File data: `artifacts/umrahme/src/data/lokasi.ts`
+File tampilan: `artifacts/umrahme/src/pages/LokasiDetail.tsx`
+
+Beberapa koordinat lokasi di `lokasi.ts` kurang akurat sehingga deep-link Google Maps
+bisa mengarah ke titik yang sedikit meleset. Koordinat di bawah sudah diverifikasi via
+riset (Wikipedia, Wikidata, latitude.to, Grokipedia, situs resmi Saudi).
+
+**PENTING:** hanya ubah field `koordinat: { lat, lng }` pada lokasi yang disebutkan.
+JANGAN ubah sejarah, nama, atau field lain.
+
+---
+
+## BAGIAN 1 — Koreksi Koordinat (yang meleset)
+
+### 1. Jabal Tsur (id: `jabal-tsur`) — KOREKSI PENTING
+Saat ini: `{ lat: 21.3733, lng: 39.8628 }`
+Ganti jadi: `{ lat: 21.3859, lng: 39.8472 }`
+> Koordinat lama meleset ~2km. Verifikasi: Gua Tsur di alamat Al Hijrah, Makkah 24241.
+
+### 2. Masjid Qiblatain (id: `masjid-qiblatain`) — KOREKSI PENTING
+Saat ini: `{ lat: 24.4842, lng: 39.5779 }`
+Ganti jadi: `{ lat: 24.4838, lng: 39.5740 }`
+> Longitude lama meleset ~400m. Verifikasi: latitude.to & Grokipedia (24°29'02"N 39°34'26"E).
+
+### 3. Masjid Quba (id: `masjid-quba`) — penyesuaian kecil
+Saat ini: `{ lat: 24.4395, lng: 39.6175 }`
+Ganti jadi: `{ lat: 24.4368, lng: 39.6170 }`
+> Penyesuaian ke titik masjid yang lebih presisi (latitude.to: 24.4368, 39.6170).
+
+---
+
+## BAGIAN 2 — Koordinat yang SUDAH AKURAT (jangan diubah, hanya untuk referensi)
+
+Lokasi berikut sudah diverifikasi BENAR — biarkan apa adanya:
+- masjidil-haram: 21.4225, 39.8262 ✓ (Ka'bah, terverifikasi)
+- masjid-nabawi: 24.4672, 39.6111 ✓
+- masjid-jin: 21.4333, 39.8289 ✓ (Wikidata: 21.4334, 39.8290)
+- masjid-aisyah-tanim: 21.4486, 39.7656 ✓ (~7.5km NW Haram)
+- masjid-bir-ali: 24.4131, 39.5419 ✓ (Dzulhulaifah, Wadi Aqiq)
+- jabal-nur: 21.4577, 39.8617 ✓ (puncak, NE Makkah ~4km)
+- jabal-rahmah: 21.3549, 39.9843 ✓ (Arafah)
+- jabal-uhud: 24.5018, 39.6157 ✓
+- raudhah: 24.4672, 39.6112 ✓ (di dalam Masjid Nabawi)
+
+> Sisanya (jannatul-baqi, jannatul-mualla, jabal-qubais, jabal-sala, sabu-masajid,
+> saqifah-bani-saidah, masjid-ghamamah, masjid-abu-bakar, masjid-ali) berada di area
+> yang konsisten dengan deskripsinya; biarkan apa adanya kecuali ada koreksi di Bagian 1.
+
+---
+
+## BAGIAN 3 — Perbaiki Format URL Google Maps
+
+File: `artifacts/umrahme/src/pages/LokasiDetail.tsx`
+
+Format URL saat ini memakai sintaks `query=lat,lng(nama)` yang kadang bikin pin tidak tepat.
+Ganti jadi format resmi Google Maps yang lebih reliable.
+
+Cari:
+```ts
+function gmapsUrl(lat: number, lng: number, nama: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${encodeURIComponent(nama)})`;
+}
+```
+
+Ganti jadi:
+```ts
+function gmapsUrl(lat: number, lng: number, _nama: string): string {
+  // Format resmi Google Maps Search API — pin tepat di koordinat
+  return `https://www.google.com/maps/search/?api=1&query=${lat}%2C${lng}`;
+}
+```
+
+> Catatan: parameter `nama` tetap ada di signature (jadi `_nama`) supaya pemanggilan
+> di baris `gmapsUrl(lokasi.koordinat.lat, lokasi.koordinat.lng, lokasi.nama)` tidak error.
+> Kalau mau tetap kirim nama sebagai konteks, alternatifnya:
+> `query=${encodeURIComponent(nama)}&center=${lat},${lng}` — TAPI pakai koordinat murni
+> lebih aman supaya tidak salah lokasi karena nama ambigu.
+
+---
+
+## Verifikasi Setelah Deploy
+Buka beberapa lokasi ini di app → klik tombol Google Maps → pastikan pin tepat:
+- Jabal Tsur → harus di gunung selatan Makkah (bukan di tengah kota)
+- Masjid Qiblatain → harus di masjid dua kiblat, NW Madinah
+- Masjid Quba → harus tepat di Masjid Quba
+- Masjidil Haram → harus tepat di Ka'bah
+
+---
+
+## Catatan
+- Tipe `koordinat` adalah `{ lat: number; lng: number }` — pastikan tetap number, bukan string
+- Jangan ubah `jarakKm`, `sejarah`, atau field lain
+- Hanya 3 koordinat yang berubah (Jabal Tsur, Qiblatain, Quba) + 1 perbaikan fungsi URL

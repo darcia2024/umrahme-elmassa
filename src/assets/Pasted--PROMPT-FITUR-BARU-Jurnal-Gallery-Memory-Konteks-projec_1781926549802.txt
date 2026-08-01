@@ -1,0 +1,56 @@
+# PROMPT FITUR BARU — Jurnal & Gallery Memory
+
+> Konteks: project Umrahme sebelumnya sudah menyebut "Jurnal" sebagai salah satu fitur rencana tapi belum dibangun penuh (implementasi awal Temanumrah hanya pakai `alert()`, belum jadi fitur sungguhan di Umrahme). Ini permintaan untuk membangunnya sebagai fitur gabungan: tiap entri jurnal bisa menempel foto, jadi satu kesatuan "jurnal bergambar", bukan dua fitur terpisah.
+
+## APA INI
+
+Jamaah menulis catatan harian/momen selama perjalanan umrah, dan bisa melampirkan foto pada tiap entri. Tampilan akhirnya berfungsi ganda: sebagai jurnal yang bisa dibaca urut waktu, dan sebagai gallery visual karena tiap entri yang ada fotonya otomatis muncul di tampilan grid foto juga.
+
+## STRUKTUR DATA
+
+```
+interface JurnalEntry {
+  id: string;
+  tanggal: string;       // ISO date string
+  judul?: string;         // opsional, judul singkat entri
+  isi: string;             // catatan/tulisan jurnal
+  fotoDataUrl?: string;   // base64 data URL dari foto yang diupload, opsional
+  lokasi?: string;        // opsional, tag lokasi bebas teks, mis. "Masjidil Haram"
+}
+```
+
+Catatan teknis penting: karena ini MVP frontend tanpa backend, foto disimpan sebagai base64 data URL di state (atau localStorage jika ukurannya wajar — base64 foto bisa besar, jadi JANGAN paksa localStorage untuk banyak foto resolusi tinggi; gunakan `FileReader` untuk membaca file upload jadi data URL, kompres/resize dulu di sisi client jika memungkinkan menggunakan canvas sebelum disimpan, agar tidak membebani memori).
+
+## HALAMAN
+
+Buat/lengkapi `Jurnal.tsx` di `src/pages/`, diakses dari Profil (tambahkan kartu/menu item di `Profil.tsx`) dan rute `/profil/jurnal`.
+
+Struktur halaman dengan DUA MODE TAMPILAN yang bisa di-switch (toggle/tab kecil di atas):
+
+**Mode 1 — Linimasa (default)**: list entri jurnal urut dari terbaru, tiap entri sebagai kartu: tanggal kecil di atas, judul (jika ada), foto (jika ada, ditampilkan penuh lebar kartu), cuplikan isi tulisan (2-3 baris, tap untuk baca penuh). Mihrab card untuk tiap entri.
+
+**Mode 2 — Gallery**: grid foto (mengikuti pola grid foto galeri umum — grid rapat, rasio persegi/seragam dipotong otomatis), HANYA menampilkan entri yang punya foto. Tap foto membuka entri jurnal lengkap terkait (judul, tanggal, isi tulisan, foto besar).
+
+Tombol "+ Tulis Jurnal" jelas di bagian atas (bukan FAB, fitur ini bukan Mode B).
+
+Form tulis entri: input judul (opsional), textarea isi tulisan, tombol upload foto (opsional, preview sebelum simpan), input tag lokasi (opsional, teks bebas — bisa juga tampilkan saran singkat dari data lokasi yang sudah ada di `src/data/lokasi.ts` jika relevan, tapi tetap bebas teks, bukan dropdown wajib).
+
+Empty state untuk kedua mode jika belum ada entri sama sekali: ajakan hangat sesuai semangat momen perjalanan (mis. "Catat momen-momen berharga selama perjalanan Anda. Setiap tulisan dan foto akan tersimpan di sini.").
+
+## DESAIN
+
+- Linimasa: kesan personal, hangat, seperti buku catatan — beri sedikit lebih banyak whitespace dan tipografi serif (Fraunces) untuk judul entri, mengikuti nuansa "kitab" yang sudah jadi karakter Umrahme.
+- Gallery: lebih rapat dan visual, kontras dengan mode linimasa yang lega — ini wajar karena fungsinya beda (linimasa untuk membaca, gallery untuk melihat sekilas).
+- Mode A sepenuhnya (tenang, reflektif) — TIDAK ada elemen Mode B (tombol besar, urgensi) di fitur ini sama sekali.
+- Token warna, font, mihrab card mengikuti design system yang sudah ada.
+
+## ATURAN
+
+- Tidak perlu fitur edit/hapus foto yang canggih untuk MVP — cukup tambah entri baru dan lihat entri yang sudah ada. Hapus entri (sederhana, dengan konfirmasi) boleh ditambahkan jika mudah diimplementasikan, tapi bukan prioritas.
+- Validasi sederhana: isi tulisan wajib diisi sebelum entri bisa disimpan, judul dan foto opsional.
+- Perhatikan ukuran file foto — beri batas wajar (misal validasi sederhana menolak file di atas beberapa MB) dan tampilkan pesan jelas jika foto terlalu besar, daripada aplikasi terasa lambat/macet karena base64 raksasa di state.
+- Mobile-first, ikuti pola layout desktop yang sudah diterapkan di halaman lain (untuk desktop, mode Gallery bisa memanfaatkan lebar dengan grid lebih banyak kolom).
+
+## OUTPUT
+
+Build langsung tanpa perlu konfirmasi rencana panjang — cukup pastikan dua mode tampilan (linimasa & gallery) konsisten menggunakan sumber data yang sama, dan penanganan foto (upload, resize, preview) berjalan wajar tanpa membebani performa.

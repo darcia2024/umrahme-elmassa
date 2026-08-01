@@ -1,0 +1,127 @@
+# PROMPT: Redesign Footer — Trend 2026
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Redesign total footer jadi style 2026 yang lagi trending: **dark background, headline besar di atas, mini CTA, link minimal, dan typography yang confident**. Gak ada lagi kolom link yang ramai dan generic.
+
+Trend footer 2026 yang perlu diterapkan:
+- **Dark/black background** — footer gelap kontras sama halaman putih, berasa final & premium
+- **Headline bold besar** di atas footer — bukan logo + tagline generik
+- **Mini CTA** langsung di dalam footer — satu tombol utama
+- **Link super minimal** — cukup 4-6 link paling penting, satu baris, tanpa kategori/kolom
+- **Typography percaya diri** — nama brand besar, bukan sekadar logo kecil + tagline
+- **Bottom bar sederhana** — copyright + 1-2 link legal
+
+---
+
+## Ganti SELURUH `<footer>` dengan ini
+
+Hapus footer yang ada dan ganti dengan kode berikut. Pertahankan `WA_LINK`, `C`, dan `F` yang sudah ada:
+
+```jsx
+{/* ══════════ FOOTER ══════════ */}
+<footer style={{ background: C.ink, color: '#fff', padding: '64px 24px 32px', position: 'relative', overflow: 'hidden' }}>
+  {/* Decorative radial glow background */}
+  <div style={{ position: 'absolute', top: -80, left: '50%', transform: 'translateX(-50%)', width: 600, height: 300, background: `radial-gradient(ellipse at center, ${C.primary}22 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+  <div style={{ maxWidth: 960, margin: '0 auto', position: 'relative' }}>
+
+    {/* ── HEADLINE BESAR ── */}
+    <div style={{ textAlign: 'center', marginBottom: 40 }}>
+      <p style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: C.accent, marginBottom: 14, fontFamily: F }}>
+        Siap memulai?
+      </p>
+      <h2 style={{ fontSize: 'clamp(28px, 5vw, 52px)', fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.02em', color: '#fff', margin: '0 auto 20px', maxWidth: 640, fontFamily: F }}>
+        5 jamaah pertama Anda,<br />gratis tanpa syarat.
+      </h2>
+      <p style={{ fontSize: 15, color: 'rgba(255,255,255,0.6)', marginBottom: 28, fontFamily: F }}>
+        Setup dalam menit. Bermerek nama travel Anda. Tanpa komitmen.
+      </p>
+
+      {/* CTA tombol */}
+      <a
+        href={WA_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+          background: C.accent, color: C.greenDark,
+          padding: '14px 28px', borderRadius: 999,
+          fontSize: 15, fontWeight: 700, textDecoration: 'none',
+          fontFamily: F, transition: 'opacity .2s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+      >
+        Klaim via WhatsApp
+        <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.15)', fontSize: 13 }}>→</span>
+      </a>
+    </div>
+
+    {/* ── DIVIDER ── */}
+    <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '0 0 28px' }} />
+
+    {/* ── BOTTOM BAR ── */}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+
+      {/* Brand */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 8, background: C.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, color: C.greenDark, fontFamily: F, flexShrink: 0 }}>U</div>
+        <span style={{ fontWeight: 700, fontSize: 15, fontFamily: F }}>Umrahme</span>
+      </div>
+
+      {/* Nav links — minimal */}
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+        {[
+          ['#fitur', 'Fitur'],
+          ['#harga', 'Harga'],
+          ['#cara', 'Cara Kerja'],
+          ['#kontak', 'Kontak'],
+          [WA_LINK, 'WhatsApp'],
+        ].map(([href, label]) => (
+          <a
+            key={label}
+            href={href}
+            target={href.startsWith('http') ? '_blank' : undefined}
+            rel="noopener noreferrer"
+            style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontFamily: F, transition: 'color .2s' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
+      {/* Copyright */}
+      <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', fontFamily: F }}>
+        © {new Date().getFullYear()} Umrahme
+      </span>
+    </div>
+
+  </div>
+</footer>
+```
+
+---
+
+## CSS mobile — tambahkan ke `@media (max-width: 760px)`
+
+```css
+footer .lp-footer-bottom {
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  gap: 20px !important;
+}
+```
+
+Tambahkan `className="lp-footer-bottom"` ke div bottom bar (`display: flex, justifyContent: space-between`) di dalam footer baru jika ingin mobile responsif. Atau tambahkan inline: `flexWrap: 'wrap', justifyContent: 'center'` sudah cukup untuk mobile.
+
+---
+
+## ATURAN
+- Hapus komponen/helper yang tidak terpakai setelah footer diganti (misalnya jika ada `FooterLink` atau helper footer lama).
+- Pastikan `WA_LINK` masih di-import/tersedia.
+- Tidak perlu tambah kolom link "Produk / Perusahaan / Legal" — by design footer ini minimalis.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

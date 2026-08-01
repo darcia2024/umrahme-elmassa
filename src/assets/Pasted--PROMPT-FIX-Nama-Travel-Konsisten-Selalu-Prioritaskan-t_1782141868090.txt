@@ -1,0 +1,76 @@
+# PROMPT FIX: Nama Travel Konsisten — Selalu Prioritaskan `tenant?.nama_travel`
+
+**Masalah:** Beberapa komponen masih pakai `jamaah.travel` langsung tanpa fallback ke `tenant?.nama_travel`, sehingga nama travel yang tampil adalah nilai lama dari localStorage, bukan dari Supabase.
+
+**File yang diubah:** `pages/Profil.tsx`, `pages/Sertifikat.tsx`, `components/DesktopSidebar.tsx`, `context/AuthContext.tsx`
+
+---
+
+## BAGIAN 1 — `pages/Profil.tsx`
+
+Cari semua kemunculan `jamaah.travel` dan ganti dengan:
+```tsx
+{tenant?.nama_travel ?? jamaah.travel}
+```
+
+Pastikan `tenant` sudah diambil dari `useAuth()` di komponen ini. Jika belum, tambahkan:
+```tsx
+const { jamaah, tenant } = useAuth();
+```
+
+---
+
+## BAGIAN 2 — `pages/Sertifikat.tsx`
+
+Sama — cari semua `jamaah.travel` ganti dengan `tenant?.nama_travel ?? jamaah.travel`.
+
+Untuk yang ada di dalam object/array seperti:
+```tsx
+{ label: 'Travel', value: jamaah.travel }
+```
+Ganti jadi:
+```tsx
+{ label: 'Travel', value: tenant?.nama_travel ?? jamaah.travel }
+```
+
+Pastikan `tenant` sudah diambil dari `useAuth()`.
+
+---
+
+## BAGIAN 3 — `components/DesktopSidebar.tsx`
+
+Baris ini:
+```tsx
+via <span className="text-charcoal font-medium">{jamaah.travel}</span>
+```
+Ganti jadi:
+```tsx
+via <span className="text-charcoal font-medium">{tenant?.nama_travel ?? jamaah.travel}</span>
+```
+
+---
+
+## BAGIAN 4 — `context/AuthContext.tsx`
+
+Tambahkan refresh `jamaah.travel` saat tenant di-load dari localStorage. Di dalam `AuthProvider`, setelah state `jamaah` dan `tenant` diinisialisasi, tambahkan `useEffect` ini:
+
+```tsx
+// Sync jamaah.travel dengan tenant.nama_travel supaya selalu up-to-date
+useEffect(() => {
+  setJamaah((prev) => {
+    if (!prev) return prev;
+    const namaTravel = tenant?.nama_travel ?? prev.travel;
+    if (prev.travel === namaTravel) return prev; // tidak perlu update
+    return { ...prev, travel: namaTravel };
+  });
+}, [tenant]);
+```
+
+Ini memastikan saat app pertama kali dibuka dan tenant di-load dari localStorage, `jamaah.travel` langsung diupdate ke nama yang benar — tanpa perlu logout/login ulang.
+
+---
+
+## ATURAN PENTING
+- Jangan ubah logika auth, routing, atau struktur data apapun.
+- Pastikan `tenant` selalu dari `useAuth()`, bukan di-import dari tempat lain.
+- Jalankan `pnpm run typecheck` setelah selesai.

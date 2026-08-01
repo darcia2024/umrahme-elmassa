@@ -1,0 +1,80 @@
+# PROMPT REVISI — Redesign Desktop (Bento Grid + Gradasi Lembut)
+
+> Konteks: project Umrahme (React+Vite+TS+Tailwind) sudah punya layout desktop dengan sidebar kiri + grid kartu seragam di kanan. Ini revisi TOTAL untuk arah visual desktop, terinspirasi dashboard referensi bernama "Crextio" — TAPI Crextio itu light mode dan Umrahme harus tetap dark mode. Yang diambil dari referensi bukan warnanya, tapi filosofi layoutnya: bento-grid asimetris, gradasi lembut, kartu-kartu dengan ukuran dan bobot visual yang bervariasi sesuai pentingnya konten, bukan grid kotak-kotak seragam.
+
+Scope: HANYA layout & presentasi desktop (≥1024px). Mobile (<1024px) TIDAK BOLEH berubah sama sekali — pertahankan persis seperti sekarang.
+
+---
+
+## MASALAH PADA DESKTOP SAAT INI
+
+Layout desktop sekarang sidebar kiri solid + grid kanan berisi kartu-kartu fitur yang semuanya berukuran sama (grid 2 kolom seragam), dengan background flat hitam-maroon polos. Hasilnya terasa kaku dan monoton — semua elemen punya bobot visual yang sama padahal sebagian fitur (mis. Counter Tawaf) jauh lebih sering dipakai daripada yang lain (mis. Sertifikat). Tidak ada variasi ukuran kartu, tidak ada gradasi, dan komposisi terasa seperti grid CSS otomatis, bukan dashboard yang dirancang.
+
+## ARAH BARU: BENTO GRID + GRADASI LEMBUT
+
+### Prinsip dari referensi yang DIAMBIL
+1. **Ukuran kartu proporsional terhadap kepentingan/frekuensi pakai** — bukan grid seragam. Kartu untuk fitur Mode B (Counter Tawaf, Counter Sa'i) jadi kartu besar/hero, kartu untuk fitur sekunder (Sertifikat, Peta) lebih kecil.
+2. **Komposisi asimetris yang tetap terasa seimbang** — campuran kartu lebar (span 2 kolom) dan kartu sempit (1 kolom), kartu pendek dan kartu tinggi, disusun seperti puzzle yang pas — bukan grid matematis rapi.
+3. **Gradasi lembut sebagai pengganti flat dark** — alih-alih `ink-950` polos rata, terapkan gradient radial/linear sangat halus antar permukaan kartu (dari `ink-900` ke `ink-950`, atau sentuhan `rose-600` dengan opacity sangat rendah di sudut kartu tertentu) sehingga permukaan terasa punya kedalaman, bukan datar.
+4. **Header section dengan ikon-ikon kecil bermakna** (seperti baris "Interviews / Hired / Project time" di referensi) — untuk Umrahme, area ini bisa berisi ringkasan progres jamaah: jumlah doa yang sudah dibaca/ditandai, progress checklist persiapan, hari menuju keberangkatan — sebagai strip ringkas di bawah header, sebelum bento grid dimulai.
+5. **Satu kartu "hero" dengan foto/ilustrasi besar** (seperti foto Lora Piterson di referensi) — untuk Umrahme, ganti dengan kartu fase perjalanan jamaah yang lebih besar dan ilustratif (bukan foto manusia, tapi ilustrasi/pattern islami halus + progress fase yang lebih besar dari sebelumnya), jadi anchor visual utama di grid.
+
+### Prinsip dari referensi yang DITOLAK (jangan ditiru)
+- JANGAN ikut light mode — tetap dark, ink-950/900/800 sebagai dasar.
+- JANGAN pakai foto manusia/wajah.
+- JANGAN ikut top nav horizontal — sidebar kiri tetap dipertahankan (lihat alasan di bawah).
+- JANGAN ikut palet kuning/krem mereka — gradasi tetap dalam keluarga warna Umrahme (ink, rose, gold).
+
+---
+
+## SIDEBAR: DIPERTAHANKAN, DI-REFINE
+
+Sidebar kiri TETAP ada (bukan top nav) karena menyimpan identitas jamaah yang harus persistent terlihat — nama, nomor jamaah, nama travel, fase perjalanan. Memindahkan ini ke top nav akan membuatnya sempit/hilang. Yang direvisi dari sidebar:
+- Beri sedikit gradasi halus juga di background sidebar (bukan flat `ink-900`), agar konsisten dengan filosofi gradasi di seluruh halaman.
+- Pertahankan semua fungsi navigasi 5 slot yang sudah ada (Beranda, Panduan, Ibadah, Doa, Profil) — tidak ada perubahan struktur navigasi, hanya treatment visual.
+
+---
+
+## BENTO GRID — BERANDA (PRIORITAS UTAMA REDESIGN)
+
+Susun ulang grid akses cepat di Beranda dengan komposisi asimetris berikut (sebagai pola dasar, boleh disesuaikan sedikit demi keseimbangan visual akhir, tapi prinsip variasi ukuran harus dipertahankan):
+
+- **Kartu hero** (span 2 kolom, tinggi lebih besar dari kartu lain): Fase Perjalanan Jamaah — versi lebih besar dan ilustratif dari yang sekarang, jadi titik fokus utama grid.
+- **Kartu besar** (span 2 kolom, tinggi sedang): Counter Tawaf & Counter Sa'i — ini DUA fitur paling sering dipakai (Mode B), beri masing-masing kartu yang nyata lebih besar dari kartu fitur sekunder, dengan sedikit preview visual (misal mini progress ring 0/7) yang di mobile tidak muat ditampilkan.
+- **Kartu sedang** (1 kolom): Kumpulan Doa, Tata Cara, Panduan Ihram — ukuran menengah, masih lebih besar dari kartu kecil.
+- **Kartu kecil** (1 kolom, lebih pendek): Peta Lokasi, Persiapan, Sertifikat — fitur yang dipakai lebih jarang atau sekali per perjalanan.
+
+Setiap kartu mempertahankan elemen mihrab card (lengkung gold di tepi atas) yang sudah jadi signature Umrahme — JANGAN dihilangkan demi mengikuti gaya kartu Crextio yang full rounded-rect tanpa lengkung. Sesuaikan ukuran lengkungnya secara proporsional dengan ukuran tiap kartu.
+
+---
+
+## TERAPKAN KE HALAMAN DESKTOP LAIN
+
+Setelah Beranda selesai, terapkan filosofi bento-grid + gradasi yang sama (proporsional, bukan seragam) ke layout desktop yang sudah ada di halaman lain, MENYESUAIKAN dengan konten masing-masing, bukan dipaksa sama:
+
+- **Kumpulan Doa** (master-detail dua kolom yang sudah ada): kolom list tetap, tapi beri gradasi halus pada panel detail di kanan agar tidak terasa seperti dua kotak flat bersisian.
+- **Peta Lokasi**: grid kartu lokasi yang sudah ada, variasikan ukuran kartu jika ada lokasi "unggulan" (misal Masjidil Haram, Masjid Nabawi) yang layak ditampilkan lebih besar dibanding lokasi lain.
+- **Persiapan (checklist)**: kategori-kategori berdampingan yang sudah ada, beri salah satu kategori dengan progress terendah penekanan visual sedikit lebih besar (mendorong perhatian ke yang belum selesai), tanpa mengubah fungsinya.
+- **Counter Tawaf & Counter Sa'i**: TIDAK diubah — tetap sesederhana sekarang, prinsip "satu layar satu tugas" untuk Mode B tidak boleh terganggu oleh redesign estetika ini.
+- **Sertifikat & Panduan lainnya**: terapkan gradasi halus pada background/card secukupnya, tidak perlu dipaksa jadi bento-grid jika kontennya memang linear (misal sertifikat tetap satu kartu utuh).
+
+---
+
+## ATURAN YANG TETAP BERLAKU (TIDAK BOLEH DILANGGAR)
+
+- Mobile (<1024px) TIDAK diubah sama sekali — ini murni revisi presentasi desktop.
+- Semua token warna dasar (ink-950/900/800, rose-600/400, gold-400, parchment-100, mute-500) tetap dipakai — gradasi dibuat MENGGUNAKAN token ini (misal `linear-gradient` dari ink-900 ke ink-950, atau radial gradient rose-600 dengan opacity rendah), BUKAN menambah warna baru di luar palet.
+- Tipografi (Fraunces, Plus Jakarta Sans, Amiri, IBM Plex Mono) tidak berubah.
+- Hierarki visual tetap dicapai lewat ukuran + whitespace + gradasi — bukan menambah warna ramai atau ornamen berlebihan.
+- Counter Tawaf & Counter Sa'i: filosofi "satu layar satu tugas, fokus, tenang" untuk Mode B HARUS tetap terjaga meski kartu akses-nya di Beranda jadi lebih besar — begitu masuk ke dalam counter itu sendiri, kesederhanaan tetap nomor satu.
+- Hormati `prefers-reduced-motion`.
+
+---
+
+## OUTPUT YANG DIHARAPKAN
+
+Sebelum membangun, tampilkan dulu rencana singkat: konfirmasi pemahaman filosofi bento-grid (ukuran proporsional terhadap kepentingan, bukan grid seragam), bagaimana gradasi akan diterapkan menggunakan token warna yang sudah ada, dan komposisi kartu untuk Beranda secara spesifik (urutan ukuran kartu dari hero hingga terkecil).
+
+Build dimulai dari Beranda (bento grid + sidebar refinement), lalu terapkan ke Kumpulan Doa dan Peta Lokasi, baru halaman sisanya.
+
+Setelah selesai, lakukan **self-review**: pastikan Counter Tawaf dan Counter Sa'i TIDAK ikut terkena redesign yang membuatnya lebih ramai — kedua halaman itu harus tetap terasa paling tenang di seluruh app meski Beranda sekarang jauh lebih dinamis secara visual.

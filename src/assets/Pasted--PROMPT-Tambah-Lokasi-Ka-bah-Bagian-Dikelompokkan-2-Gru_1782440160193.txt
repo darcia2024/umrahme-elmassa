@@ -1,0 +1,98 @@
+# PROMPT: Tambah Lokasi Ka'bah + Bagian Dikelompokkan 2 Grup (Rapi)
+
+**File terkait:**
+- `artifacts/umrahme/src/types/index.ts` (tambah tipe `bagianGrup`)
+- `artifacts/umrahme/src/data/lokasi.ts` (tambah objek Ka'bah)
+- `artifacts/umrahme/src/pages/LokasiDetail.tsx` (render 2 grup)
+
+Tambahkan lokasi Ka'bah. Bagian-bagiannya JANGAN ditampilkan terpisah jadi banyak kartu — kelompokkan jadi **2 grup** saja: "4 Sudut (Rukun) Ka'bah" dan "Bagian Penting Lainnya". Tiap grup = 1 kartu berisi daftar ringkas.
+
+**PENTING soal karakter:** tulis karakter Arab (ﷺ, الكعبة, dll), apostrof (’), dan em-dash (—) LANGSUNG sebagai karakter asli. JANGAN pakai escape `\uXXXX` apalagi double-backslash `\\uXXXX` — itu menyebabkan teks tampil mentah/ngawur. File `lokasi-kabah-grup.ts` sudah memakai karakter langsung yang benar; salin apa adanya.
+
+---
+
+## LANGKAH 1 — Tambah tipe di `types/index.ts`
+
+```ts
+export interface BagianKabahItem {
+  nama: string;
+  arab?: string;
+  deskripsi: string;
+}
+
+export interface BagianKabahGrup {
+  judul: string;              // mis. "4 Sudut (Rukun) Ka'bah"
+  items: BagianKabahItem[];
+}
+
+export interface Lokasi {
+  // ... field yang sudah ada ...
+  bagianGrup?: BagianKabahGrup[];   // untuk Ka'bah: bagian dikelompokkan
+}
+```
+
+---
+
+## LANGKAH 2 — Tambah objek Ka'bah di `data/lokasi.ts`
+Salin objek lengkap dari file `lokasi-kabah-grup.ts` ke dalam array `daftarLokasi` (letakkan di kelompok lokasi Makkah). Field `bagianGrup` berisi 2 grup:
+1. **4 Sudut (Rukun) Ka'bah:** Rukun Hajar Aswad, Rukun Yamani, Rukun Iraqi, Rukun Syami.
+2. **Bagian Penting Lainnya:** Multazam, Maqam Ibrahim, Hijir Ismail, Pintu Ka'bah, Mizab Ar-Rahman, Kiswah, Syadzarwan.
+
+---
+
+## LANGKAH 3 — Render 2 grup di `LokasiDetail.tsx`
+
+Tampilkan hanya jika `lokasi.bagianGrup` ada. Tiap grup = SATU kartu, isinya daftar baris ringkas (bukan satu kartu per bagian). Letakkan setelah section Sejarah.
+
+```tsx
+{lokasi.bagianGrup && lokasi.bagianGrup.length > 0 && (
+  <section className="mt-6">
+    <div className="mb-3">
+      <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Rincian</p>
+      <h3 className="mt-0.5 text-[15px] font-bold text-ink">Bagian-Bagian Ka’bah</h3>
+    </div>
+
+    <div className="space-y-3">
+      {lokasi.bagianGrup.map((grup, gi) => (
+        <div key={gi} className="rounded-2xl border border-hairline bg-surface-card p-4 shadow-drop-soft">
+          {/* Judul grup */}
+          <div className="mb-2 flex items-center gap-2">
+            <span className="h-4 w-1 rounded-full bg-gold" aria-hidden />
+            <h4 className="text-[13.5px] font-bold text-ink">{grup.judul}</h4>
+          </div>
+
+          {/* Daftar item dalam grup (baris ringkas, dipisah garis halus) */}
+          <div className="divide-y divide-hairline">
+            {grup.items.map((it, ii) => (
+              <div key={ii} className="py-2.5 first:pt-0 last:pb-0">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h5 className="text-[13px] font-semibold text-ink">{it.nama}</h5>
+                  {it.arab && <span className="flex-none font-arab text-[14px] text-gold" dir="rtl">{it.arab}</span>}
+                </div>
+                <p className="mt-0.5 text-[12px] leading-snug text-charcoal">{it.deskripsi}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+```
+
+Hasil: cuma 2 kartu (Sudut & Bagian Lain), masing-masing berisi daftar ringkas yang rapi dengan pemisah garis tipis — tidak lagi banyak kartu berserakan.
+
+---
+
+## CATATAN AKURASI (review sebagai mahasiswa Ushuluddin)
+- Posisi sudut: Hajar Aswad = timur, Rukun Yamani = barat daya (kadang disebut selatan), Rukun Iraqi = utara, Rukun Syami = barat laut. Sesuaikan bila manhaj/sumber Anda berbeda.
+- Catatan Hajar Aswad mengutip atsar Umar bin Khattab (Bukhari-Muslim) untuk meluruskan akidah (mencium = ittiba', bukan menyembah batu).
+- Shalat di Hijir Ismail dihukumi seperti di dalam Ka'bah (pendapat masyhur) — verifikasi sesuai manhaj.
+
+---
+
+## ATURAN
+- Bagian Ka'bah HARUS hanya 2 grup/kartu (Sudut & Bagian Lain), bukan banyak kartu terpisah.
+- Tulis semua karakter Arab/tanda baca langsung; jangan pakai `\\uXXXX`.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

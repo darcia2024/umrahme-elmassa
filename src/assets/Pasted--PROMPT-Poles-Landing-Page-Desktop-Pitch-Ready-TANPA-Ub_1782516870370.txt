@@ -1,0 +1,107 @@
+# PROMPT — Poles Landing Page Desktop (Pitch-Ready) TANPA Ubah Mobile
+
+## Konteks
+File: `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Landing page memakai arsitektur: **inline style = tampilan dasar (desktop)**, lalu di-override
+untuk mobile via blok `<style>` dengan `@media (max-width: ...)` yang semuanya pakai `!important`.
+
+Karena itu, cara TERAMAN memperbaiki desktop tanpa menyentuh mobile adalah:
+menambah blok **`@media (min-width: 1024px)`** baru (juga pakai `!important` agar bisa
+mengalahkan inline style). Aturan `min-width` ini TIDAK akan pernah aktif di layar mobile,
+jadi tampilan HP dijamin tidak berubah sama sekali.
+
+**Tujuan:** desktop terasa lebih megah, lega, dan meyakinkan untuk presentasi ke calon travel —
+hero lebih besar & dominan, ritme antar-section lebih lega, kontainer lebih lebar di monitor
+besar, kartu & heading lebih proporsional.
+
+---
+
+## SATU-SATUNYA PERUBAHAN: Tambah Blok CSS Desktop
+
+Di dalam blok `<style>{`...`}</style>` pada LandingPage, cari baris media query terakhir
+(sekitar `@media (max-width: 640px) { .lp-compare { ... } }`, dekat penutup `}` style).
+TEPAT SEBELUM penutup backtick `` ` `` blok style, **tambahkan** blok berikut:
+
+```css
+/* ═══════════════════════════════════════════════════
+   DESKTOP POLISH — hanya aktif di layar ≥1024px.
+   Tidak menyentuh mobile (mobile pakai max-width).
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  /* Kontainer lebih lebar di layar besar → terasa premium */
+  .lp-inner { max-width: 1240px !important; }
+
+  /* Ritme antar-section lebih lega */
+  .lp-section { padding-top: 88px !important; padding-bottom: 88px !important; }
+
+  /* Hero lebih dominan & "berdiri" di layar besar */
+  .lp-hero-padding { padding-top: 132px !important; padding-bottom: 120px !important; }
+  .lp-hero-padding h1 {
+    font-size: clamp(52px, 5.4vw, 74px) !important;
+    line-height: 1.04 !important;
+    max-width: 960px !important;
+    margin-bottom: 24px !important;
+  }
+  .lp-hero-padding p {
+    font-size: 17px !important;
+    max-width: 600px !important;
+    margin-bottom: 32px !important;
+  }
+  /* Tombol hero sedikit lebih besar */
+  .lp-hero-btns .lp-btn {
+    padding: 16px 32px !important;
+    font-size: 15.5px !important;
+  }
+
+  /* Heading section lebih besar & berwibawa */
+  .lp-h2 { font-size: clamp(34px, 3.4vw, 44px) !important; }
+
+  /* Kartu fitur sedikit lebih lega */
+  .lp-feat-card { padding: 22px !important; border-radius: 14px !important; }
+
+  /* Grid fitur: beri jarak lebih nyaman */
+  .lp-feat-grid { gap: 16px !important; }
+  .lp-bento { gap: 16px !important; }
+}
+
+/* Layar sangat besar (proyektor / monitor lebar) */
+@media (min-width: 1440px) {
+  .lp-inner { max-width: 1320px !important; }
+  .lp-section { padding-top: 104px !important; padding-bottom: 104px !important; }
+  .lp-hero-padding h1 { font-size: 78px !important; }
+}
+```
+
+---
+
+## Penting: Hero pakai maxWidth inline, bukan `.lp-inner`
+
+Hero container memakai `style={{ maxWidth: 1180, ... }}` langsung (bukan class `lp-inner`).
+Agar hero ikut melebar di desktop, lakukan SALAH SATU:
+
+**Opsi A (disarankan, minimal):** tambahkan `className="lp-inner"` pada div kontainer hero
+(yang sekarang `<div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>`), sambil tetap pertahankan style inline-nya. Karena media query
+`.lp-inner` memakai `!important`, max-width akan ikut melebar di desktop, dan mobile tetap aman.
+
+Jadi:
+```tsx
+<div className="lp-inner" style={{ maxWidth: 1180, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 2, textAlign: 'center' }}>
+```
+
+> Selector `.lp-hero-padding h1` dan `.lp-hero-padding p` menargetkan h1/p di dalam hero —
+> pastikan hanya ada satu h1 & paragraf utama di hero (memang begitu strukturnya), jadi aman.
+
+---
+
+## Yang TIDAK Boleh Diubah
+- JANGAN sentuh blok `@media (max-width: ...)` mana pun (itu semua untuk mobile/tablet).
+- JANGAN ubah inline style dasar (biarkan apa adanya — media query desktop yang menimpanya).
+- JANGAN ubah teks/copy, struktur section, warna brand, atau animasi.
+- JANGAN ubah navbar mobile, dropdown mobile, atau layout phone mockup mobile.
+
+## Verifikasi Setelah Deploy
+- **Mobile (lebar ≤760px)**: buka di HP / resize browser sempit → tampilan SAMA PERSIS seperti sebelumnya (tidak ada yang berubah).
+- **Desktop (≥1024px)**: hero lebih besar & dominan, jarak antar-section lebih lega, kontainer lebih lebar, heading lebih besar.
+- **Monitor besar (≥1440px)**: konten makin lebar & hero makin besar — enak untuk presentasi / proyektor.
+- Tidak ada layout yang pecah di lebar antara (768px–1023px / tablet).

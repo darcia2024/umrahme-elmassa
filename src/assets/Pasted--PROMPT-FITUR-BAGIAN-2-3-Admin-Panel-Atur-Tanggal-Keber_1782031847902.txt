@@ -1,0 +1,34 @@
+# PROMPT FITUR (BAGIAN 2/3) — Admin Panel: Atur Tanggal Keberangkatan & Agenda
+
+> Prasyarat: Bagian 1 (skema database `tanggal_keberangkatan`, `tanggal_kepulangan`, tabel `agenda_items`) harus sudah selesai. Prasyarat lain: migrasi login jamaah ke database (prompt terpisah sebelumnya, "Sambungkan Login Jamaah ke Database Tenant") idealnya sudah selesai juga, tapi BAGIAN INI bisa tetap dikerjakan independen karena hanya menyentuh admin panel.
+>
+> Tujuan: admin (`AdminTenantForm.tsx`) bisa mengisi tanggal keberangkatan/kepulangan, dan mengelola daftar agenda untuk tenant tersebut.
+
+## 1. Tambah field tanggal di `AdminTenantForm.tsx`
+
+Tambahkan dua field baru ke form yang sudah ada (setelah field "Page Title", sebelum tombol submit):
+- **Tanggal Keberangkatan** — `<input type="date">`, opsional (boleh kosong).
+- **Tanggal Kepulangan** — `<input type="date">`, opsional, dengan validasi sederhana: jika diisi, harus setelah atau sama dengan tanggal keberangkatan (tampilkan error inline jika tidak valid, jangan blokir submit untuk error non-kritis ini — cukup peringatan).
+
+Sertakan kedua field ini dalam payload `insert`/`update` yang sudah ada di `handleSubmit`, mengikuti pola field lain yang sudah ada di form ini.
+
+## 2. Bagian baru: Kelola Agenda (hanya muncul saat EDIT tenant, bukan saat membuat tenant baru)
+
+Di bawah form utama (atau sebagai section terpisah setelah form tersimpan), tambahkan area "Agenda Perjalanan" yang HANYA tampil ketika `!isNew` (tenant sudah ada, karena agenda butuh `tenant_id` yang valid):
+
+- **Daftar agenda yang sudah ada**: tabel/list sederhana menampilkan semua baris dari `agenda_items` milik tenant ini (`select * from agenda_items where tenant_id = :id order by tanggal, jam_mulai`), kolom: tanggal, jam, judul, lokasi, tombol hapus per baris.
+- **Form tambah agenda baru**: di atas atau di bawah list, form kecil dengan field: Tanggal (wajib), Jam Mulai (opsional), Judul (wajib), Deskripsi (opsional, textarea), Lokasi (opsional). Tombol "+ Tambah Agenda" yang melakukan `insert` ke `agenda_items` dengan `tenant_id` dari tenant yang sedang diedit, lalu refresh list tanpa reload halaman penuh.
+- **Hapus agenda**: tombol hapus per baris memanggil `delete` ke `agenda_items` dengan konfirmasi sederhana (`window.confirm` cukup untuk versi ini) sebelum eksekusi.
+- TIDAK PERLU fitur edit agenda individual untuk versi ini (hapus lalu tambah ulang sudah cukup untuk MVP) — jangan over-engineer dengan modal edit terpisah.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Field-field form tenant yang sudah ada (kode aktivasi, nama travel, warna, logo, page title) dan logic submit-nya — tidak diubah, hanya ditambahkan field baru.
+- `AdminTenantList.tsx` — tidak perlu menampilkan tanggal/agenda di tabel daftar tenant untuk versi ini (cukup terlihat saat masuk ke halaman edit tenant tertentu).
+- Sistem styling "light premium" yang sudah diterapkan ke admin panel sebelumnya — field dan komponen baru harus mengikuti pola visual yang sudah ada (warna accent indigo, font-mono untuk label, dll), bukan style default Tailwind polos.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan bukti: buka tenant yang sudah ada di admin panel, isi tanggal keberangkatan, tambahkan 2-3 item agenda dengan tanggal & jam berbeda, simpan — lalu refresh halaman dan tunjukkan data tersebut masih ada (tersimpan benar di database, bukan hanya state sementara di browser).

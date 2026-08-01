@@ -1,0 +1,106 @@
+# PROMPT: Redesign Final Kartu Lokasi — Rapi, Estetik, Sempurna
+
+**File:** `artifacts/umrahme/src/pages/Peta.tsx`
+
+Kartu lokasi saat ini berantakan: meta info (KM / KOTA / TIPE) kepotong di kanan, ada redundansi (badge "MASJID" di atas + "TIPE: Masjid" di bawah — duplikat), dan badge tidak align rapi dengan judul yang wrap. Redesign total kartu agar rapi, estetik, dan presisi.
+
+Ganti SELURUH markup kartu (mobile & desktop) dengan struktur baru di bawah. Pertahankan design tokens: `gold`, `primary`, `hairline`, `surface-card`, `surface-bone`, `font-arab`, `font-mono`, `ink`, `charcoal`, `mute`, `ash`, `IconPeta`, `IconChevron`.
+
+---
+
+## STRUKTUR KARTU BARU (foto atas, konten bawah — gaya kartu vertikal premium)
+
+Ganti blok list/grid lokasi dengan ini. Gunakan SATU komponen kartu untuk mobile & desktop, dibedakan lewat grid container.
+
+```tsx
+{/* GRID LOKASI — 1 kolom mobile, 2 kolom desktop */}
+<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  {lokasi.map((l) => (
+    <Link
+      key={l.id}
+      to={`/peta/${l.id}`}
+      className="group flex flex-col overflow-hidden rounded-2xl border border-hairline bg-surface-card transition-all hover:border-hairline-strong hover:shadow-drop-soft active:scale-[0.99]"
+    >
+      {/* ── Gambar ── */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-surface-bone">
+        {l.gambar ? (
+          <img
+            src={l.gambar}
+            alt={l.nama}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 opacity-[0.18]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #d4a24e 0 1px, transparent 1px 9px)' }} aria-hidden />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <IconPeta className="h-7 w-7 text-gold/50" />
+            </div>
+          </>
+        )}
+
+        {/* Badge tipe — kiri atas, di atas gambar */}
+        <span className="absolute left-2.5 top-2.5 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+          {l.tipe === 'masjid' ? 'Masjid' : 'Bersejarah'}
+        </span>
+
+        {/* Badge kota — kanan atas */}
+        <span className="absolute right-2.5 top-2.5 rounded-full bg-white/85 px-2.5 py-1 font-mono text-[9px] font-semibold uppercase tracking-wider text-ink backdrop-blur-sm">
+          {l.kota}
+        </span>
+
+        {/* Gradient bawah untuk kontras (opsional, halus) */}
+        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/20 to-transparent" aria-hidden />
+      </div>
+
+      {/* ── Konten ── */}
+      <div className="flex flex-1 flex-col p-3.5">
+        {/* Nama + Arab */}
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-[15.5px] font-bold leading-snug text-ink">{l.nama}</h2>
+        </div>
+        {l.namaArab && (
+          <p className="mt-0.5 font-arab text-[15px] leading-relaxed text-gold" dir="rtl">{l.namaArab}</p>
+        )}
+
+        {/* Ringkas */}
+        <p className="mt-1.5 line-clamp-2 text-[12.5px] leading-snug text-charcoal">{l.ringkas}</p>
+
+        {/* Footer meta — jarak + chevron */}
+        <div className="mt-3 flex items-center justify-between border-t border-hairline pt-2.5">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-mute">
+            <IconPeta className="h-3.5 w-3.5 text-gold/70" />
+            <span>{l.jarakKm} km dari pusat</span>
+          </div>
+          <span className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Detail
+            <IconChevron className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  ))}
+</div>
+```
+
+Hapus markup kartu lama (baik versi list mobile maupun grid desktop yang lama) dan ganti dengan satu grid di atas.
+
+---
+
+## PERBAIKAN YANG DILAKUKAN
+1. **Hilangkan redundansi** — dulu ada badge "MASJID" + meta "TIPE: Masjid". Sekarang tipe hanya tampil sekali sebagai badge di atas gambar.
+2. **Meta tidak kepotong** — dulu grid KM/KOTA/TIPE 3 kolom sempit bikin teks terpotong. Sekarang footer cuma "{jarak} km dari pusat" + "Detail →", muat rapi.
+3. **Badge di atas gambar** — kota & tipe jadi overlay di foto (kiri & kanan atas), tidak mengganggu judul. Judul bebas wrap tanpa tabrakan badge.
+4. **Kartu vertikal konsisten** — foto rasio 16:10 di atas, konten di bawah. Rapi & seragam baik 1 maupun 2 kolom.
+5. **Footer dengan garis pemisah** — meta jarak + CTA "Detail" dipisah garis halus, terlihat tertata.
+6. **Tombol "Lihat Detail" hitam besar dihapus** — diganti CTA teks "Detail →" yang lebih elegan; seluruh kartu sudah bisa diklik (`Link`), jadi tombol besar mubazir.
+7. **Hover halus** — foto zoom + border menguat + chevron bergeser.
+
+---
+
+## ATURAN
+- Jangan ubah header, banner atas, atau tab kategori.
+- Jika `border-hairline-strong` belum ada di config, ganti ke `border-hairline`.
+- Pastikan `IconPeta` & `IconChevron` ter-import.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

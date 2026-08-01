@@ -1,0 +1,51 @@
+# PROMPT FIX — Halaman Jadwal Sholat (6 Masalah Visual & Fungsional)
+
+> Konteks: project Umrahme, halaman Jadwal Sholat (`/ibadah/jadwal-sholat`). Review visual menemukan 6 masalah yang perlu diperbaiki sekaligus dalam satu sesi. Halaman ini bersifat informasional (data dummy/statis, tanpa GPS/API sungguhan) — perbaikan di bawah TIDAK mengubah sifat dummy tersebut, hanya kualitas visual dan logika tampilan.
+
+## MASALAH 1 — Ikon Kiri-Kanan di Gauge Tidak Jelas/Tidak Konsisten
+
+Saat ini di kiri gauge (dekat label "SUBUH") ada ikon pin lokasi merah yang tidak relevan, dan di kanan (dekat label "ISYA") ada bentuk tidak jelas (terlihat seperti bentuk melengkung emas dengan lingkaran kecil kosong menempel di sampingnya) — kedua ikon ini tidak merepresentasikan apapun yang bermakna dan terlihat seperti elemen yang salah/belum selesai.
+
+**Perbaikan**: ganti kedua ikon dengan ikon yang jelas merepresentasikan waktu — gunakan ikon bulan/fajar untuk Subuh (sisi kiri) dan ikon bintang/malam untuk Isya (sisi kanan), TANPA elemen tambahan yang mengambang tidak jelas (hapus lingkaran kecil kosong yang menempel itu). Ikuti gaya ikon custom elegan yang sudah ditentukan di revisi ikon sebelumnya jika sudah tersedia (`src/components/icons/`), atau buat ikon sederhana dengan stroke konsisten mengikuti design system jika ikon custom belum ada untuk waktu sholat ini.
+
+## MASALAH 2 — Angka "56" Tanpa Label/Konteks
+
+Di bawah jam besar "20:47" ada angka kecil "56" sendirian tanpa keterangan apapun — tidak jelas itu detik berjalan, sisa menit, atau apa.
+
+**Perbaikan**: jika angka ini dimaksudkan sebagai detik berjalan (format jam realtime HH:MM:SS yang dipecah tampilannya), maka beri jarak/styling yang jelas menunjukkan ini bagian dari jam (mis. ":56" menyambung ke "20:47" sebagai "20:47:56", atau ditampilkan lebih kecil dengan label "detik" jika ingin tetap terpisah). Jika angka ini dimaksudkan sebagai sesuatu yang lain (mis. hitung mundur menit ke waktu sholat berikutnya), maka beri label jelas (mis. "menit lagi"). Pilih SALAH SATU makna yang masuk akal dan terapkan dengan label yang jelas — jangan biarkan angka tanpa konteks apapun.
+
+## MASALAH 3 — Tombol Kembali Terlalu Mepet ke Judul
+
+Tombol kembali (ikon panah kiri, bulat putih) di pojok kiri atas posisinya terlalu dekat/hampir menempel dengan teks "IBADAH" dan "Jadwal Sholat" di sebelahnya.
+
+**Perbaikan**: beri jarak (margin/padding) yang cukup antara tombol kembali dan blok teks judul, mengikuti pola spacing header yang konsisten dengan halaman-halaman dalam lainnya di app (cek halaman seperti Counter Tawaf atau Detail Doa untuk pola jarak tombol-kembali-ke-judul yang sudah benar, terapkan pola yang sama di sini).
+
+## MASALAH 4 — State Default Toggle Notifikasi Tidak Konsisten
+
+Saat ini toggle notifikasi untuk Maghrib dalam keadaan AKTIF (oranye/menyala) sementara Subuh, Dzuhur, dan Ashar dalam keadaan NONAKTIF (abu-abu) — padahal belum ada interaksi user sama sekali (ini halaman baru dibuka). State default yang tidak konsisten ini terlihat seperti bug.
+
+**Perbaikan**: tentukan SATU state default yang konsisten untuk SEMUA toggle notifikasi saat halaman pertama kali dibuka (sebelum ada interaksi user) — disarankan default AKTIF untuk semua waktu sholat (asumsi jamaah ingin diingatkan untuk semua waktu), kecuali ada alasan spesifik untuk default berbeda. Pastikan logic state-nya tidak punya nilai acak/tertinggal dari testing sebelumnya.
+
+## MASALAH 5 — Tidak Ada Penanda Waktu Sholat yang Sedang Berlangsung/Berikutnya
+
+Gauge di atas menunjukkan rentang Maghrib→Isya (sesuai waktu dummy 20:47), tapi di LIST waktu sholat di bawahnya, semua kartu (Subuh, Dzuhur, Ashar, Maghrib) terlihat identik secara visual — tidak ada penanda mana yang sedang berlangsung atau berikutnya, padahal ini informasi penting yang seharusnya konsisten dengan apa yang ditunjukkan gauge di atas.
+
+**Perbaikan**: beri penekanan visual yang jelas pada kartu waktu sholat yang SEDANG BERLANGSUNG atau PALING DEKAT dengan waktu saat ini (data dummy, sinkronkan dengan jam dummy yang sama dipakai gauge) — mis. border gold tipis, background sedikit lebih terang, atau badge kecil "Sekarang"/"Berikutnya". Penekanan ini harus konsisten dengan apa yang ditampilkan gauge di atas (jika gauge menunjukkan rentang Maghrib-Isya, maka kartu Maghrib di list sebaiknya yang mendapat penekanan visual, BUKAN ditentukan acak/independen dari gauge).
+
+## MASALAH 6 — Glow/Efek Oranye Tidak Wajar Menutupi Konten & Navigasi
+
+Ada efek glow/blur oranye besar yang menutupi sebagian kartu Maghrib di list DAN bottom navigation di bawahnya — terlihat seperti elemen styling (kemungkinan box-shadow atau glow effect) dengan ukuran/blur radius yang jauh lebih besar dari yang dimaksudkan, sampai melebar ke luar elemen yang seharusnya jadi sumber glow tersebut.
+
+**Perbaikan**: identifikasi sumber glow ini (kemungkinan berasal dari toggle Maghrib yang aktif, atau dari FAB di bottom nav) dan KECILKAN blur radius/ukuran glow tersebut secara signifikan sehingga efeknya halus dan TERBATAS pada elemen sumbernya saja (mis. glow rose-400 pada FAB seperti yang sudah ditentukan di revisi FAB sebelumnya seharusnya HANYA mengelilingi FAB itu sendiri, tidak melebar sampai menutupi card list atau item nav lain). Jika glow ini tidak disengaja sama sekali (bukan bagian dari desain FAB), hapus sepenuhnya.
+
+---
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Sifat halaman tetap informasional dengan data dummy/statis — TIDAK menambahkan logic GPS/geolocation/API waktu sholat sungguhan.
+- Layout keseluruhan (gauge besar + list waktu sholat di bawah) — struktur ini dipertahankan, perbaikan di atas adalah penyempurnaan, bukan rombak ulang.
+- Token warna, font, dan design system lainnya — tidak berubah, KECUALI ukuran/intensitas glow yang memang menjadi masalah.
+
+## OUTPUT
+
+Build langsung — keenam masalah ini spesifik dan bisa diperbaiki bersamaan dalam satu halaman. Setelah selesai, tunjukkan halaman Jadwal Sholat secara penuh untuk verifikasi: ikon kiri-kanan jelas dan rapi, angka di bawah jam punya label/konteks, tombol kembali punya jarak cukup, semua toggle dalam state default yang konsisten, kartu Maghrib (atau waktu yang sesuai jam dummy) mendapat penekanan visual di list, dan tidak ada lagi glow oranye berlebihan yang menutupi konten/navigasi.

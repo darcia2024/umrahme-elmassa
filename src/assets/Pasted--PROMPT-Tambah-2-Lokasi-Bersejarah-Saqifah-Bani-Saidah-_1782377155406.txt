@@ -1,0 +1,41 @@
+# PROMPT: Tambah 2 Lokasi Bersejarah — Saqifah Bani Saidah & Masjid Bir Ali
+
+**File:** `artifacts/umrahme/src/data/lokasi.ts`
+
+Tambahkan 2 lokasi bersejarah penting di sekitar Madinah ke array `daftarLokasi`. Keduanya sangat relevan untuk jamaah dan sering jadi titik ziarah. Pakai escape unicode untuk teks Arab seperti pola objek yang sudah ada.
+
+> **Teks lengkap siap pakai (sudah escape unicode) ada di file `lokasi-saqifah-birali.ts`. Salin kedua objek langsung ke dalam array `daftarLokasi`.**
+
+---
+
+## RINGKASAN 2 LOKASI
+
+**1. Saqifah Bani Saidah** (`saqifah-bani-saidah`, tipe `sejarah`, Madinah)
+- namaArab: `سقيفة بني ساعدة`, jarakKm: 0.45, koordinat: `{ lat: 24.4685, lng: 39.6105 }`
+- Taman bersejarah ~450m barat laut Masjid Nabawi. Tempat musyawarah kaum Anshar & **pembaiatan Abu Bakar رضي الله عنه sebagai khalifah pertama** setelah Rasulullah ﷺ wafat.
+- 3 sub-sejarah: Musyawarah pertama umat Islam, Pembaiatan Abu Bakar, Teladan kerendahan hati.
+- Tokoh: Abu Bakar, Umar, Sa'ad bin Ubadah رضي الله عنهم.
+- Dalil: QS. Asy-Syura:38 (musyawarah) + HR. Bukhari.
+- Catatan: kini berupa taman, tidak selalu dibuka; ziarah untuk mengenang sejarah, bukan ibadah khusus.
+
+**2. Masjid Bir Ali / Dzulhulaifah** (`masjid-bir-ali`, tipe `masjid`, Madinah)
+- namaArab: `مسجد ذي الحليفة`, jarakKm: 11, koordinat: `{ lat: 24.4131, lng: 39.5419 }`
+- **Tempat miqat** (niat ihram) bagi jamaah dari Madinah menuju Makkah. Rasulullah ﷺ berihram dari sini saat Haji Wada.
+- 3 sub-sejarah: Miqat yang ditetapkan Rasulullah ﷺ, Nama Bir Ali & Masjid Asy-Syajarah, Amalan sunnah saat miqat.
+- Tokoh: Nabi ﷺ, Umar bin Abdul Aziz.
+- Dalil: HR. Bukhari & Muslim (hadis penetapan miqat dari Ibnu Abbas).
+- Adab penting: mandi sunnah ihram, shalat 2 rakaat, **WAJIB niat ihram sebelum lewat batas miqat** (kalau terlewat → dam).
+- Catatan: miqat utama jamaah Indonesia gelombang dari Madinah.
+
+---
+
+## ATURAN
+- Jangan hapus/ubah lokasi yang sudah ada.
+- `gambar: ''` untuk keduanya (foto menyusul).
+- Pastikan struktur cocok interface `Lokasi`.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.
+
+## ⭐ FOTO YANG PERLU DILENGKAPI
+- `saqifah-bani-saidah.jpg` — taman Saqifah Bani Saidah (taman hijau dekat Masjid Nabawi)
+- `masjid-bir-ali.jpg` — Masjid Bir Ali / Dzulhulaifah (masjid besar dengan gerbang & menara)

@@ -1,0 +1,105 @@
+# PROMPT FITUR: Tambah Box Gambar di Halaman Detail Lokasi
+
+**Konteks:** project Umrahme (React + TypeScript + Vite + Tailwind). Lanjutan dari redesain `LokasiDetail.tsx`. File yang diubah: `src/types/index.ts`, `src/data/lokasi.ts`, dan `src/pages/LokasiDetail.tsx`.
+
+**Tujuan:** Tambahkan field `gambar` (opsional) di type `Lokasi`, isi semua entry di `daftarLokasi` dengan string kosong sebagai placeholder, dan tampilkan box gambar di halaman detail — elegan, siap diisi URL nanti.
+
+---
+
+## BAGIAN 1 — Update type `Lokasi` di `src/types/index.ts`
+
+Tambahkan satu field opsional di dalam interface `Lokasi` (sisipkan setelah field `ringkas`):
+
+```ts
+/**
+ * URL gambar lokasi. Kosongkan ("") jika belum tersedia.
+ * Saat nanti ada gambar, isi dengan URL publik atau path /public/images/...
+ * Contoh: 'https://upload.wikimedia.org/...' atau '/images/masjidil-haram.jpg'
+ */
+gambar?: string;
+```
+
+---
+
+## BAGIAN 2 — Update `src/data/lokasi.ts`
+
+Tambahkan field `gambar: ''` ke SETIAP objek lokasi di dalam `daftarLokasi`. Letakkan setelah field `ringkas` di masing-masing objek. Contoh:
+
+```ts
+{
+  id: 'masjidil-haram',
+  tipe: 'masjid',
+  nama: 'Masjidil Haram',
+  // ... field lainnya ...
+  ringkas: 'Masjid teragung dalam Islam...',
+  gambar: '',   // ← tambahkan ini, kosong dulu
+  koordinat: { lat: 21.4225, lng: 39.8262 },
+  // ... seterusnya
+},
+```
+
+Lakukan hal yang sama untuk SEMUA lokasi (masjidil-haram, masjid-nabawi, masjid-quba, jabal-nur, jabal-tsur, jabal-rahmah, jabal-uhud, jannatul-baqi, masjid-qiblatain, masjid-aisyah-tanim, dan lokasi lain yang ada).
+
+---
+
+## BAGIAN 3 — Update `src/pages/LokasiDetail.tsx`
+
+Tambahkan section gambar DI ANTARA nama Arab dan kartu Google Maps (setelah blok `{lokasi.namaArab && ...}` dan sebelum blok kartu peta/maps).
+
+Logikanya:
+- Jika `lokasi.gambar` berisi URL (truthy) → tampilkan `<img>` asli
+- Jika `lokasi.gambar` kosong / undefined → tampilkan box placeholder elegan
+
+```tsx
+{/* BOX GAMBAR — antara nama Arab dan kartu Maps */}
+{lokasi.gambar ? (
+  /* Gambar asli */
+  <div className="rounded-md overflow-hidden border border-hairline">
+    <img
+      src={lokasi.gambar}
+      alt={lokasi.nama}
+      className="w-full h-52 object-cover"
+    />
+  </div>
+) : (
+  /* Placeholder — siap diisi gambar nanti */
+  <div className="relative flex h-52 items-center justify-center overflow-hidden rounded-md border border-dashed border-hairline-strong bg-surface-bone">
+    {/* Motif diagonal samar */}
+    <div
+      className="absolute inset-0 opacity-[0.12]"
+      style={{ backgroundImage: 'repeating-linear-gradient(45deg, #d4a24e 0 1px, transparent 1px 18px)' }}
+      aria-hidden
+    />
+    {/* Konten tengah */}
+    <div className="relative flex flex-col items-center gap-2 text-center px-6">
+      {/* Ikon kamera/gambar */}
+      <div className="h-10 w-10 rounded-full bg-surface-bone border border-hairline flex items-center justify-center">
+        <svg
+          className="h-5 w-5 text-ash"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          aria-hidden="true"
+        >
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+      </div>
+      <p className="font-mono text-[11px] uppercase tracking-wider text-stone leading-tight">
+        Foto belum tersedia
+      </p>
+    </div>
+  </div>
+)}
+```
+
+---
+
+## ATURAN PENTING
+
+1. Tambah field `gambar` **hanya** di `Lokasi` interface dan `daftarLokasi` — jangan ubah logika apapun yang sudah ada.
+2. Box placeholder harus `h-52` (tinggi cukup untuk mata tapi tidak makan tempat berlebihan), border `border-dashed` agar beda dari kartu Maps.
+3. Jika `lokasi.gambar` diisi URL nanti (kapanpun), gambar langsung tampil otomatis — zero code change.
+4. Jalankan `pnpm run typecheck` setelah selesai — pastikan nol TypeScript error.
+5. Jangan sentuh komponen atau file lain di luar tiga file yang disebutkan.

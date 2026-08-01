@@ -1,0 +1,194 @@
+# PROMPT: Perluas Search Global — Akses Semua Konten (FAQ, Miqat, Dam, Ihram, dll)
+
+**File terkait:**
+- `artifacts/umrahme/src/data/searchIndex.ts` (perluas index)
+- `artifacts/umrahme/src/pages/FaqFikih.tsx` (tambah dukungan deep-link/anchor)
+- `artifacts/umrahme/src/pages/PanduanIhram.tsx` (tambah anchor opsional)
+
+Search bar saat ini hanya meng-index: doa, tata cara, ritual, checklist, lokasi, manasik. Banyak konten BARU belum bisa dicari: FAQ fikih, miqat, dam ihram, niat & larangan ihram. Perluas index agar search bisa menemukan SEMUA pembahasan di seluruh app, termasuk item spesifik di dalam halaman.
+
+---
+
+## LANGKAH 1 — Perluas `data/searchIndex.ts`
+
+### 1a. Tambah import data baru (di atas file)
+```ts
+import { faqKategori } from './faqFikih';
+import { daftarMiqat } from './miqat';
+import { niatIhram, larganganIhram, jenisDam } from './ihram';
+```
+
+### 1b. Tambah tipe baru pada `SearchItemType`
+```ts
+export type SearchItemType =
+  | 'doa'
+  | 'panduan'
+  | 'lokasi'
+  | 'checklist'
+  | 'halaman'
+  | 'manasik'
+  | 'faq'        // BARU
+  | 'miqat'      // BARU
+  | 'dam';       // BARU
+```
+
+### 1c. Tambah meta untuk tipe baru di `TYPE_META`
+```ts
+faq:   { label: 'Tanya Jawab', emoji: '❓' },
+miqat: { label: 'Miqat',       emoji: '🕋' },
+dam:   { label: 'Dam',         emoji: '⚖️' },
+```
+
+### 1d. Tambah halaman statis baru ke array `halamanStatis`
+```ts
+{ id: 'hal-faq-fikih', type: 'halaman', judul: 'Tanya Jawab Fikih', sub: 'FAQ seputar ibadah umrah', to: '/panduan/faq-fikih' },
+{ id: 'hal-miqat',     type: 'halaman', judul: 'Panduan Miqat',     sub: '5 titik miqat & aturan ihram', to: '/panduan/miqat' },
+```
+
+### 1e. Tambah builder untuk konten baru di dalam `buildIndex()` (sebelum `return items;`)
+
+```ts
+  // FAQ Fikih — index tiap pertanyaan, deep-link via hash ke item
+  faqKategori.forEach((kat) =>
+    kat.items.forEach((f) =>
+      items.push({
+        id: `faq-${f.id}`,
+        type: 'faq',
+        judul: f.tanya,
+        sub: f.jawab.slice(0, 70),
+        to: `/panduan/faq-fikih#${f.id}`,
+        keywords: `${f.tanya} ${f.jawab} ${f.catatan ?? ''} ${kat.nama}`.toLowerCase(),
+      })
+    )
+  );
+
+  // Miqat — index tiap titik miqat
+  daftarMiqat.forEach((m) =>
+    items.push({
+      id: `miqat-${m.id}`,
+      type: 'miqat',
+      judul: `Miqat: ${m.nama}`,
+      sub: m.untuk?.slice(0, 70),
+      to: `/panduan/miqat#${m.id}`,
+      keywords: `miqat ${m.nama} ${m.namaArab ?? ''} ${m.namaLain ?? ''} ${m.untuk ?? ''} ${m.keterangan ?? ''}`.toLowerCase(),
+    })
+  );
+
+  // Dam (denda pelanggaran ihram)
+  jenisDam.forEach((d) =>
+    items.push({
+      id: `dam-${d.id}`,
+      type: 'dam',
+      judul: d.nama,
+      sub: d.untukPelanggaran?.slice(0, 70),
+      to: `/panduan/ihram#${d.id}`,
+      keywords: `dam denda ${d.nama} ${d.untukPelanggaran} ${d.bentuk} ${d.catatan ?? ''}`.toLowerCase(),
+    })
+  );
+
+  // Niat Ihram
+  niatIhram.forEach((n) =>
+    items.push({
+      id: `niat-${n.id}`,
+      type: 'panduan',
+      judul: n.judul,
+      sub: n.arti?.slice(0, 70),
+      to: `/panduan/ihram#${n.id}`,
+      keywords: `niat ihram ${n.judul} ${n.latin} ${n.arti}`.toLowerCase(),
+    })
+  );
+
+  // Larangan Ihram
+  larganganIhram.forEach((l) =>
+    items.push({
+      id: `larangan-${l.id}`,
+      type: 'panduan',
+      judul: `Larangan: ${l.judul}`,
+      sub: l.keterangan?.slice(0, 70),
+      to: `/panduan/ihram#${l.id}`,
+      keywords: `larangan ihram ${l.judul} ${l.keterangan} ${l.gender}`.toLowerCase(),
+    })
+  );
+```
+
+> Jika nantinya ada data baru lagi (glosarium, kesehatan, dll), tambahkan builder serupa di sini agar otomatis ter-index.
+
+---
+
+## LANGKAH 2 — Tingkatkan kualitas pencarian (opsional tapi disarankan)
+
+Di fungsi `searchAll`, tingkatkan agar mendukung pencarian multi-kata (semua kata harus cocok, urutan bebas) supaya hasil lebih relevan:
+
+```ts
+export function searchAll(query: string, limit = 10): SearchItem[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const kata = q.split(/\s+/).filter(Boolean);
+
+  const scored = searchIndex
+    .map((item) => {
+      const kw = item.keywords ?? '';
+      const judul = item.judul.toLowerCase();
+      // semua kata harus muncul di judul atau keywords
+      const semuaCocok = kata.every((k) => judul.includes(k) || kw.includes(k));
+      if (!semuaCocok) return null;
+      // skor: judul match penuh > sebagian kata di judul > hanya keywords
+      let score = 0;
+      if (judul.includes(q)) score = 3;
+      else if (kata.some((k) => judul.includes(k))) score = 2;
+      else score = 1;
+      return { item, score };
+    })
+    .filter(Boolean) as { item: SearchItem; score: number }[];
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit).map((x) => x.item);
+}
+```
+
+---
+
+## LANGKAH 3 — Dukungan deep-link (anchor) agar search bisa "masuk ke dalam halaman"
+
+Agar hasil search yang mengarah ke `#id` benar-benar membuka & menyorot item di dalam halaman:
+
+### 3a. Di `FaqFikih.tsx`
+- Beri tiap item accordion atribut `id`: pada wrapper `FaqAccordion`, tambahkan `id={item.id}`.
+- Tambahkan logika auto-buka + scroll saat ada hash di URL:
+```tsx
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+
+// di dalam komponen FaqFikih:
+const location = useLocation();
+useEffect(() => {
+  const hash = location.hash?.replace('#', '');
+  if (!hash) return;
+  // beri delay agar elemen sudah ter-render
+  const t = setTimeout(() => {
+    const el = document.getElementById(hash);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-primary/40');
+      setTimeout(() => el.classList.remove('ring-2', 'ring-primary/40'), 2000);
+    }
+  }, 200);
+  return () => clearTimeout(t);
+}, [location.hash]);
+```
+- Pastikan `FaqAccordion` membuka jawabannya jika `id` cocok dengan hash (mis. lewat prop `defaultOpen={item.id === hashAktif}` atau buka semua saat di-target). Cara sederhana: jika hash cocok, set state open item tersebut menjadi true.
+
+### 3b. Di `PanduanIhram.tsx`
+- Beri `id` pada elemen pembungkus tiap item: niat (`id={n.id}`), larangan (`id={l.id}`), dan kartu dam (`id={d.id}`).
+- Tambahkan `useEffect` scroll-to-hash yang sama seperti di atas, agar hasil search dam/niat/larangan men-scroll ke kartu yang tepat.
+
+> Catatan: jika item berada di dalam accordion yang tertutup secara default, pastikan accordion target terbuka otomatis saat hash cocok.
+
+---
+
+## ATURAN
+- Jangan ubah tampilan search bar atau komponen hasil pencarian — cukup perluas index + perbaiki fungsi search + dukungan anchor.
+- Semua konten baru (FAQ, miqat, dam, niat, larangan) harus muncul di hasil search.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.
+```

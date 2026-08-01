@@ -1,0 +1,77 @@
+# PROMPT #4 — Pasang Domain umrahme.sbs (Anti Hardcode)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx` (+ buat config kecil)
+
+Domain `umrahme.app` masih di-hardcode di beberapa tempat (preview & salin link slug). Kalau domain
+produksi berubah / belum aktif, link yang ditampilkan ke travel jadi salah. Solusi: pusatkan
+domain di satu konstanta, otomatis ikut domain yang sedang dipakai.
+
+---
+
+## LANGKAH 1 — Buat konstanta domain
+
+Buat file `artifacts/umrahme/src/config/site.ts`:
+```ts
+// Basis URL publik untuk link yang dibagikan ke jamaah (slug travel).
+// Pakai env kalau ada; kalau tidak, fallback ke domain produksi umrahme.sbs.
+export const PUBLIC_BASE_URL: string =
+  (import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined)?.replace(/\/$/, '')
+  || 'https://umrahme.sbs';
+
+// Domain tanpa skema, untuk ditampilkan (mis. "umrahme.sbs")
+export const PUBLIC_HOST: string = PUBLIC_BASE_URL.replace(/^https?:\/\//, '');
+
+// Bangun URL slug lengkap
+export function slugUrl(slug: string): string {
+  return `${PUBLIC_BASE_URL}/t/${slug}`;
+}
+```
+
+> Catatan: setelah domain `umrahme.sbs` ter-connect di Vercel, link slug otomatis benar.
+> Kalau suatu saat ganti domain, cukup ubah satu baris di file ini (atau set
+> `VITE_PUBLIC_BASE_URL` di Vercel) — tidak perlu sentuh kode lain.
+
+---
+
+## LANGKAH 2 — Pakai di AdminTenantForm.tsx
+
+Import di atas:
+```ts
+import { PUBLIC_HOST, slugUrl } from '@/config/site';   // sesuaikan alias path bila perlu
+```
+
+### Ganti tampilan prefix (baris ~1355)
+```tsx
+<span className="font-mono text-[12px] flex-none" style={{ color: '#9ca3af' }}>{PUBLIC_HOST}/t/</span>
+```
+
+### Ganti preview link (baris ~1368)
+```tsx
+{PUBLIC_HOST}/t/{slug}
+```
+
+### Ganti salin link (baris ~1372)
+```tsx
+navigator.clipboard.writeText(slugUrl(slug));
+```
+
+---
+
+## Catatan
+- Setelah ini, link slug otomatis benar memakai `umrahme.sbs`.
+- Kalau suatu saat ganti domain, cukup ubah satu baris di `config/site.ts`
+  (atau set `VITE_PUBLIC_BASE_URL` di Vercel) — tidak perlu sentuh kode lain.
+
+## Pasang domain kustom di Vercel (umrahme.sbs)
+1. Domain `umrahme.sbs` sudah dibeli ✓
+2. Vercel → Project → Settings → Domains → Add → ketik `umrahme.sbs`.
+3. Vercel kasih DNS records → pasang di pengaturan DNS tempat beli domain `.sbs`.
+4. Tunggu propagasi DNS (5 menit–beberapa jam). Vercel otomatis kasih HTTPS.
+5. (Opsional) set env `VITE_PUBLIC_BASE_URL=https://umrahme.sbs` di Vercel — tidak wajib,
+   karena sudah jadi fallback default di kode.
+
+## Verifikasi Setelah Deploy
+- Buka edit tenant → preview link slug menampilkan `umrahme.sbs/t/...`
+- Tombol "Salin Link" menyalin `https://umrahme.sbs/t/{slug}` & bisa dibuka
+- Buka URL slug → halaman login branded travel muncul

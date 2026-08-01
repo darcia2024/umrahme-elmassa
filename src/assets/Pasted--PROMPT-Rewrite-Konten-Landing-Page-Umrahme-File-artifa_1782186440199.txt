@@ -1,0 +1,374 @@
+# PROMPT: Rewrite Konten Landing Page Umrahme
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+**Jangan ubah:** struktur komponen, styling, animasi, logika React, CSS, layout. **Hanya ganti teks konten.**
+
+---
+
+## KONTEKS PRODUK
+
+Umrahme = aplikasi pendamping umrah white-label untuk travel agency. Owner travel bayar **10 SAR per jamaah per keberangkatan**, dapat aplikasi bermerek travel mereka sendiri. Jamaah dapat: 55+ doa, manasik interaktif, counter tawaf/sa'i, peta 10 lokasi ziarah, agenda harian, kartu jamaah digital, jadwal sholat, sertifikat & jurnal. Travel dapat: portal kelola jamaah & agenda, kirim pengumuman real-time.
+
+---
+
+## PRINSIP COPY
+
+- **Pendek & kuat.** Headline max 6 kata. Subheadline max 2 kalimat.
+- **Spesifik, bukan generik.** Pakai angka nyata (55+, 10 SAR, 10 lokasi). Hindari "terbaik", "revolusi", "canggih".
+- **Bicara ke owner travel**, bukan jamaah. Pain point mereka: biaya cetak buku doa, muthowif kewalahan, sulit broadcast info.
+- **Tone:** hangat, percaya diri, islami — tapi tidak lebay.
+
+---
+
+## PERUBAHAN KONTEN (ganti PERSIS seperti di bawah)
+
+### 1. HERO — Headline
+**Cari:**
+```
+Jadikan Perjalanan Jamaah Anda{' '}
+            <span style={{ color: C.accent, fontStyle: 'italic' }}>Lebih Bermakna</span>
+            {' '}— Tanpa Repot
+```
+**Ganti dengan:**
+```
+Aplikasi Umrah{' '}
+            <span style={{ color: C.accent, fontStyle: 'italic' }}>Nama Travel Anda</span>
+```
+
+### 2. HERO — Subheadline
+**Cari:**
+```
+Pengganti buku doa digital, panduan ibadah lengkap, dan sistem komunikasi travel dalam satu aplikasi.
+            White-label penuh, siap pakai, hanya <strong>10 SAR per jamaah</strong>.
+```
+**Ganti dengan:**
+```
+Ganti buku doa cetak. Ringankan kerja muthowif. Beri jamaah panduan ibadah lengkap — langsung di HP mereka. White-label penuh, hanya <strong>10 SAR per jamaah</strong>.
+```
+
+### 3. HERO — Social proof bawah
+**Cari:**
+```
+Dipercaya travel agency umrah Indonesia
+```
+**Ganti dengan:**
+```
+Siap untuk keberangkatan umrah Anda berikutnya
+```
+
+### 4. HERO — Tombol sekunder
+**Cari:**
+```
+Lihat Cara Kerja
+```
+**Ganti dengan:**
+```
+Lihat Demo →
+```
+
+### 5. BENTO — Stat kiri (judul)
+**Cari:**
+```
+Umrahme
+```
+*(yang ada di dalam bento card biru, bukan logo/brand)*
+**Ganti dengan:**
+```
+White-Label Penuh
+```
+
+### 6. BENTO — Sub-teks stat kiri
+**Cari:**
+```
+Segera hadir — daftarkan travel Anda sekarang
+```
+**Ganti dengan:**
+```
+Logo & nama travel Anda tampil di seluruh aplikasi jamaah
+```
+
+### 7. BENTO — Stat tengah (angka besar)
+**Cari:**
+```
+10 SAR
+```
+*(di dalam bento card putih, bukan di section harga)*
+**Ganti dengan:**
+```
+10 SAR
+```
+*(biarkan — sudah benar)*
+
+### 8. BENTO — Label stat tengah
+**Cari:**
+```
+Per jamaah per keberangkatan
+```
+*(biarkan — sudah benar)*
+
+### 9. BENTO — Quote di bawah angka
+**Cari:**
+```
+"Jamaah kami tidak lagi bingung. Semua info ibadah, jadwal, dan doa ada di satu aplikasi yang terasa milik travel kami sendiri."
+```
+**Ganti dengan:**
+```
+"Muthowif kami tidak lagi kewalahan menjawab pertanyaan berulang. Semua sudah terjawab di aplikasi."
+```
+
+### 10. PAIN POINTS — Judul section
+**Cari:**
+```
+Kenapa layanan umrah masih terasa repot?
+```
+**Ganti dengan:**
+```
+Tantangan yang dihadapi hampir semua travel umrah
+```
+
+### 11. PAIN POINTS — Sub judul
+**Cari:**
+```
+Tantangan harian yang dialami hampir setiap travel agency umrah — dan jawabannya ada di Umrahme.
+```
+**Ganti dengan:**
+```
+Masalah yang sama, berulang setiap keberangkatan. Umrahme hadir untuk mengatasinya.
+```
+
+### 12. PAIN POINTS — Item 4 desc
+**Cari:**
+```
+Pengumuman penting harus dikirim satu per satu, tidak semua jamaah membacanya.
+```
+**Ganti dengan:**
+```
+Broadcast mendadak lewat WA grup sering tertimbun pesan lain — tidak semua jamaah membaca.
+```
+
+### 13. PAIN POINTS — Item 5 title & desc
+**Cari:**
+```
+Semua manual lewat WhatsApp
+```
+**Ganti dengan:**
+```
+Koordinasi melelahkan
+```
+
+**Cari:**
+```
+Grup WA penuh, pesan tenggelam, dan koordinasi jadi melelahkan.
+```
+**Ganti dengan:**
+```
+Info hotel, jadwal, doa — semua mesti dikirim ulang tiap ada jamaah yang tanya.
+```
+
+### 14. PAIN POINTS — Item 6 desc
+**Cari:**
+```
+Travel belum punya wajah digital yang membangun kepercayaan calon jamaah.
+```
+**Ganti dengan:**
+```
+Travel lain sudah punya aplikasi bermerek sendiri. Calon jamaah menilai profesionalisme dari sana.
+```
+
+### 15. FITUR — Judul section
+**Cari:**
+```
+Satu aplikasi untuk seluruh perjalanan ibadah jamaah
+```
+**Ganti dengan:**
+```
+Semua yang jamaah butuhkan, dalam satu aplikasi
+```
+
+### 16. FITUR — Sub judul
+**Cari:**
+```
+Dua belas fitur inti yang menggantikan buku doa, panduan, dan koordinasi manual.
+```
+**Ganti dengan:**
+```
+Sudah jadi, siap pakai. Tinggal aktifkan untuk keberangkatan Anda.
+```
+
+### 17. CARA KERJA — Sub judul
+**Cari:**
+```
+Tanpa biaya setup, tanpa tim IT. Travel langsung bisa pakai untuk keberangkatan berikutnya.
+```
+**Ganti dengan:**
+```
+Tidak butuh tim IT. Tidak ada biaya setup. Langsung aktif untuk keberangkatan berikutnya.
+```
+
+### 18. CARA KERJA — Step 1
+**Cari:**
+```
+Daftar & Kustomisasi
+```
+**Ganti dengan:**
+```
+Daftar & Atur Branding
+```
+
+**Cari:**
+```
+Daftar travel Anda, lalu atur logo, warna, dan nama. Aplikasi langsung tampil seperti milik travel sendiri.
+```
+**Ganti dengan:**
+```
+Upload logo, pilih warna brand, atur nama. Dalam hitungan menit aplikasi sudah bermerek travel Anda.
+```
+
+### 19. CARA KERJA — Step 2
+**Cari:**
+```
+Masukkan data jamaah dan agenda perjalanan melalui portal travel yang mudah digunakan.
+```
+**Ganti dengan:**
+```
+Input data jamaah dan agenda perjalanan lewat portal. Semua tersinkron otomatis ke aplikasi jamaah.
+```
+
+### 20. CARA KERJA — Step 3
+**Cari:**
+```
+Jamaah mengakses aplikasi, mengikuti panduan ibadah, dan tetap terhubung dengan travel.
+```
+**Ganti dengan:**
+```
+Jamaah buka link, masukkan kode, langsung pakai. Panduan ibadah, doa, jadwal — semua siap.
+```
+
+### 21. WHITE-LABEL — Headline
+**Cari:**
+```
+Aplikasi yang terasa 100% milik travel Anda
+```
+**Ganti dengan:**
+```
+Jamaah melihat nama Anda, bukan kami
+```
+
+### 22. WHITE-LABEL — Sub teks
+**Cari:**
+```
+Jamaah membuka aplikasi dengan logo, warna, dan nama travel Anda. Tidak ada merek pihak ketiga — hanya identitas brand Anda yang memperkuat kepercayaan.
+```
+**Ganti dengan:**
+```
+Logo, warna, dan nama travel tampil di seluruh halaman aplikasi. Jamaah menggunakannya setiap hari selama perjalanan — dan yang mereka ingat adalah nama travel Anda.
+```
+
+### 23. HARGA — Headline
+**Cari:**
+```
+Transparan, terjangkau, tanpa biaya tersembunyi
+```
+**Ganti dengan:**
+```
+Satu harga, semua fitur
+```
+
+### 24. HARGA — Sub judul
+**Cari:**
+```
+Bayar hanya untuk jumlah jamaah yang berangkat. Tanpa biaya setup, tanpa langganan bulanan.
+```
+**Ganti dengan:**
+```
+Tidak ada biaya bulanan. Tidak ada biaya setup. Bayar hanya untuk jamaah yang benar-benar berangkat.
+```
+
+### 25. HARGA — Card label
+**Cari:**
+```
+Lisensi per Jamaah
+```
+**Ganti dengan:**
+```
+Per Jamaah Per Keberangkatan
+```
+
+### 26. HARGA — Card sub teks
+**Cari:**
+```
+Sekali bayar per jamaah per keberangkatan. Semua fitur termasuk.
+```
+**Ganti dengan:**
+```
+Semua 12 fitur sudah termasuk. Tidak ada biaya tambahan apapun.
+```
+
+### 27. TESTIMONI — Headline
+**Cari:**
+```
+Kata mereka yang sudah pakai
+```
+**Ganti dengan:**
+```
+Apa kata travel yang sudah mencoba
+```
+
+### 28. FAQ — Headline
+**Cari:**
+```
+Pertanyaan yang Sering Ditanyakan
+```
+**Ganti dengan:**
+```
+Ada pertanyaan?
+```
+
+### 29. FAQ — Item 5 jawaban
+**Cari:**
+```
+Pembayaran dilakukan per keberangkatan berdasarkan jumlah jamaah aktif. Tidak ada biaya bulanan atau setup. Hubungi kami via WhatsApp untuk detail.
+```
+**Ganti dengan:**
+```
+10 SAR per jamaah per keberangkatan. Tidak ada biaya bulanan atau setup. Hubungi kami via WhatsApp untuk mulai.
+```
+
+### 30. CTA AKHIR — Headline
+**Cari:**
+```
+Siap Upgrade Layanan Travel Anda?
+```
+**Ganti dengan:**
+```
+Mulai untuk keberangkatan berikutnya
+```
+
+### 31. CTA AKHIR — Sub teks
+**Cari:**
+```
+Bergabung sekarang dan berikan pengalaman umrah terbaik untuk jamaah Anda. Demo gratis, tidak ada komitmen.
+```
+**Ganti dengan:**
+```
+Demo gratis dengan branding travel Anda. Lihat sendiri sebelum memutuskan — tanpa komitmen apapun.
+```
+
+### 32. FOOTER — Tagline
+**Cari:**
+```
+Platform pendamping umrah digital untuk travel agency modern di seluruh Indonesia.
+```
+**Ganti dengan:**
+```
+Aplikasi pendamping umrah white-label untuk travel agency Indonesia.
+```
+
+---
+
+## ATURAN PENTING
+
+1. Ganti **hanya teks** — jangan sentuh style, className, struktur JSX, logika, atau animasi apapun.
+2. Kalau string tidak ditemukan persis, cari teks terdekat secara manual dan ganti.
+3. Setelah selesai, jalankan `pnpm --filter umrahme typecheck` dan pastikan nol error.
+4. Tunjukkan daftar perubahan yang berhasil diapply vs yang tidak ditemukan.

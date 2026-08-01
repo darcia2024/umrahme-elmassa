@@ -1,0 +1,129 @@
+# PROMPT SECURITY TAHAP 1 — Fix Bug & Hardening Aman (Tanpa Ubah RLS Database)
+
+> Fokus: perbaikan yang TIDAK mempengaruhi login jamaah atau flow auth yang sudah jalan. Semua perubahan di sini murni di sisi frontend/kode — tidak ada perubahan RLS database di tahap ini.
+
+## 1. Fix bug Login — maxLength kode aktivasi
+
+File: `src/pages/Login.tsx`
+
+Temukan input kode aktivasi yang punya `maxLength={6}` (baris 93) — ganti menjadi `maxLength={20}`. Sekalian pastikan `onChange` sudah trim whitespace:
+
+```tsx
+onChange={(e) => setKode(e.target.value.toUpperCase().trim())}
+maxLength={20}
+```
+
+Placeholder tetap seperti sekarang. Jangan ubah hal lain di Login.tsx.
+
+## 2. Fix upload logo — tolak SVG, validasi MIME type
+
+File: `src/pages/admin/AdminTenantForm.tsx`
+
+### 2a. Ubah `accept` di input file (baris 489):
+```tsx
+// SEBELUM:
+accept="image/png,image/svg+xml,image/jpeg,image/webp"
+
+// SESUDAH:
+accept="image/png,image/jpeg,image/webp"
+```
+
+### 2b. Tambahkan validasi MIME type di `handleLogoChange` (setelah cek `file.size`):
+```ts
+const allowedTypes = ['image/png', 'image/jpeg', 'image/webp'];
+if (!allowedTypes.includes(file.type)) {
+  setError('Logo harus berupa PNG, JPG, atau WEBP. SVG tidak diizinkan.');
+  return;
+}
+```
+
+### 2c. Gunakan filename berbasis UUID di fungsi `uploadLogo`:
+```ts
+const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+const filename = `logos/${crypto.randomUUID()}.${ext}`;
+```
+
+## 3. Validasi input di form admin
+
+File: `src/pages/admin/AdminTenantForm.tsx`
+
+### 3a. Validasi warna hex sebelum submit:
+Tambahkan helper di atas komponen:
+```ts
+function isValidHex(val: string) {
+  return /^#[0-9A-Fa-f]{6}$/.test(val);
+}
+```
+Di `handleSubmit`, sebelum submit payload, cek:
+```ts
+if (!isValidHex(primaryColor)) {
+  setError('Warna primary harus berupa hex valid, contoh: #0ea5e9');
+  return;
+}
+```
+
+### 3b. Normalisasi nomor WhatsApp:
+Tambahkan helper:
+```ts
+function normalizePhone(val: string) {
+  return val.replace(/[^\d+]/g, '');
+}
+```
+Terapkan saat mengisi state `guideWhatsapp` dan `tourLeaderWhatsapp`:
+```tsx
+onChange={(e) => setGuideWhatsapp(normalizePhone(e.target.value))}
+```
+
+### 3c. Batasi panjang field (terapkan via `maxLength` di input masing-masing):
+- Nama travel: `maxLength={80}`
+- Judul pengumuman: `maxLength={120}`
+- Isi pengumuman: `maxLength={1000}` (textarea)
+- Hotel Makkah/Madinah: `maxLength={120}`
+- Meeting point: `maxLength={160}`
+- Nama pembimbing/tour leader: `maxLength={80}`
+
+## 4. Buat `.env.example`
+
+Buat file `.env.example` di root project (`Umrahme-main/.env.example`):
+```env
+# Supabase — ambil dari dashboard.supabase.com → Settings → API
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+
+# Hanya dipakai di Edge Function (server-side), JANGAN di frontend
+SUPABASE_SERVICE_ROLE_KEY=
+SUPER_ADMIN_EMAIL=
+```
+
+## 5. Pastikan `.env` masuk `.gitignore`
+
+Cek file `.gitignore` yang sudah ada. Jika belum ada baris berikut, tambahkan:
+```
+.env
+.env.local
+.env.*.local
+```
+
+## 6. Buat `supabase/schema.sql` sebagai dokumentasi
+
+Buat folder `supabase/` di root project jika belum ada. Buat file `supabase/schema.sql` yang berisi dokumentasi SQL dari semua tabel yang sudah ada:
+- `tenants`
+- `tenant_users`
+- `jamaah_accounts`
+- `agenda_items`
+- `travel_announcements`
+
+Isi dengan struktur tabel yang sudah ada (bisa dilihat dari tipe data di `src/lib/supabase.ts`). Ini HANYA dokumentasi — tidak dieksekusi otomatis, tidak mengubah database yang sudah jalan.
+
+## YANG TIDAK BOLEH DIUBAH
+
+- RLS di Supabase — tidak ada perubahan database apapun di tahap ini
+- Flow login jamaah — tidak disentuh selain fix maxLength
+- Admin panel auth flow — tidak disentuh
+- Komponen lain di luar yang disebutkan
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error
+2. `pnpm run build` — sukses
+3. Konfirmasi: upload SVG ditolak, kode 8 karakter bisa diketik penuh di login

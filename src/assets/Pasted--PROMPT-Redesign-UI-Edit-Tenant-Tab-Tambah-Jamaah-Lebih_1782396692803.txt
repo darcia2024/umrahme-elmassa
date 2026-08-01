@@ -1,0 +1,161 @@
+# PROMPT: Redesign UI Edit Tenant (Tab) + Tambah Jamaah Lebih Mudah
+
+**File:** `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx`
+
+Halaman edit tenant sekarang menumpuk SEMUA bagian (branding, operasional, agenda, pengumuman, jamaah, akun travel) dalam satu halaman vertikal yang sangat panjang (1100+ baris) — terasa ribet & overwhelming. Tujuan redesign:
+1. **Pisah jadi TAB** agar tidak overwhelming — admin fokus satu bagian dalam satu waktu.
+2. **Tambah jamaah jadi cepat & mudah** — hanya field wajib yang tampil, detail lain opsional/collapse.
+
+**PENTING:** Jangan ubah logika/handler/state/fungsi Supabase yang sudah ada (handleSubmit, handleAddJamaah, handleAddAgenda, dll). Ini murni reorganisasi tampilan (layout & pembungkus tab) + penyederhanaan form jamaah. Pertahankan semua fungsionalitas.
+
+---
+
+## BAGIAN 1 — Susun Konten Jadi TAB
+
+### 1a. Tambah state tab
+```tsx
+type TabId = 'profil' | 'operasional' | 'jamaah' | 'agenda' | 'pengumuman' | 'akun';
+const [activeTab, setActiveTab] = useState<TabId>('profil');
+```
+Untuk tenant baru (`isNew`), hanya tab "Profil" yang relevan (yang lain butuh id setelah tersimpan) — saat `isNew`, sembunyikan tab selain "Profil" dan tampilkan hint "Simpan tenant dulu untuk mengelola jamaah, agenda, dll."
+
+### 1b. Bilah tab (di bawah header halaman, sticky)
+```tsx
+const TABS: { id: TabId; label: string; icon?: string }[] = [
+  { id: 'profil',      label: 'Profil & Branding' },
+  { id: 'operasional', label: 'Operasional' },
+  { id: 'jamaah',      label: 'Jamaah' },
+  { id: 'agenda',      label: 'Agenda' },
+  { id: 'pengumuman',  label: 'Pengumuman' },
+  { id: 'akun',        label: 'Akun Travel' },
+];
+
+<div className="sticky top-0 z-10 -mx-1 mb-6 flex gap-1 overflow-x-auto border-b px-1 pb-0"
+     style={{ background: '#f9f7f3', borderColor: 'rgba(0,0,0,0.06)' }}>
+  {TABS.map((t) => {
+    const disabled = isNew && t.id !== 'profil';
+    const active = activeTab === t.id;
+    return (
+      <button
+        key={t.id}
+        type="button"
+        disabled={disabled}
+        onClick={() => setActiveTab(t.id)}
+        className="relative flex-none whitespace-nowrap px-4 py-3 text-[13px] font-semibold transition-colors"
+        style={{
+          color: disabled ? '#d1d5db' : active ? '#4338ca' : '#6b7280',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+      >
+        {t.label}
+        {active && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full" style={{ background: '#4338ca' }} />}
+      </button>
+    );
+  })}
+</div>
+```
+
+### 1c. Bungkus tiap section yang sudah ada dengan kondisi tab
+- **Profil & Branding** (`activeTab === 'profil'`): bungkus `<form onSubmit={handleSubmit}>` yang berisi nama travel, kode aktivasi, warna, logo, hero, sertifikat, judul halaman, tanggal berangkat/pulang. Tombol "Simpan Perubahan / Buat Tenant" tetap di sini.
+- **Operasional** (`activeTab === 'operasional'`): bagian "Info Operasional" (hotel, meeting point, guide, tour leader, emergency note). Catatan: jika field operasional ikut tersimpan lewat handleSubmit yang sama, beri tombol simpan sendiri ATAU pertahankan satu form besar — lihat Bagian 3.
+- **Jamaah** (`activeTab === 'jamaah'`): form tambah jamaah + list jamaah (lihat Bagian 2).
+- **Agenda** (`activeTab === 'agenda'`): bagian Agenda Perjalanan.
+- **Pengumuman** (`activeTab === 'pengumuman'`): bagian Pengumuman Travel.
+- **Akun Travel** (`activeTab === 'akun'`): bagian akun travel (email/password tenant user).
+
+Gunakan pola:
+```tsx
+{activeTab === 'profil' && ( <form onSubmit={handleSubmit}> ...section profil & branding... </form> )}
+{activeTab === 'operasional' && ( <div> ...section operasional... </div> )}
+{activeTab === 'jamaah' && ( <div> ...form + list jamaah... </div> )}
+// dst
+```
+
+Ini membuat tiap layar pendek & fokus, tidak lagi scroll panjang.
+
+---
+
+## BAGIAN 2 — Tambah Jamaah Lebih Mudah & Cepat
+
+Form jamaah sekarang menampilkan 7 field sekaligus (nama, nomor, rombongan, bus, kamar, paspor, fase) — padahal hanya **nama** & **nomor jamaah** yang wajib. Sederhanakan:
+
+### 2a. Form cepat: hanya 2 field wajib terlihat
+Tampilkan default hanya **Nama** + **Nomor Jamaah** dalam satu baris + tombol "+ Tambah", sehingga admin bisa input cepat berturut-turut.
+```tsx
+<form onSubmit={handleAddJamaah} className="rounded-2xl border p-4" style={{ borderColor: 'rgba(0,0,0,0.07)', background: '#fff' }}>
+  <p className="font-mono text-[10px] uppercase tracking-[0.14em] mb-3" style={{ color: '#6b7280' }}>Tambah Jamaah</p>
+
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div className="flex-1">
+      <FieldLabel>Nama Jamaah *</FieldLabel>
+      <StyledInput value={jmNama} onChange={e => setJmNama(e.target.value)} placeholder="cth. Budi Santoso" />
+    </div>
+    <div className="sm:w-44">
+      <FieldLabel>Nomor Jamaah *</FieldLabel>
+      <StyledInput value={jmNomorJamaah} onChange={e => setJmNomorJamaah(e.target.value)} placeholder="cth. TU-2026-001" />
+    </div>
+    <button type="submit" disabled={jmSubmitting}
+      className="flex-none rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white transition-all active:scale-[0.98]"
+      style={{ background: 'linear-gradient(135deg, #4338ca, #4f46e5)' }}>
+      {jmSubmitting ? 'Menyimpan…' : '+ Tambah'}
+    </button>
+  </div>
+
+  {/* Detail opsional — collapse */}
+  <button type="button" onClick={() => setShowDetailJamaah(v => !v)}
+    className="mt-3 inline-flex items-center gap-1 text-[12px] font-medium" style={{ color: '#4338ca' }}>
+    {showDetailJamaah ? '− Sembunyikan detail' : '+ Detail opsional (rombongan, bus, kamar, paspor, fase)'}
+  </button>
+
+  {showDetailJamaah && (
+    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div><FieldLabel>Rombongan</FieldLabel><StyledInput value={jmRombongan} onChange={e => setJmRombongan(e.target.value)} placeholder="A / 1" /></div>
+      <div><FieldLabel>No. Bus</FieldLabel><StyledInput value={jmBus} onChange={e => setJmBus(e.target.value)} placeholder="3" /></div>
+      <div><FieldLabel>No. Kamar</FieldLabel><StyledInput value={jmKamar} onChange={e => setJmKamar(e.target.value)} placeholder="812" /></div>
+      <div><FieldLabel>No. Paspor</FieldLabel><StyledInput value={jmPaspor} onChange={e => setJmPaspor(e.target.value)} placeholder="C1234567" /></div>
+      <div className="col-span-2 sm:col-span-1">
+        <FieldLabel>Fase</FieldLabel>
+        <select value={jmFase} onChange={e => setJmFase(e.target.value as JamaahAccountRow['fase'])}
+          className="w-full rounded-xl px-3 py-2.5 text-[14px]" style={{ border: '1px solid rgba(0,0,0,0.15)' }}>
+          {FASE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+    </div>
+  )}
+
+  {jmError && <p className="mt-2 text-[12px]" style={{ color: '#dc2626' }}>{jmError}</p>}
+</form>
+```
+Tambah state: `const [showDetailJamaah, setShowDetailJamaah] = useState(false);`
+
+> Field detail (rombongan/bus/kamar/paspor/fase) tetap memakai state & handler yang SUDAH ADA. Hanya disembunyikan di balik toggle. `handleAddJamaah` tidak berubah.
+
+### 2b. Auto-fokus & input beruntun
+Setelah berhasil tambah jamaah, `handleAddJamaah` sudah mereset field. Tambahkan auto-fokus kembali ke input Nama agar admin bisa langsung mengetik jamaah berikutnya:
+- Beri `ref` pada input Nama (`const namaRef = useRef<HTMLInputElement>(null);`), dan setelah sukses tambah, panggil `namaRef.current?.focus();` di akhir blok sukses `handleAddJamaah`.
+
+### 2c. (Opsional) Counter jumlah jamaah
+Di header tab Jamaah, tampilkan "{jamaahList.length} jamaah terdaftar" agar admin tahu progres input.
+
+### 2d. List jamaah lebih ringkas
+Tampilkan list jamaah sebagai baris rapi: nama + nomor (mono) di kiri; rombongan/bus/kamar sebagai chip kecil bila ada; tombol Edit & Hapus di kanan. Pertahankan handler edit/hapus yang ada.
+
+---
+
+## BAGIAN 3 — Catatan soal Tombol Simpan (Profil)
+
+Jika field operasional (hotel, guide, dll) DAN field profil/branding semuanya disimpan oleh `handleSubmit` yang sama:
+- **Opsi sederhana (disarankan):** taruh seluruh field profil + operasional dalam SATU `<form onSubmit={handleSubmit}>`, tapi pisahkan secara visual ke tab "Profil & Branding" dan "Operasional" yang sama-sama merupakan bagian dari form itu. Tombol "Simpan Perubahan" muncul di kedua tab (atau buat tombol simpan melayang/sticky di bawah yang selalu terlihat saat di tab profil/operasional).
+- Pastikan menekan Simpan di tab manapun tetap menyimpan seluruh data tenant (karena satu state).
+
+Agenda, Pengumuman, Jamaah, Akun Travel sudah punya handler simpan sendiri-sendiri (createAgenda, createJamaah, dll), jadi tidak terpengaruh tombol Simpan profil.
+
+---
+
+## ATURAN
+- JANGAN ubah logika handler, state, validasi, atau fungsi Supabase yang sudah ada — hanya reorganisasi tampilan (tab) + sederhanakan form jamaah (toggle detail + autofocus).
+- Tab harus bisa di-scroll horizontal di mobile.
+- Saat `isNew`, hanya tab Profil aktif; tab lain disabled dengan hint.
+- Pertahankan semua section yang ada; tidak ada fitur yang hilang.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

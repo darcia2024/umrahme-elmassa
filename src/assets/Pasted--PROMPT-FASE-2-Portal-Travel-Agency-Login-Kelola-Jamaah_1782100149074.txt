@@ -1,0 +1,159 @@
+# PROMPT FASE 2 — Portal Travel Agency (Login + Kelola Jamaah Sendiri)
+
+> Prasyarat: Fase 1 (tabel `jamaah_accounts`, verifikasi nama saat login jamaah) sudah selesai dan berjalan.
+>
+> Tujuan: travel agency bisa login sendiri ke portal mereka, dan hanya bisa melihat/mengelola jamaah di bawah tenant mereka sendiri — tidak bisa mengakses data tenant lain.
+
+## 1. Tabel mapping `tenant_users` (link akun auth ke tenant)
+
+```sql
+create table tenant_users (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tenant_id uuid not null references tenants(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (user_id, tenant_id)
+);
+
+create index idx_tenant_users_user on tenant_users (user_id);
+create index idx_tenant_users_tenant on tenant_users (tenant_id);
+```
+
+Tabel ini yang menentukan: akun Supabase Auth dengan `user_id` ini punya akses ke `tenant_id` mana. Super admin (lo) bisa assign satu akun ke satu tenant. Satu user bisa punya akses ke beberapa tenant jika diperlukan nanti, tapi untuk MVP fokus 1 user = 1 tenant.
+
+### RLS untuk `tenant_users`
+- AKTIFKAN RLS.
+- Policy READ: `using (user_id = auth.uid())` — user hanya bisa lihat mapping milik dirinya sendiri.
+- Policy WRITE: TIDAK ada policy publik.
+
+### Update RLS `jamaah_accounts` untuk travel agency
+Tambahkan policy baru (di samping policy publik read yang sudah ada dari Fase 1):
+```sql
+-- Travel agency bisa INSERT/UPDATE/DELETE jamaah di tenant mereka
+create policy "travel_agency_write_jamaah" on jamaah_accounts
+  for all
+  using (
+    exists (
+      select 1 from tenant_users
+      where tenant_users.user_id = auth.uid()
+      and tenant_users.tenant_id = jamaah_accounts.tenant_id
+    )
+  );
+```
+
+## 2. Cara setup akun travel agency (dilakukan oleh super admin/lo)
+
+Super admin membuat akun travel agency via Supabase Dashboard (Authentication → Users → Add user), lalu insert ke `tenant_users`:
+```sql
+insert into tenant_users (user_id, tenant_id)
+values ('<uuid-user-travel-agency>', '<uuid-tenant-mereka>');
+```
+
+Dokumentasikan ini di `src/config/tenants/README.md` (append, jangan hapus isi lama) sebagai panduan langkah menambah akun travel agency baru.
+
+## 3. Tambah `TenantUserRow` di `src/lib/supabase.ts`
+
+```ts
+export type TenantUserRow = {
+  id: string;
+  user_id: string;
+  tenant_id: string;
+  created_at: string;
+};
+```
+
+## 4. Context baru `TravelAuthContext.tsx`
+
+Buat `src/context/TravelAuthContext.tsx` — MIRIP `AdminAuthContext.tsx` tapi dengan tambahan: setelah sesi auth didapat, fetch `tenant_id` milik user ini dari tabel `tenant_users`, lalu fetch data tenant lengkap dari tabel `tenants`.
+
+```ts
+interface TravelAuthValue {
+  session: Session | null;
+  tenant: TenantRow | null;   // tenant yang dimiliki user ini
+  loading: boolean;
+  signOut: () => Promise<void>;
+}
+```
+
+Ikuti pola `AdminAuthContext.tsx` yang sudah ada untuk `onAuthStateChange` dan cleanup subscription.
+
+## 5. File-file baru untuk portal travel agency
+
+Buat folder dan file berikut, mengikuti pola yang PERSIS SAMA dengan admin panel yang sudah ada (`AdminLogin`, `AdminLayout`, `AdminProtectedRoute`) — jangan rebuild dari nol, copy pola dan sesuaikan:
+
+### `src/components/travel/TravelProtectedRoute.tsx`
+Sama persis dengan `AdminProtectedRoute.tsx` tapi menggunakan `useTravelAuth()` bukan `useAdminAuth()`. Redirect ke `/travel/login` jika tidak ada sesi.
+
+### `src/components/travel/TravelLayout.tsx`
+Sama persis dengan `AdminLayout.tsx` tapi:
+- Header menampilkan nama tenant (`tenant?.nama_travel`) bukan "Admin Panel"
+- Warna accent header menggunakan primary color tenant jika ada (`tenant?.primary_color ?? '#4338ca'`) — supaya terasa branded per-travel
+- Navigasi: "Jamaah Saya" → `/travel`
+- Tidak tampilkan email admin (ganti dengan nama travel)
+
+### `src/pages/travel/TravelLogin.tsx`
+Sama persis dengan `AdminLogin.tsx` tapi:
+- Judul: "Portal Travel Agency"
+- Subtitle: "Masuk untuk mengelola jamaah Anda."
+- Redirect setelah login: `/travel`
+
+### `src/pages/travel/TravelDashboard.tsx`
+Halaman utama portal travel — menampilkan daftar jamaah di tenant milik user yang sedang login.
+
+Query: `select * from jamaah_accounts where tenant_id = :tenantId order by nama`
+
+Fitur yang SAMA dengan section "Daftar Jamaah" di `AdminTenantForm.tsx` yang sudah ada di Fase 1:
+- List jamaah (nama, nomor jamaah, rombongan, bus, kamar, fase)
+- Form tambah jamaah baru
+- Hapus jamaah (dengan konfirmasi)
+- Update fase jamaah inline (dropdown)
+
+Tambahan yang tidak ada di admin panel:
+- Tampilkan **ringkasan** di atas list: total jamaah, berapa sudah aktivasi (untuk versi ini, "sudah aktivasi" = sudah pernah login setidaknya sekali — tapi karena kita belum track ini, cukup tampilkan total jamaah saja untuk MVP, dengan catatan komentar `// TODO: track last_login`)
+- Label tenant yang jelas di atas halaman: nama travel + kode aktivasi mereka (read-only, supaya travel agency tau kode yang harus dibagikan ke jamaah)
+
+## 6. Daftarkan route travel portal di `App.tsx`
+
+Tambahkan routes baru (di luar `<ProtectedRoute>` jamaah dan di luar admin routes):
+
+```tsx
+// Travel Agency Portal
+<Route path="/travel/login" element={<TravelLogin />} />
+<Route
+  path="/travel"
+  element={
+    <TravelAuthProvider>
+      <TravelProtectedRoute>
+        <TravelDashboard />
+      </TravelProtectedRoute>
+    </TravelAuthProvider>
+  }
+/>
+```
+
+Import semua komponen yang diperlukan di atas.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Admin panel (`/admin/*`) dan `AdminAuthContext` — TIDAK disentuh sama sekali. Super admin tetap bisa akses semua tenant dari panel yang sama.
+- App jamaah (`/login`, `/beranda`, dll) — TIDAK disentuh.
+- Tabel `jamaah_accounts` dan `tenants` yang sudah ada — hanya ditambahkan RLS policy baru, tidak ada perubahan kolom.
+- Tipe `TenantRow`, `JamaahAccountRow`, dll yang sudah ada di `supabase.ts` — tidak diubah, hanya ditambah `TenantUserRow`.
+
+## CATATAN PENTING: isolasi data
+
+Travel agency HANYA boleh lihat/edit jamaah di tenant mereka sendiri. Ini dijamin di dua lapis:
+1. **RLS di database** (poin 1) — bahkan kalau ada bug di frontend, database tetap menolak akses lintas-tenant
+2. **Query di frontend** selalu filter by `tenant_id` yang didapat dari `TravelAuthContext` (bukan dari input user) — jangan pernah trust `tenant_id` dari URL parameter atau localStorage untuk operasi write
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. **Tunjukkan bukti end-to-end**:
+   - Buka `/travel/login` → login dengan akun travel agency yang sudah di-setup
+   - Dashboard `/travel` menampilkan nama travel mereka + kode aktivasi mereka (read-only) + daftar jamaah milik mereka
+   - Tambah 1 jamaah baru lewat portal travel → muncul di list
+   - Logout dari portal travel, login sebagai jamaah dengan nama yang baru saja ditambahkan → berhasil masuk ke app jamaah
+   - Buka `/admin` dengan akun super admin → pastikan masih bisa lihat SEMUA tenant dan jamaah, tidak terdampak perubahan ini
+4. Konfirmasi: akun travel agency yang login ke `/travel` TIDAK bisa mengakses `/admin` (redirect ke `/admin/login` atau 401, bukan masuk sebagai admin).

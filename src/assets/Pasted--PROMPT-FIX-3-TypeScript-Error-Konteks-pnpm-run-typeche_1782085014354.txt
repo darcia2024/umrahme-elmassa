@@ -1,0 +1,45 @@
+# PROMPT FIX — 3 TypeScript Error
+
+> Konteks: `pnpm run typecheck` menghasilkan 3 error berikut. Perbaiki satu-satu, jangan ubah hal lain di luar yang disebutkan.
+
+## Error 1 & 2 — `src/data/searchIndex.ts`
+
+```
+src/data/searchIndex.ts(131,14): error TS2339: Property 'deskripsi' does not exist on type 'ManasikModul'.
+src/data/searchIndex.ts(133,41): error TS2339: Property 'deskripsi' does not exist on type 'ManasikModul'.
+```
+
+Penyebab: kode mengakses `m.deskripsi`, tapi field yang benar pada interface `ManasikModul` (lihat `src/data/manasikInteraktif.ts`) adalah `subjudul`, bukan `deskripsi`.
+
+Perbaikan di `src/data/searchIndex.ts`, bagian yang membangun index untuk Manasik Interaktif:
+- Ganti semua `m.deskripsi` menjadi `m.subjudul`.
+
+SEKALIAN perbaiki bug terkait yang ditemukan saat investigasi (bukan error TypeScript, tapi bug navigasi nyata): route tujuan untuk item manasik di search index saat ini `to: \`/manasik/${m.id}\`` — route ini TIDAK ADA di `App.tsx`. Route yang benar dan sudah terdaftar adalah `/panduan/manasik-interaktif/${m.id}` (lihat `App.tsx`, route `/panduan/manasik-interaktif/:modulId`). Perbaiki `to` di search index ini supaya hasil pencarian Manasik benar-benar mengarah ke halaman yang ada, bukan 404.
+
+## Error 3 — `src/pages/Pengumuman.tsx`
+
+```
+src/pages/Pengumuman.tsx(126,63): error TS2322: Type '{ key: string; item: TravelAnnouncement; defaultOpen: boolean; travelName: string; }' is not assignable to type 'IntrinsicAttributes & { item: TravelAnnouncement; travelName?: string | undefined; }'.
+  Property 'defaultOpen' does not exist on type 'IntrinsicAttributes & { item: TravelAnnouncement; travelName?: string | undefined; }'.
+```
+
+Penyebab: komponen `AnnouncementCard` di file ini dipanggil dengan prop `defaultOpen={i === 0}`, tapi interface komponennya hanya menerima `{ item, travelName }` — prop `defaultOpen` tidak pernah didefinisikan di komponennya.
+
+Perbaikan — pilih SALAH SATU pendekatan berikut, mana yang lebih sesuai dengan maksud aslinya (periksa apakah `AnnouncementCard` punya logic expand/collapse internal yang seharusnya menerima initial state ini):
+
+**Opsi A** (jika `AnnouncementCard` memang dimaksudkan punya state collapse/expand): tambahkan prop `defaultOpen?: boolean` ke interface props `AnnouncementCard`, gunakan sebagai initial value untuk state buka/tutup di dalam komponen tersebut.
+
+**Opsi B** (jika `AnnouncementCard` tidak punya/tidak butuh state collapse sama sekali, kontennya memang selalu tampil penuh — sesuai komentar `// Card pengumuman — konten selalu tampil` yang ada di atas komponen ini): hapus saja prop `defaultOpen={i === 0}` dari pemanggilan komponen di baris yang error, karena tidak relevan.
+
+Periksa isi komponen `AnnouncementCard` terlebih dahulu untuk menentukan opsi mana yang sesuai — JANGAN asal pilih tanpa membaca implementasinya, karena salah pilih bisa menghilangkan fitur yang dimaksudkan atau meninggalkan kode mati.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Tidak ada perubahan struktur/fitur lain di luar 3 error ini.
+- Tidak mengubah `ManasikModul` interface — perbaikan dilakukan di sisi pemanggil (`searchIndex.ts`), bukan mengubah tipe datanya.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan hasilnya 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Konfirmasi mana dari Opsi A/B yang dipilih untuk Error 3, dan alasannya berdasarkan apa yang ditemukan di kode `AnnouncementCard`.

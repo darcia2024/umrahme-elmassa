@@ -1,0 +1,87 @@
+# PROMPT — Warna Hero Gradient Per Tenant (dari primary_color & primary_deep_color)
+
+## Konteks
+File: `artifacts/umrahme/src/pages/Beranda.tsx`
+
+Di Beranda, hero section pakai background image + overlay gradient gelap (hardcoded hitam).
+Kita mau ganti overlay gradientnya supaya pakai warna brand dari tenant:
+- `tenant.primary_color` → warna utama (misal: merah Temanumrah)
+- `tenant.primary_deep_color` → warna dalam/gelap (untuk bagian bawah gradient)
+
+Kalau `tenant` null/belum load, fallback ke warna gelap default (`rgba(5,10,20,...)`).
+
+---
+
+## Logika Warna
+
+Tambahkan helper function ini di dekat bagian atas komponen Beranda (sebelum `return`):
+
+```ts
+// Konversi hex ke rgba dengan opacity
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+```
+
+Lalu buat variabel overlay di dalam komponen (setelah `tenant` tersedia):
+
+```ts
+const heroOverlayTop = tenant?.primary_deep_color
+  ? hexToRgba(tenant.primary_deep_color, 0.60)
+  : 'rgba(5,10,20,0.55)';
+
+const heroOverlayBottom = tenant?.primary_color
+  ? hexToRgba(tenant.primary_color, 0.85)
+  : 'rgba(5,10,20,0.92)';
+```
+
+---
+
+## Perubahan di JSX (Mobile Hero)
+
+Cari dua div overlay ini (di dalam `<div className="relative overflow-hidden" ...>`):
+
+```tsx
+<div className="pointer-events-none absolute inset-0"
+  style={{ background: 'linear-gradient(to bottom, rgba(5,10,20,0.55) 0%, transparent 45%)' }} />
+<div className="pointer-events-none absolute inset-0"
+  style={{ background: 'linear-gradient(to top, rgba(5,10,20,0.92) 0%, rgba(5,10,20,0.40) 40%, transparent 70%)' }} />
+```
+
+Ganti jadi:
+
+```tsx
+<div className="pointer-events-none absolute inset-0"
+  style={{ background: `linear-gradient(to bottom, ${heroOverlayTop} 0%, transparent 45%)` }} />
+<div className="pointer-events-none absolute inset-0"
+  style={{ background: `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(5,10,20,0.20) 40%, transparent 70%)` }} />
+```
+
+---
+
+## Perubahan di JSX (Desktop Hero, kalau ada)
+
+Cari overlay desktop (sekitar baris 482–483):
+
+```tsx
+<div className="pointer-events-none absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(5,10,20,0.4) 0%, rgba(5,10,20,0.82) 100%)' }} />
+```
+
+Ganti jadi:
+
+```tsx
+<div className="pointer-events-none absolute inset-0"
+  style={{ background: `linear-gradient(to bottom, ${heroOverlayTop} 0%, ${heroOverlayBottom} 100%)` }} />
+```
+
+---
+
+## Catatan
+- Jangan ubah apapun selain overlay gradient hero
+- Tidak perlu ubah Supabase, skema DB, atau field lain — `primary_color` dan `primary_deep_color` sudah ada di `TenantRow`
+- Pastikan `hexToRgba` handle hex tanpa `#` dengan baik (sudah ada `.replace('#', '')`)
+- Kalau `tenant` belum load (null), fallback ke warna gelap default — jangan crash

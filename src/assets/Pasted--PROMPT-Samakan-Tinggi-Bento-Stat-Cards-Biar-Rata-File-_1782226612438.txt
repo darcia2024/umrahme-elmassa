@@ -1,0 +1,69 @@
+# PROMPT: Samakan Tinggi Bento Stat Cards (Biar Rata)
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+**Masalah:** 4 stat card di section "Tentang Umrahme" tingginya tidak rata — ada yang panjang, ada yang pendek, karena jumlah teks beda dan card tidak mengisi penuh tinggi cell grid-nya.
+
+**Solusi:** Buat semua card mengisi penuh tinggi cell (`height: 100%`), grid pakai `align-items: stretch`, dan konten di dalam card tersebar rapi (`justify-content: space-between`) supaya tinggi seragam dan isi terdistribusi baik.
+
+---
+
+## Langkah 1 — Grid pakai align stretch
+
+Cari div grid bento (kemungkinan `<div className="lp-bento" style={{ display: 'grid', ... }}>`). Pastikan ada `alignItems: 'stretch'`. Jika grid-nya 4 kolom/2x2, set:
+```jsx
+<div className="lp-bento" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, alignItems: 'stretch' }}>
+```
+(Sesuaikan jumlah kolom dengan yang aktual — yang penting tambahkan `alignItems: 'stretch'`.)
+
+Jika tiap card dibungkus `<Reveal>`, tambahkan `style={{ height: '100%' }}` atau pastikan `Reveal` tidak memotong tinggi. Reveal pakai `motion.div` — beri `className` atau pastikan wrapper-nya `height: 100%`. Tambahkan di `<style>`:
+```css
+.lp-bento > div { height: 100%; }
+```
+Ini memastikan setiap pembungkus langsung (termasuk Reveal) mengisi penuh tinggi cell.
+
+## Langkah 2 — Setiap card: height 100% + distribusi konten
+
+Pada KEEMPAT stat card, pastikan style-nya punya:
+```
+height: '100%',
+display: 'flex',
+flexDirection: 'column',
+justifyContent: 'space-between',
+```
+
+Contoh — ubah tiap card jadi seperti ini (pertahankan warna & isi masing-masing):
+```jsx
+<div style={{
+  borderRadius: 16,
+  padding: 22,
+  background: /* warna card masing-masing */,
+  color: /* warna teks masing-masing */,
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  minHeight: 200,
+  boxSizing: 'border-box',
+}}>
+  <div style={{ fontSize: 13, fontWeight: 600 }}>{/* label atas */}</div>
+  <div style={{ fontSize: 36, fontWeight: 800, margin: '14px 0' }}>{/* angka */}</div>
+  <div style={{ fontSize: 12.5, opacity: 0.85 }}>{/* sub-teks bawah */}</div>
+</div>
+```
+
+Dengan `justifyContent: 'space-between'`, label nempel atas, angka di tengah, sub-teks nempel bawah — sehingga semua card terisi penuh dan terlihat seimbang meski jumlah teks beda.
+
+## Langkah 3 — Samakan minHeight
+
+Set `minHeight: 200` (atau nilai yang konsisten) pada keempat card supaya ada tinggi minimum yang sama. Card dengan teks lebih sedikit akan tetap setinggi card terpanjang karena `height: 100%` + grid stretch.
+
+---
+
+## Hasil yang diharapkan
+Keempat stat card sama tinggi, rapi sejajar dalam grid 2x2 (mobile) / 4 kolom (desktop). Label-angka-subteks terdistribusi rapi di tiap card. Tidak ada lagi card yang lebih pendek/panjang.
+
+## Aturan
+- Jangan ubah warna, copy, atau angka.
+- Pastikan `box-sizing: border-box` agar padding tidak menambah tinggi tak terduga.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

@@ -1,0 +1,66 @@
+# PROMPT: Fix Bug — Pindah Modul Manasik Malah Langsung "Selesai"
+
+**File:** `artifacts/umrahme/src/pages/ManasikModulDetail.tsx`
+
+**Bug:** Saat menekan "Lanjut ke Modul Berikutnya", halaman modul baru langsung menampilkan layar "Modul Selesai" (tahap ringkasan), padahal modul itu belum dikerjakan. Seharusnya modul baru mulai dari tahap A (Kenali).
+
+**Penyebab:** Saat navigasi antar modul (mis. dari `/manasik-interaktif/tawaf` ke `/manasik-interaktif/sai`), komponen tidak re-mount — hanya `modulId` yang berubah. State `tahap` tetap bernilai `'ringkasan'` dari modul sebelumnya. `useEffect` yang ada hanya men-set `tahap` ke `'ringkasan'` JIKA modul sudah selesai, tapi TIDAK me-reset ke `'A'` jika modul baru belum selesai. Akibatnya `tahap` nyangkut di `'ringkasan'`.
+
+---
+
+## FIX — Reset tahap & skor saat modul berganti
+
+Cari `useEffect` ini (sekitar baris 643):
+```tsx
+useEffect(() => {
+  if (!modul) return;
+  const p = getModulProgress(modul.id);
+  if (p.selesai) {
+    setPartCSkor(p.partCScore);
+    setPartCTotal(p.partCTotal);
+    setTahap('ringkasan');
+  }
+}, [modul?.id]);
+```
+
+Ganti dengan versi yang menangani KEDUA kasus (selesai → ringkasan, belum → reset ke A):
+```tsx
+useEffect(() => {
+  if (!modul) return;
+  const p = getModulProgress(modul.id);
+  if (p.selesai) {
+    setPartCSkor(p.partCScore);
+    setPartCTotal(p.partCTotal);
+    setTahap('ringkasan');
+  } else {
+    // modul baru belum selesai — mulai dari awal, reset skor
+    setPartCSkor(0);
+    setPartCTotal(0);
+    setTahap('A');
+  }
+}, [modul?.id]);
+```
+
+Inti perbaikan: tambahkan blok `else` yang me-reset `tahap` ke `'A'` dan skor ke 0 ketika modul yang dibuka belum selesai. Dengan begitu, setiap kali `modul.id` berubah (termasuk saat tap "Lanjut ke Modul Berikutnya"), tahap selalu disesuaikan dengan status modul yang sedang dibuka.
+
+---
+
+## (Opsional tapi disarankan) Scroll ke atas saat pindah modul
+Agar pengguna mulai dari atas halaman modul baru, tambahkan di dalam `useEffect` yang sama (di awal, setelah `if (!modul) return;`):
+```tsx
+window.scrollTo({ top: 0, behavior: 'smooth' });
+```
+
+---
+
+## VERIFIKASI
+Setelah fix, alur harus begini:
+1. Selesaikan Modul 2 (Tawaf) → muncul ringkasan "Modul Selesai".
+2. Tap "Lanjut ke Modul Berikutnya" → masuk Modul 3 (Sai) **mulai dari tahap A (Kenali)**, BUKAN langsung ringkasan.
+3. Jika membuka modul yang memang sudah pernah diselesaikan → tetap menampilkan ringkasan (perilaku benar).
+4. Modul terakhir (Tahallul) → tombol jadi "Kembali ke Daftar Modul".
+
+## ATURAN
+- Jangan ubah logika lain (handleLanjut, handlePartC, dll sudah benar).
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

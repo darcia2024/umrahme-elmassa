@@ -1,0 +1,46 @@
+# PROMPT: Auto-Scroll ke Atas Saat Pindah Lokasi (LokasiDetail)
+
+**File:** `artifacts/umrahme/src/pages/LokasiDetail.tsx`
+
+Saat menekan tombol navigasi "Lokasi sebelumnya / berikutnya" di bawah halaman detail, halaman tetap di posisi scroll bawah. Seharusnya otomatis scroll ke atas agar pengguna langsung melihat lokasi baru dari awal (foto + nama).
+
+---
+
+## SOLUSI — Scroll ke atas setiap kali lokasi (id) berubah
+
+Tambahkan `useEffect` yang memantau perubahan `id` lokasi dari URL param, lalu scroll ke atas.
+
+### Langkah 1 — Pastikan import useEffect
+Di baris import React:
+```tsx
+import { useEffect } from 'react';
+```
+(atau gabung dengan import yang sudah ada, mis. `import { useEffect, useState } from 'react';`)
+
+### Langkah 2 — Tambah useEffect scroll-to-top
+Di dalam komponen `LokasiDetail`, setelah ambil `id`/param dari `useParams`, tambahkan:
+```tsx
+const { id } = useParams<{ id: string }>(); // jika belum ada, sesuaikan dengan yang sudah ada
+
+useEffect(() => {
+  // scroll ke atas setiap kali lokasi berganti
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  // jika konten berada di container scroll tersendiri (bukan window),
+  // scroll container itu juga ke atas:
+  const scroller = document.querySelector('[data-scroll-container]') as HTMLElement | null;
+  if (scroller) scroller.scrollTo({ top: 0, behavior: 'smooth' });
+}, [id]);
+```
+
+**Catatan:** kunci-nya adalah dependency `[id]` — efek ini jalan tiap kali `id` lokasi di URL berubah (termasuk saat tap tombol sebelumnya/berikutnya yang melakukan navigate ke `/peta/{idLain}`).
+
+### Langkah 3 — Pastikan tombol navigasi pakai navigate/Link ke id baru
+Tombol "sebelumnya/berikutnya" harus mengubah route ke `/peta/{idTujuan}` (pakai `<Link to={...}>` atau `navigate(...)`). Jika sudah, efek di atas otomatis menangani scroll. Jika tombol pakai `<Link>`, biarkan; jangan tambahkan `window.scrollTo` manual di onClick (cukup andalkan useEffect `[id]`).
+
+---
+
+## CATATAN
+- Jika app pakai container scroll khusus (bukan `window`), beri atribut `data-scroll-container` pada elemen pembungkus yang scrollable, agar baris scroller di atas berfungsi. Jika scroll memang di `window`, `window.scrollTo` sudah cukup dan baris scroller boleh dibiarkan (akan no-op).
+- `behavior: 'smooth'` memberi animasi halus; ganti ke `'auto'` jika ingin langsung lompat ke atas.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

@@ -1,0 +1,59 @@
+# PROMPT FIX — Rapikan Halaman Login
+
+> Masalah visual yang terlihat di screenshot:
+> 1. Transisi foto masjid ke area form kasar — ada layer putih di ujung bawah foto yang bikin potongannya tidak smooth
+> 2. Input field terlalu tinggi secara keseluruhan, kerasa ada ruang kosong yang tidak proporsional
+> 3. Tombol "Masuk" terlihat abu-abu flat saat field kosong — ini behavior yang benar tapi kurang enak dilihat
+> 4. Area form terasa terlalu lega di atas (gap antara foto dan "Selamat Datang!")
+
+File: `src/pages/Login.tsx`
+
+## Fix 1 — Gradient foto
+Ganti gradient di hero dari:
+```
+rgba(255,255,255,0.70) di ujung bawah
+```
+Menjadi transparan penuh di ujung bawah:
+```tsx
+style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.10) 60%, transparent 100%)' }}
+```
+
+## Fix 2 — Overlap sheet putih di atas foto
+Tambahkan negative margin agar area form sedikit overlap ke atas foto (mirip pola Beranda mobile):
+```tsx
+{/* Form area — ganti pt-5 menjadi: */}
+<div className="flex flex-col flex-1 px-6 pb-6" style={{ paddingTop: '20px', marginTop: '-16px', borderRadius: '24px 24px 0 0', background: 'white', position: 'relative', zIndex: 1 }}>
+```
+
+## Fix 3 — Kurangi gap heading
+Ganti `mb-5` di div heading menjadi `mb-4`, dan kurangi margin antara h2 dan subtitle:
+```tsx
+<div className="text-center mb-4">
+  <h2 ...>Selamat Datang!</h2>
+  <p className="mt-0.5 text-[13px] text-charcoal">...</p>
+</div>
+```
+
+## Fix 4 — Tombol saat disabled lebih elegan
+Ganti warna disabled dari abu-abu solid ke versi yang lebih halus:
+```tsx
+background: loading || !kode || !nama
+  ? 'rgba(0,0,0,0.18)'
+  : '#111111',
+```
+
+## Fix 5 — Input field lebih kompak
+Kurangi padding vertikal input field dari `py-3.5` menjadi `py-3`:
+```tsx
+<div className="rounded-2xl border px-4 py-3" ...>
+```
+
+## YANG TIDAK BOLEH DIUBAH
+- Logic form (validasiKode, handleSubmit, error handling) — tidak disentuh
+- maxLength={20} yang sudah diperbaiki — pertahankan
+- Font, warna, komponen lain — tidak diubah
+
+## OUTPUT
+1. `pnpm run typecheck` — 0 error
+2. `pnpm run build` — sukses
+3. Screenshot halaman login yang sudah diperbaiki

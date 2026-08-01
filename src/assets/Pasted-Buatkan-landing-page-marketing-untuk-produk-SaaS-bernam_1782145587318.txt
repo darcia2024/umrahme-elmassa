@@ -1,0 +1,164 @@
+Buatkan landing page marketing untuk produk SaaS bernama **Umrahme** dalam satu file HTML.
+
+---
+
+## KONTEKS PRODUK
+
+Umrahme adalah aplikasi web pendamping umrah yang dijual ke owner travel agency.
+Model bisnis: Travel beli lisensi, jamaah mereka dapat akses app yang terasa seperti
+"milik travel sendiri" (white-label — logo, warna, nama travel bisa disesuaikan).
+
+Harga: **10 SAR per jamaah** (sangat terjangkau, tidak ada biaya setup).
+
+Target audiens landing page ini: **Owner travel agency umrah di Indonesia**
+yang ingin digitalisasi layanan mereka.
+
+---
+
+## PAIN POINT YANG DISELESAIKAN
+
+- Jamaah bingung dan ketinggalan info selama perjalanan
+- Muthowif/pembimbing harus jelasin hal yang sama berulang kali
+- Buku doa fisik sering ketinggalan, hilang, atau tidak dibaca
+- Travel susah broadcast pengumuman mendadak ke semua jamaah
+- Tidak ada sistem digital — semua masih manual & WhatsApp
+
+---
+
+## SOLUSI & FITUR (yang harus ditonjolkan)
+
+1. **Pengganti Buku Doa Digital**
+   45 doa lengkap (Arab + latin + terjemahan + cara baca), 9 kategori sesuai
+   tahapan ibadah. Ketika muthowif sedang menjelaskan, jamaah bisa ikuti
+   langsung di HP masing-masing. Tidak perlu buku fisik lagi.
+
+2. **Counter Tawaf & Sa'i**
+   Hitung putaran otomatis 1-7, lengkap dengan doa per putaran.
+   Jamaah tidak akan lupa sudah putaran ke berapa.
+
+3. **Panduan Ibadah Step-by-Step**
+   Ritual Navigator, Manasik Interaktif, Panduan Ihram — semua ada.
+   Jamaah bisa belajar mandiri sebelum berangkat.
+
+4. **Peta & Info Lokasi Bersejarah**
+   Info masjid dan lokasi ziarah di Makkah & Madinah lengkap dengan
+   sejarah, koordinat Google Maps, adab berkunjung.
+
+5. **Jadwal Sholat Real-time**
+   Otomatis sesuai lokasi jamaah di Makkah/Madinah.
+
+6. **Pengumuman dari Travel**
+   Travel bisa kirim pengumuman penting langsung ke seluruh jamaah
+   (perubahan jadwal bus, meeting point, dll).
+
+7. **Agenda Perjalanan**
+   Jadwal harian jamaah dari travel bisa diisi dan dilihat real-time.
+
+8. **Kartu Jamaah Digital**
+   Data jamaah: nama, nomor, rombongan, bus, kamar hotel, kontak pembimbing.
+   Tidak perlu kartu fisik.
+
+9. **Jurnal Perjalanan**
+   Jamaah bisa catat momen & foto selama perjalanan sebagai kenangan.
+
+10. **Sertifikat Umrah Digital**
+    Kenangan selesai umrah yang bisa disimpan dan dibagikan.
+
+11. **White-label Penuh**
+    Logo travel, warna brand, nama app — semuanya bisa disesuaikan.
+    Jamaah merasa ini aplikasi milik travel mereka sendiri.
+
+12. **Portal Travel Agency**
+    Dashboard khusus travel untuk kelola jamaah, isi agenda, kirim pengumuman,
+    atur info hotel, kontak pembimbing, dll.
+
+---
+
+## STRUKTUR HALAMAN
+
+### 1. NAVBAR
+- Logo "Umrahme" kiri
+- Menu: Fitur | Harga | Cara Kerja | Kontak
+- CTA button kanan: "Daftar Sekarang"
+
+### 2. HERO SECTION
+Headline besar yang menggugah owner travel:
+"Jadikan Perjalanan Jamaah Anda Lebih Bermakna — Tanpa Repot"
+
+Subheadline:
+"Satu aplikasi lengkap pengganti buku doa, panduan ibadah, dan sistem komunikasi
+travel. White-label, siap pakai, hanya 10 SAR per jamaah."
+
+2 CTA: "Mulai Sekarang" (primary) + "Lihat Demo" (secondary)
+Social proof: "Dipercaya travel agency di Indonesia"
+
+Tampilkan mockup UI app (card-card floating yang menunjukkan fitur:
+counter tawaf, doa Arab, kartu jamaah, pengumuman travel)
+
+### 3. PAIN POINT SECTION
+Headline: "Masalah yang Sering Dihadapi Travel Agency"
+Tampilkan 4-5 pain point di atas dengan ikon, singkat dan relatable.
+
+### 4. SOLUSI / FITUR UTAMA
+Headline: "Semua yang Dibutuhkan Jamaah, dalam Satu App"
+Grid 3 kolom, tiap fitur punya ikon + nama + deskripsi singkat 1-2 kalimat.
+Tampilkan semua 12 fitur di atas.
+
+### 5. HOW IT WORKS (Cara Kerja)
+3 langkah simpel:
+1. Travel daftar & kustomisasi (logo, warna, nama travel)
+2. Input data jamaah & jadwal perjalanan
+3. Jamaah login dengan kode aktivasi — langsung bisa pakai semua fitur
+
+### 6. WHITE-LABEL SHOWCASE
+Tunjukkan bahwa app bisa tampil dengan brand travel masing-masing.
+"App Anda, Brand Anda" — jamaah tidak tahu ini Umrahme, mereka pikir ini app travel mereka.
+
+### 7. PRICING
+Simple, transparan:
+- **10 SAR per jamaah**
+- Tidak ada biaya setup
+- Tidak ada biaya bulanan
+- Bayar hanya untuk jamaah aktif
+- Semua fitur sudah termasuk
+
+Tambahkan estimasi: "Contoh: 40 jamaah = 400 SAR sekali bayar"
+
+### 8. TESTIMONI (placeholder)
+3 kartu testimoni dari owner travel (buat nama & travel fiktif yang realistis Indonesia)
+
+### 9. FAQ
+5-6 pertanyaan umum yang mungkin ditanyakan owner travel:
+- Apakah jamaah perlu install aplikasi?
+- Bagaimana cara kustomisasi tampilan?
+- Apakah data jamaah aman?
+- Apakah bisa dipakai tanpa internet? (mode offline)
+- Bagaimana cara pembayaran?
+- Apakah ada masa trial?
+
+### 10. CTA PENUTUP
+Headline kuat: "Siap Upgrade Layanan Travel Anda?"
+Subtext: "Bergabung sekarang dan berikan pengalaman umrah terbaik untuk jamaah Anda."
+CTA: "Hubungi Kami via WhatsApp" (link ke wa.me)
+
+### 11. FOOTER
+Logo, tagline singkat, link menu, copyright.
+
+---
+
+## DESAIN
+
+- Satu file HTML lengkap dengan CSS dan JS inline
+- Gunakan Google Fonts: Plus Jakarta Sans
+- Bahasa: Indonesia
+- Tone: Profesional tapi hangat, meyakinkan, tidak lebay
+- Responsif mobile & desktop
+- Animasi scroll fade-in halus
+- Warna bebas — pilih yang cocok untuk produk islami/umrah (bukan harus hijau,
+  boleh navy, gold, atau kombinasi elegan lainnya)
+- Modern, clean, conversion-focused — tujuan utama: owner travel mau hubungi kita
+
+---
+
+## OUTPUT
+Satu file `index.html` siap deploy, tidak perlu backend.

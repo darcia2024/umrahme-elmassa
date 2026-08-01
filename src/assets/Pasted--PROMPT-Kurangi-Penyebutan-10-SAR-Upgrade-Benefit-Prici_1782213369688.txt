@@ -1,0 +1,117 @@
+# PROMPT: Kurangi Penyebutan "10 SAR" + Upgrade Benefit Pricing
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Dua tujuan:
+1. Hapus penyebutan "10 SAR" di mana-mana — sisakan HANYA di pricing card. Ganti dengan diksi yang menonjolkan VALUE, bukan angka.
+2. Buat benefit di pricing lebih meyakinkan & berorientasi keuntungan travel.
+
+Jangan ubah warna, logika, animasi, layout.
+
+---
+
+## BAGIAN 1 — Ganti semua "10 SAR" di luar pricing
+
+### 1A. Deskripsi Hero
+**Cari:**
+```
+Buku doa cetak Anda habis 15–25 SAR per jamaah — dan sering tidak dibaca. Umrahme menggantikannya seharga <strong>10 SAR</strong>, lengkap dengan panduan ibadah, jadwal, dan komunikasi travel. Semua bermerek nama travel Anda.
+```
+**Ganti:**
+```
+Doa, panduan ibadah, jadwal, dan komunikasi travel — semua dalam satu aplikasi bermerek nama Anda. Lebih hemat dari mencetak buku doa, dengan manfaat berkali lipat.
+```
+*(Jika deskripsi hero sudah diganti versi lebih pendek sebelumnya, cukup pastikan tidak ada "10 SAR" di dalamnya.)*
+
+### 1B. Sub-heading Pricing
+**Cari:**
+```
+Buku doa cetak 15–25 SAR per jamaah — dan itu hanya buku doa. Umrahme 10 SAR, dapat 12 fitur lengkap, bermerek travel Anda.
+```
+**Ganti:**
+```
+Bandingkan: buku doa cetak hanya memberi jamaah satu buku. Umrahme memberi 12 fitur lengkap, bermerek travel Anda — dengan biaya yang justru lebih ringan.
+```
+
+### 1C. Final CTA
+**Cari:**
+```
+Jamaah lebih tenang. Muthowif lebih fokus. Travel Anda tampil lebih profesional. Semua ini hanya 10 SAR per jamaah. Mulai dengan demo gratis — kami setup langsung dengan nama travel Anda.
+```
+**Ganti:**
+```
+Jamaah lebih tenang. Muthowif lebih fokus. Travel Anda tampil lebih profesional. Mulai dengan demo gratis — kami setup langsung dengan nama travel Anda.
+```
+
+### 1D. Footer tagline
+**Cari:**
+```
+Ganti buku doa cetak. Ringankan kerja muthowif. Tampil profesional. Hanya 10 SAR per jamaah.
+```
+**Ganti:**
+```
+Ganti buku doa cetak. Ringankan kerja muthowif. Bawa travel Anda tampil lebih profesional.
+```
+
+### 1E. FAQ pembayaran
+**Cari:**
+```
+Hubungi kami via WhatsApp, kami bantu setup demo gratis dengan nama travel Anda dulu. Kalau cocok, baru bicara soal pembayaran. 10 SAR per jamaah, dibayar per keberangkatan. Tidak ada kontrak, tidak ada minimum jamaah.
+```
+**Ganti:**
+```
+Hubungi kami via WhatsApp, kami bantu setup demo gratis dengan nama travel Anda dulu. Kalau cocok, baru bicara soal pembayaran. Biaya dihitung per jamaah dan dibayar per keberangkatan — tanpa kontrak, tanpa minimum jamaah. Detail harga ada di bagian Harga.
+```
+
+### 1F. Testimoni (jika section testimoni masih ada; kalau sudah dihapus, lewati)
+**Cari:**
+```
+Kami biasa cetak buku doa 20 SAR per jamaah. Dengan Umrahme 10 SAR, dapat jauh lebih banyak — dan jamaah benar-benar pakai. Keputusan terbaik musim ini.
+```
+**Ganti:**
+```
+Biaya per jamaahnya jauh lebih ringan dari cetak buku doa — tapi yang jamaah dapat berkali lipat lebih banyak. Dan mereka benar-benar memakainya. Keputusan terbaik musim ini.
+```
+
+### 1G. Bento stat "10 SAR" (jika masih ada angka 10 SAR di bento)
+Jika di bento ada kartu stat dengan angka `10 SAR`, ganti angkanya jadi **`12`** dengan label **`fitur lengkap`** — supaya bento tidak menyebut harga, dan tetap menonjolkan value. (Kalau bento sudah diubah sebelumnya tanpa "10 SAR", lewati.)
+
+---
+
+## BAGIAN 2 — Upgrade Benefit di Pricing Card
+
+Pada pricing card (yang background `C.ink`), ganti array benefit. **Cari:**
+```jsx
+{['Tidak ada biaya setup — langsung aktif', 'Tidak ada tagihan bulanan yang mengejutkan', 'Bayar sesuai jamaah yang berangkat saja', 'Semua 12 fitur langsung aktif — tidak ada upgrade berbayar', 'Branding travel Anda penuh — tanpa biaya kustomisasi', 'Support via WhatsApp'].map(t => (
+```
+
+**Ganti array-nya menjadi:**
+```jsx
+{['Lebih murah dari biaya cetak buku doa — langsung balik modal', 'Tanpa biaya setup, tanpa langganan bulanan, tanpa kontrak', 'Bayar hanya untuk jamaah yang benar-benar berangkat', '12 fitur premium aktif penuh — tanpa biaya tersembunyi', 'Aplikasi bermerek travel Anda — perkuat brand di mata jamaah', 'Tingkatkan kepuasan jamaah & dorong referral keberangkatan berikutnya', 'Pendampingan & support langsung via WhatsApp'].map(t => (
+```
+
+### Sub-teks di bawah angka harga
+**Cari:**
+```
+Bayar per keberangkatan, sesuai jumlah jamaah aktif. Tidak ada biaya bulanan, tidak ada biaya setup, tidak ada kontrak.
+```
+**Ganti:**
+```
+Investasi kecil per jamaah yang langsung terbayar dari hemat biaya cetak — dan terus memberi nilai di setiap keberangkatan.
+```
+
+### Tambah micro-line di atas tombol (opsional, kalau mudah)
+Tepat sebelum tombol "Mulai Sekarang", tambahkan satu baris kecil:
+```jsx
+<p style={{ fontSize: 12.5, color: C.accent, fontWeight: 600, marginBottom: 12, textAlign: 'center' }}>
+  Coba gratis dulu — tanpa risiko, tanpa komitmen.
+</p>
+```
+
+---
+
+## ATURAN
+- Setelah selesai, pastikan kata "10 SAR" HANYA muncul di pricing card (angka besar "10" + "SAR / jamaah"). Tidak ada di tempat lain.
+- Jangan ubah warna, logika, animasi, atau layout.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+- Laporkan setiap perubahan yang berhasil & yang tidak ditemukan.

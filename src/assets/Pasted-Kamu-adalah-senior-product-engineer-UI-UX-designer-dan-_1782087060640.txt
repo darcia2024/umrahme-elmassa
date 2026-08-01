@@ -1,0 +1,547 @@
+Kamu adalah senior product engineer, UI/UX designer, dan product strategist untuk aplikasi travel umrah.
+
+Tolong upgrade dashboard jamaah Umrahme supaya menjadi kualitas 10/10 dari sisi owner travel. Dashboard harus terasa seperti aplikasi resmi travel yang benar-benar mendampingi jamaah selama perjalanan, bukan sekadar kumpulan menu doa/manasik.
+
+Konteks project:
+
+* App utama ada di `artifacts/umrahme`
+* Dashboard jamaah ada di `src/pages/Beranda.tsx`
+* Komponen travel companion ada di `src/components/dashboard/TravelCompanionFlow.tsx`
+* Data travel companion ada di `src/data/travelCompanion.ts`
+* Halaman kartu jamaah ada di `src/pages/KartuJamaah.tsx`
+* Halaman pengumuman ada di `src/pages/Pengumuman.tsx`
+* Agenda lengkap ada di `src/pages/AgendaLengkap.tsx`
+* Auth jamaah ada di `src/context/AuthContext.tsx`
+* Tipe data ada di `src/types/index.ts`
+* Jangan rebuild dari nol.
+* Jangan hapus fitur lama.
+* Jangan ubah total style visual.
+* Upgrade flow, hierarchy, copywriting, dan komponen dashboard agar terasa premium, operasional, dan layak dijual ke owner travel.
+
+==================================================
+TARGET PRODUK
+=============
+
+Dashboard harus membuat owner travel merasa:
+
+“Ini aplikasi resmi travel saya. Jamaah saya bisa tahu agenda, pengumuman, kontak pembimbing, kartu jamaah, hotel, bus, kamar, dan panduan ibadah dari satu tempat.”
+
+Dashboard harus membuat jamaah merasa:
+
+“Saya tahu hari ini harus ngapain, jam berapa kumpul, bawa apa, hubungi siapa kalau bingung, dan fitur ibadah apa yang harus saya buka.”
+
+Formula dashboard final:
+
+IDENTITAS TRAVEL
+→ STATUS PERJALANAN
+→ AGENDA HARI INI
+→ INSTRUKSI HARI INI
+→ PENGUMUMAN PENTING
+→ BANTUAN CEPAT
+→ KARTU JAMAAH
+→ FITUR IBADAH SESUAI FASE
+→ FITUR TAMBAHAN
+
+Jangan jadikan dashboard sebagai:
+
+MENU → MENU → MENU → MENU
+
+==================================================
+URUTAN DASHBOARD MOBILE FINAL
+=============================
+
+Update `src/pages/Beranda.tsx` agar urutan mobile menjadi:
+
+1. Header / hero travel existing
+2. Search jika masih diperlukan
+3. Status perjalanan / countdown existing
+4. Agenda Hari Ini
+5. TravelCompanionFlow
+6. Instruksi Hari Ini
+7. Pengumuman Penting
+8. Bantuan Cepat
+9. Kartu Jamaah
+10. Shortcut Ibadah sesuai fase
+11. Checklist persiapan
+12. Fitur lainnya
+13. Sertifikat / jurnal / kenangan
+
+Jika sekarang Quick Actions muncul sebelum TravelCompanionFlow, pindahkan Quick Actions ke bawah TravelCompanionFlow.
+
+Dashboard harus langsung terasa operasional dalam 1 layar pertama.
+
+==================================================
+UPGRADE DATA TRAVEL COMPANION
+=============================
+
+Update `src/data/travelCompanion.ts`.
+
+Tambahkan data instruksi harian:
+
+```ts
+export type DailyInstruction = {
+  id: string;
+  title: string;
+  meetingTime: string;
+  meetingPoint: string;
+  dressCode: string;
+  bringItems: string[];
+  note: string;
+};
+```
+
+Tambahkan helper:
+
+```ts
+export function getTodayInstruction(_tenantId?: string | null): DailyInstruction {
+  return {
+    id: 'instruction-1',
+    title: 'Persiapan kegiatan hari ini',
+    meetingTime: '04.30',
+    meetingPoint: 'Lobby utama hotel',
+    dressCode: 'Pakaian ihram / seragam sesuai arahan pembimbing',
+    bringItems: ['Sandal', 'Tas kecil', 'Kartu jamaah', 'Botol minum'],
+    note: 'Tetap bersama rombongan dan ikuti arahan pembimbing.',
+  };
+}
+```
+
+Update fallback hotel agar tidak terlihat mentah.
+
+Ganti:
+`Hotel Makkah — diisi travel`
+
+Menjadi:
+`Hotel akan diumumkan oleh travel`
+
+Atau untuk demo visual gunakan:
+`Swissôtel Makkah`
+
+Ganti:
+`Hotel Madinah — diisi travel`
+
+Menjadi:
+`Hotel akan diumumkan oleh travel`
+
+Atau untuk demo visual gunakan:
+`Maden Hotel Madinah`
+
+Tambahkan field operational info jika belum ada:
+
+```ts
+groupCode: 'Rombongan A',
+busNumber: 'Bus 3',
+roomNumber: '804',
+meetingPoint: 'Lobby utama hotel',
+guideName: 'Ust. Muthowwif',
+guideRole: 'Muthowwif Rombongan',
+guideWhatsapp: '6281234567890',
+tourLeaderName: 'Bpk. Tour Leader',
+tourLeaderRole: 'Tour Leader',
+tourLeaderWhatsapp: '6281234567890',
+```
+
+==================================================
+UPGRADE TRAVEL COMPANION FLOW
+=============================
+
+Update `src/components/dashboard/TravelCompanionFlow.tsx`.
+
+Pastikan komponen ini menampilkan section dengan urutan:
+
+1. `TripIdentityCard`
+2. `TripProgressCard`
+3. `TodayInstructionCard`
+4. `PinnedAnnouncementCard`
+5. `EmergencyGuideCard`
+6. `DigitalJamaahCardPreview`
+7. `PhaseBasedActionCard`
+
+==================================================
+
+1. TRIP IDENTITY CARD
+   ==================================================
+
+Card identitas harus menampilkan:
+
+* Nama jamaah
+* Nama travel
+* Nomor jamaah
+* Rombongan
+* Bus
+* Kamar
+* Hotel Makkah
+* Hotel Madinah
+
+Copy yang diinginkan:
+
+“Assalamu’alaikum, Ahmad”
+“Aplikasi Jamaah Travel Demo”
+“Rombongan A · Bus 3 · Kamar 804”
+
+Tambahkan chip/chips:
+
+* Rombongan A
+* Bus 3
+* Kamar 804
+
+Jangan hanya tampilkan hotel. Rombongan, bus, dan kamar harus terlihat cepat di dashboard utama.
+
+==================================================
+2. TRIP PROGRESS CARD
+=====================
+
+Tambahkan progress perjalanan ringkas:
+
+```txt
+Persiapan → Keberangkatan → Tanah Suci → Selesai
+```
+
+Tampilkan sesuai `jamaah.fase`.
+
+Untuk fase `persiapan`:
+
+* Persiapan aktif
+* Keberangkatan belum
+* Tanah Suci belum
+* Selesai belum
+
+Untuk fase `tanah-suci`:
+
+* Persiapan done
+* Keberangkatan done
+* Tanah Suci aktif
+* Selesai belum
+
+Untuk fase `selesai`:
+
+* Semua done
+
+Copy:
+“Fase perjalananmu sekarang”
+“Persiapan keberangkatan”
+atau
+“Sedang berada di Tanah Suci”
+atau
+“Perjalanan selesai”
+
+==================================================
+3. TODAY INSTRUCTION CARD
+=========================
+
+Buat card “Instruksi Hari Ini”.
+
+Isi:
+
+* Jam kumpul
+* Titik kumpul
+* Pakaian
+* Barang yang dibawa
+* Catatan pembimbing
+
+Contoh UI copy:
+
+“Instruksi Hari Ini”
+“Jam kumpul: 04.30”
+“Titik kumpul: Lobby utama hotel”
+“Pakaian: Ihram / seragam sesuai arahan”
+“Bawa: Sandal, tas kecil, kartu jamaah, botol minum”
+
+Ini penting agar dashboard terasa benar-benar dipakai di perjalanan.
+
+==================================================
+4. PINNED ANNOUNCEMENT CARD
+===========================
+
+Pengumuman harus punya hierarchy.
+
+Tampilkan label:
+
+* PENTING
+* DARI TRAVEL
+* WAJIB DIBACA
+
+Card dashboard hanya tampilkan 1 pengumuman paling penting/pinned.
+
+Copy:
+“Pengumuman Penting”
+“Jamaah dimohon berkumpul sesuai arahan pembimbing. Bawa sandal, tas kecil, kartu jamaah, dan tetap bersama rombongan.”
+
+Tambahkan link:
+“Lihat Semua Pengumuman”
+
+Route:
+`/pengumuman`
+
+==================================================
+5. EMERGENCY GUIDE CARD
+=======================
+
+Card bantuan cepat harus sangat jelas.
+
+Tampilkan dua kontak jika tersedia:
+
+* Muthowwif
+* Tour Leader
+
+Button:
+
+* WhatsApp Muthowwif
+* Telepon
+* WhatsApp Tour Leader
+
+Emergency card jangan terlalu bawah. Di mobile, minimal satu tombol WhatsApp harus terlihat sebelum user scroll terlalu jauh.
+
+Tambahkan copy:
+“Butuh Bantuan Cepat?”
+“Jika tersesat atau terpisah dari rombongan, tetap tenang dan hubungi pembimbing.”
+
+==================================================
+6. DIGITAL JAMAAH CARD PREVIEW
+==============================
+
+Preview kartu jamaah harus tampil profesional.
+
+Isi:
+
+* Nama jamaah
+* Travel
+* Rombongan
+* Bus
+* Kamar
+* Button: “Buka Kartu Jamaah”
+
+Route:
+`/profil/kartu`
+
+Copy:
+“Simpan kartu ini untuk ditunjukkan saat dibutuhkan.”
+
+==================================================
+7. PHASE BASED ACTION CARD
+==========================
+
+Shortcut fitur harus berubah sesuai fase.
+
+Jika `fase === 'persiapan'`, tampilkan:
+
+* Checklist Persiapan → `/profil/persiapan`
+* Doa Safar → `/doa`
+* Panduan Ihram → `/panduan/ihram`
+* Agenda Keberangkatan → `/profil/agenda`
+
+Jika `fase === 'tanah-suci'`, tampilkan:
+
+* Counter Tawaf → `/ibadah/tawaf`
+* Counter Sa’i → `/ibadah/sai`
+* Doa Tawaf → `/doa`
+* Panduan Tahallul → `/panduan/tahallul`
+
+Jika `fase === 'selesai'`, tampilkan:
+
+* Jurnal → `/profil/jurnal`
+* Sertifikat → `/profil/sertifikat`
+* Doa Pulang → `/doa`
+* Tempat Ziarah → `/peta`
+
+Judul card:
+“Yang Perlu Dibuka Sekarang”
+
+Bukan:
+“Akses Cepat”
+
+==================================================
+UPGRADE AGENDA HARI INI
+=======================
+
+Jika dashboard sudah punya Agenda Hari Ini, upgrade agar lebih operasional.
+
+Agenda dashboard harus menampilkan:
+
+* Jam
+* Judul
+* Lokasi
+* Catatan singkat jika ada
+* Label penting jika agenda penting
+
+Contoh:
+“04.30 — Kumpul di Lobby Hotel”
+“Bawa tas kecil dan kartu jamaah”
+
+Dashboard cukup tampilkan 2–3 agenda terdekat. Jangan tampilkan semua.
+
+Tambahkan CTA:
+“Lihat Jadwal Lengkap”
+
+Route:
+`/profil/agenda`
+
+==================================================
+UPDATE KARTU JAMAAH DIGITAL
+===========================
+
+Update `src/pages/KartuJamaah.tsx` agar terasa lebih resmi dan berguna.
+
+Kartu harus menampilkan:
+
+* Nama jamaah
+* Nama travel
+* Logo travel jika ada
+* Nomor jamaah
+* Kode aktivasi
+* Rombongan
+* Nomor bus
+* Nomor kamar
+* Hotel Makkah
+* Hotel Madinah
+* Titik kumpul
+* Muthowwif
+* Tour Leader
+* WhatsApp muthowwif
+* WhatsApp tour leader
+* Emergency note
+
+Tambahkan copy:
+“Jika tersesat, tunjukkan kartu ini kepada petugas atau hubungi pembimbing.”
+
+Tombol:
+
+* WhatsApp Muthowwif
+* WhatsApp Tour Leader
+* Telepon
+
+Pastikan halaman ini nyaman untuk screenshot.
+
+==================================================
+WHITE-LABEL FEEL
+================
+
+Perkuat rasa white-label travel.
+
+Di dashboard, gunakan copy:
+
+“Aplikasi Jamaah [Nama Travel]”
+
+Contoh:
+“Aplikasi Jamaah Travel Demo”
+
+Di header/hero, pastikan:
+
+* Logo travel muncul jika ada
+* Nama travel jelas
+* Warna primary travel dipakai untuk CTA utama
+* Jangan terlalu menonjolkan Umrahme dibanding nama travel
+
+Umrahme boleh muncul kecil sebagai powered by jika diperlukan.
+
+Owner travel harus merasa app ini adalah app travel mereka.
+
+==================================================
+COPYWRITING STYLE
+=================
+
+Gunakan bahasa yang sederhana, hangat, dan operasional.
+
+Contoh copy yang bagus:
+
+* “Hari ini jamaah dimohon berkumpul sesuai arahan pembimbing.”
+* “Buka kartu jamaah jika diminta petugas atau saat terpisah dari rombongan.”
+* “Tetap bersama rombongan dan jangan ragu menghubungi pembimbing.”
+* “Fokus hari ini: ikuti agenda, siapkan perlengkapan, dan jaga kondisi.”
+
+Hindari copy yang terlalu generik:
+
+* “Akses cepat”
+* “Fitur lainnya”
+* “Informasi”
+* “Menu utama”
+
+Ganti dengan:
+
+* “Yang Perlu Dibuka Sekarang”
+* “Arahan Hari Ini”
+* “Bantuan Cepat”
+* “Dokumen Perjalanan”
+* “Panduan Ibadah”
+
+==================================================
+DESIGN REQUIREMENTS
+===================
+
+Ikuti style existing:
+
+* Rounded card besar
+* Border hairline
+* Soft shadow
+* Mobile-first
+* Warna primary travel
+* Font existing
+* Spacing lega
+* Tombol besar
+* Cocok untuk jamaah lansia
+
+Emergency button harus jelas dan tinggi minimal nyaman disentuh.
+
+Tambahkan padding bawah ekstra pada dashboard agar card terakhir tidak ketutup bottom nav:
+
+```tsx
+className="pb-28"
+```
+
+atau sesuai struktur existing.
+
+==================================================
+ACCEPTANCE CRITERIA
+===================
+
+Dashboard dianggap 10/10 jika:
+
+1. Dalam 5 detik, owner travel langsung paham ini app untuk jamaah travelnya.
+2. Jamaah langsung melihat nama travel dan identitas dirinya.
+3. Rombongan, bus, kamar tampil di dashboard utama.
+4. Agenda hari ini tampil dominan.
+5. Instruksi hari ini tampil jelas: jam kumpul, titik kumpul, pakaian, barang dibawa.
+6. Pengumuman penting tampil dengan label jelas.
+7. Kontak muthowwif/tour leader mudah ditekan.
+8. Kartu jamaah digital mudah dibuka.
+9. Shortcut fitur berubah sesuai fase perjalanan.
+10. Fitur lama tetap ada dan tidak rusak.
+11. Dashboard tidak terasa seperti kumpulan menu.
+12. Dashboard terasa seperti pusat komando perjalanan jamaah.
+13. App tetap build tanpa error TypeScript.
+14. Jalankan `npm run build` dan perbaiki sampai sukses.
+
+==================================================
+BATASAN
+=======
+
+Jangan sambungkan ke database/admin dulu kecuali struktur sudah tersedia. Untuk tahap ini boleh pakai fallback/dummy data yang rapi dan realistis.
+
+Jangan hapus:
+
+* Doa
+* Panduan
+* Counter Tawaf
+* Counter Sa’i
+* Checklist
+* Jurnal
+* Sertifikat
+* Agenda
+* Pengumuman
+* Kartu Jamaah
+
+Jangan membuat desain terlalu ramai. Fokus pada hierarchy dan kegunaan.
+
+==================================================
+OUTPUT YANG DIHARAPKAN
+======================
+
+Setelah selesai, jelaskan:
+
+1. File apa saja yang diubah.
+2. Komponen apa saja yang ditambahkan.
+3. Flow dashboard baru.
+4. Cara test manual.
+5. Hasil `npm run build`.
+
+Kerjakan bertahap dan hati-hati. Jangan rebuild project dari nol.

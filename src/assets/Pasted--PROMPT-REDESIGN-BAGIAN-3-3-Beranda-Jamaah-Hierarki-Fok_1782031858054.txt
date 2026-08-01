@@ -1,0 +1,66 @@
+# PROMPT REDESIGN (BAGIAN 3/3) — Beranda Jamaah: Hierarki Fokus + Countdown H-30 + Agenda Hari Ini
+
+> Prasyarat: Bagian 1 & 2 (skema database + admin bisa isi tanggal & agenda) harus sudah selesai. Prasyarat lain: migrasi login jamaah ke database (`tenant` tersedia lewat `useAuth()`, bukan lagi `activeTenant` statis) idealnya juga sudah selesai — prompt ini mengasumsikan `useAuth()` mengembalikan `tenant: TenantRow | null` yang sudah berisi `tanggal_keberangkatan` dari Bagian 1.
+>
+> Masalah yang diperbaiki: Beranda saat ini menampilkan terlalu banyak elemen dengan bobot visual yang SETARA (6 chip akses cepat, kartu fase, progress, grid 3 fitur terpisah, sertifikat) — jamaah harus "mencari-cari" mana yang relevan untuk mereka SEKARANG, bukan langsung diarahkan. Redesign ini membangun HIERARKI: satu fokus utama besar di posisi paling atas (berbeda tergantung fase + kedekatan tanggal keberangkatan), baru elemen pendukung di bawahnya.
+
+## STRUKTUR BARU BERANDA MOBILE (dari atas ke bawah)
+
+### 1. Hero — TETAP seperti sekarang
+Foto masjid, sapaan nama jamaah, logo tenant. Tidak diubah.
+
+### 2. Kartu Fokus Utama (BARU — gantikan posisi "Kartu Fase" lama, naik ke urutan PALING ATAS setelah hero, sebelum chip akses cepat)
+
+Satu kartu besar, isinya BERBEDA tergantung kondisi (urutan prioritas dari atas — pakai kondisi PERTAMA yang cocok):
+
+**a. Jika `tenant.tanggal_keberangkatan` ada DAN selisih hari ke tanggal tersebut antara 1-30 hari (belum berangkat):**
+- Tampilkan angka besar "H-{n}" sebagai elemen visual utama kartu (font besar, mirip ukuran angka jam di JadwalSholat).
+- Di bawahnya: "Menuju keberangkatan bersama {nama_travel}".
+- CTA: ke checklist persiapan (`/profil/persiapan`), karena ini fase paling relevan untuk mempersiapkan diri.
+
+**b. Jika fase jamaah adalah `tanah-suci` (sudah berangkat) DAN ada agenda untuk hari ini (`agenda_items` dengan `tanggal` = hari ini, milik tenant aktif):**
+- Tampilkan label "Agenda Hari Ini" + tanggal.
+- List 2-3 item agenda terdekat (jam + judul + lokasi jika ada), diurutkan berdasarkan `jam_mulai`.
+- Jika ada lebih dari 3 item, tampilkan "+{n} agenda lainnya" sebagai link ke halaman agenda lengkap (lihat poin 5 di bawah, perlu dibuat).
+- CTA: "Lihat Semua Agenda" jika ada agenda, ATAU jika TIDAK ADA agenda hari ini, fallback ke CTA Ritual Navigator yang sudah ada ("Lanjutkan Panduan Hari Ini" ke `/ibadah/navigator`).
+
+**c. Fallback (tidak ada tanggal keberangkatan terisi, ATAU lewat dari 30 hari, ATAU fase `selesai`):**
+- Gunakan kartu fase yang SUDAH ADA sekarang (3 kotak fase + CTA sesuai fase) — JANGAN diubah, ini sudah berfungsi baik sebagai fallback ketika data agenda/tanggal belum tersedia.
+
+### 3. Chip akses cepat — TETAP ada, urutan boleh disesuaikan ringan
+Pertahankan struktur 6 chip yang sudah ada (Doa, Ihram, Tawaf, Sa'i, Peta, Sholat). Detail kecil, tidak wajib diubah signifikan — prioritaskan poin 2 dan 4.
+
+### 4. Semua Fitur — GABUNGKAN section "Grid Fitur" (3 kotak: Tata Cara/Ihram/Peta) dengan fitur-fitur yang SAAT INI TIDAK MUNCUL di Beranda sama sekali: Jurnal (`/profil/jurnal`), Manasik Interaktif (`/panduan/manasik-interaktif`), Tahallul (`/ibadah/tahallul`), Ritual Navigator (`/ibadah/navigator`, kecuali sudah jadi CTA utama di poin 2b).
+
+Jadikan SATU grid konsisten (bukan dipecah jadi dua section terpisah seperti sekarang, itu sumber kebingungan utama), dengan label section yang jelas, misalnya "Jelajahi Semua Fitur". Grid boleh lebih dari 3 baris untuk menampung semua item, gunakan `grid-cols-3` yang sudah ada, biarkan wrap ke beberapa baris secara natural.
+
+### 5. Halaman baru: Daftar Agenda Lengkap (`/profil/agenda`)
+Buat halaman baru sederhana yang menampilkan SEMUA `agenda_items` milik tenant aktif, dikelompokkan per tanggal (misalnya "Senin, 15 Maret 2026" sebagai header, lalu list item di bawahnya), urut kronologis. Gunakan `PageHeader` yang sudah ada (pola yang sama dengan halaman lain seperti `JadwalSholat.tsx`) untuk konsistensi. Daftarkan route ini di `App.tsx` di dalam `<ProtectedRoute>` yang sama dengan halaman jamaah lainnya.
+
+### 6. Progress Persiapan & Sertifikat — TETAP seperti sekarang, posisi di bawah grid fitur (poin 4)
+
+## PERHITUNGAN H-{n}
+
+```ts
+function hitungHariMenuju(tanggalISO: string): number {
+  const target = new Date(tanggalISO + 'T00:00:00');
+  const sekarang = new Date();
+  sekarang.setHours(0, 0, 0, 0);
+  const selisihMs = target.getTime() - sekarang.getTime();
+  return Math.ceil(selisihMs / (1000 * 60 * 60 * 24));
+}
+```
+Tampilkan kartu H-{n} HANYA jika hasilnya antara 1 dan 30 (inklusif). Jika 0 atau negatif (hari-H atau sudah lewat), JANGAN tampilkan H-{n}, fallback ke kondisi (b) atau (c) di atas, karena pada titik itu jamaah seharusnya sudah dalam fase `tanah-suci`.
+
+## YANG TIDAK BOLEH BERUBAH
+
+- Hero, chip akses cepat (strukturnya), kartu fase lama (dipertahankan sebagai fallback poin 2c), progress checklist, dan section sertifikat — semuanya TETAP ADA, hanya DIURUTKAN ULANG dan diberi kondisi tambahan, bukan dihapus.
+- Desktop layout (`hidden lg:block` bento grid) — TIDAK disentuh oleh prompt ini, fokus hanya pada mobile (`lg:hidden`). Jika ingin diterapkan ke desktop juga, itu permintaan terpisah.
+- Data source (`urutanFase`, `faseDesc`, dll yang sudah ada) — tidak diubah.
+- Sistem warna tenant (`var(--color-primary)`) — semua elemen baru harus memakai token warna yang sudah ada, bukan hex baru.
+
+## OUTPUT
+
+1. Jalankan `pnpm run typecheck` — pastikan 0 error.
+2. Jalankan `pnpm run build` — pastikan build sukses.
+3. Tunjukkan preview Beranda untuk 3 kondisi berbeda sebagai bukti hierarki fokus bekerja: (a) tenant dengan `tanggal_keberangkatan` 15 hari dari sekarang, kartu H-15 muncul di posisi atas; (b) jamaah fase `tanah-suci` dengan agenda hari ini terisi, kartu "Agenda Hari Ini" muncul; (c) tenant tanpa tanggal keberangkatan sama sekali, fallback ke kartu fase lama, tidak ada elemen kosong/rusak.

@@ -1,0 +1,74 @@
+# PROMPT REVISI — Redesign Mobile Beranda + Halaman Baru "Jadwal Sholat"
+
+> Konteks: project Umrahme (React+Vite+TS+Tailwind) sudah punya mobile UI yang berfungsi baik (bottom nav 5 slot, mihrab card, Counter Tawaf & Sa'i yang sudah teruji). Revisi ini terinspirasi referensi mobile app islami bergaya hijau-emas terang dengan story-circle, gauge jadwal sholat, dan card list — TAPI Umrahme TETAP hitam-pink, hanya STRUKTUR LAYOUT-nya yang diadaptasi, bukan warnanya. Tidak ada fitur sosial/feed yang ditambahkan — itu di luar scope.
+
+Scope: (1) Restyle Beranda mobile mengikuti struktur referensi (header + story-circle row + card promosi), (2) Halaman BARU "Jadwal Sholat" memakai struktur gauge dari referensi. Desktop (≥1024px) TIDAK disentuh oleh prompt ini — itu sudah dikerjakan terpisah.
+
+---
+
+## YANG DIAMBIL DARI REFERENSI (struktur, bukan warna)
+
+1. **Header sapaan + lokasi**: "Assalamualaikum!" + nama kota kecil di bawahnya, dengan ikon notifikasi bulat di kanan atas. Untuk Umrahme: ganti jadi sapaan nama jamaah (sudah ada), tambahkan baris kecil di bawahnya berisi fase saat ini atau lokasi (jika di Tanah Suci, bisa tampilkan "Makkah" atau "Madinah" — untuk MVP boleh statis/dummy).
+2. **Story-circle row**: baris avatar bulat horizontal-scroll di referensi menampilkan tempat-tempat suci dengan badge "LIVE". Untuk Umrahme: ganti jadi row akses cepat berbentuk lingkaran ke kategori-kategori penting — bukan untuk "live streaming", tapi sebagai shortcut visual ke: Doa, Ihram, Tawaf, Sa'i, Peta (5 lingkaran). Tiap lingkaran pakai ikon, bukan foto tempat, dan TIDAK ada badge "LIVE" (tidak relevan untuk Umrahme) — boleh diganti badge kecil lain yang relevan jika ada makna (misal badge centang kecil untuk fitur yang progress-nya sudah ada, contoh: Persiapan dengan progress > 0%).
+3. **Kartu promosi besar dengan CTA**: di referensi "Explore Ramadan" dengan tombol "Watch Ramadan Special". Untuk Umrahme: ganti jadi kartu fase perjalanan yang sudah ada di Beranda saat ini ("Siapkan Perjalanan Anda" dsb), tapi di-restyle mengikuti proporsi referensi — lebih besar, dengan ornamen islami halus di background (bukan foto Ka'bah literal, tapi pattern geometris tipis konsisten dengan design system Umrahme), dan CTA button yang jelas.
+4. **Card list dengan progress bar**: seperti "Do You Fast Today? 06/30" di referensi. Untuk Umrahme: pakai pola ini untuk menampilkan ringkas progress Persiapan (checklist) langsung di Beranda — card kecil dengan progress bar dan angka "X/Y item selesai", tap untuk masuk ke halaman Persiapan penuh.
+5. **Struktur gauge arc** (dari halaman "Prayer Time" di referensi): arc besar setengah lingkaran dengan waktu di tengah, dua info kecil di kiri-kanan bawah arc (di referensi: Fajr & Iftar). Dipakai di halaman baru Jadwal Sholat (lihat bagian bawah).
+6. **Card list waktu dengan ikon kiri + toggle kanan**: pola "Fazr 04:35 AM-05:15 AM" dengan ikon matahari dan toggle suara di referensi. Dipakai di halaman baru Jadwal Sholat untuk list 5 waktu sholat.
+
+## YANG TIDAK DIAMBIL (eksplisit ditolak)
+
+- TIDAK ikut warna hijau-emas terang — tetap pakai token Umrahme (`ink-950/900/800`, `rose-600/400`, `gold-400`, `parchment-100`, `mute-500`).
+- TIDAK ada feed sosial (postingan orang lain, like, share, foto dari user lain) — di luar scope.
+- TIDAK ada foto manusia/wajah.
+- TIDAK mengganti Counter Tawaf atau Counter Sa'i dengan gauge — keduanya tetap dengan desain tombol-tap-raksasa yang sudah ada dan teruji, TIDAK disentuh oleh prompt ini.
+- TIDAK menambah badge "LIVE" atau elemen yang menyiratkan siaran langsung — tidak relevan untuk konteks Umrahme.
+
+---
+
+## BAGIAN 1 — RESTYLE BERANDA MOBILE
+
+Susun ulang `Beranda.tsx` (khusus tampilan mobile, <1024px) mengikuti urutan struktur berikut dari atas ke bawah:
+
+1. **Header**: sapaan nama jamaah (sudah ada) + baris kecil tambahan di bawahnya (fase saat ini, gaya label seperti referensi: kecil, redup, dengan ikon lokasi/chevron kecil) + ikon notifikasi bulat di kanan atas (boleh dummy/non-fungsional untuk MVP, atau hilangkan jika tidak ada fitur notifikasi sama sekali — jangan buat ikon kosong yang menjanjikan fitur yang tidak ada).
+2. **Row lingkaran akses cepat** (horizontal scroll, 5 lingkaran): Doa, Ihram, Tawaf, Sa'i, Peta — ikon di tengah lingkaran, label kecil di bawah tiap lingkaran, border tipis gold mengikuti gaya mihrab/sakral yang sudah jadi identitas Umrahme. Tap langsung menuju halaman terkait.
+3. **Kartu fase perjalanan** (versi restyle dari kartu "Siapkan Perjalanan Anda" yang sudah ada): lebih besar dari sebelumnya, dengan pattern geometris islami sangat halus di background (opacity rendah, tidak mengganggu keterbacaan teks), CTA button jelas mengarah ke halaman terkait fase tersebut.
+4. **Card progress Persiapan**: card ringkas dengan progress bar + "X dari Y item selesai", tap untuk ke halaman Persiapan.
+5. **Grid akses fitur lainnya**: pertahankan grid kartu fitur yang sudah ada di bawahnya (Tata Cara, Panduan Ihram, Peta Lokasi, Sertifikat, dst) — TIDAK perlu di-restyle drastis, cukup pastikan konsisten secara visual dengan elemen baru di atasnya.
+
+Pertahankan mihrab card (lengkung gold) sebagai elemen pada kartu-kartu besar di Beranda — JANGAN diganti jadi lingkaran/rounded-rect polos seperti gaya referensi.
+
+---
+
+## BAGIAN 2 — HALAMAN BARU: JADWAL SHOLAT
+
+Buat halaman baru `JadwalSholat.tsx` di `src/pages/`, dengan struktur:
+
+1. **Header**: tombol kembali kiri atas (konsisten dengan semua halaman dalam lainnya) + judul "Jadwal Sholat" di tengah/kiri.
+2. **Gauge arc besar**: setengah lingkaran (atau lebih, sesuaikan proporsi) menampilkan waktu saat ini di tengah (format besar, font display Fraunces atau mono untuk angka — pilih yang lebih sesuai dengan gaya angka di Counter Tawaf yang sudah ada agar konsisten), dengan nama lokasi kecil di atas waktu (misal "Makkah, Arab Saudi" — dummy/statis untuk MVP). Arc digambar dengan gradient `rose-600` ke `gold-400` mengikuti progress hari (opsional, atau cukup warna `rose-400` solid jika progress real-time tidak diimplementasikan untuk MVP ini — gunakan data dummy/statis, JANGAN buat logic perhitungan waktu sholat sungguhan, itu di luar scope MVP).
+3. **Dua info kecil di bawah arc, kiri-kanan**: waktu sholat pertama dan terakhir hari itu (mengikuti pola Fajr/Iftar di referensi) — untuk Umrahme pakai "Subuh" dan "Isya".
+4. **List 5 waktu sholat** di bawah arc: Subuh, Dzuhur, Ashar, Maghrib, Isya — tiap baris: ikon kecil kiri (boleh ikon matahari/bulan sederhana sesuai waktu), nama waktu + rentang jam (data dummy, format "HH:MM - HH:MM"), dan toggle kecil di kanan untuk notifikasi adzan (boleh non-fungsional/UI-only untuk MVP, state default "aktif").
+5. Tambahkan rute baru `/ibadah/jadwal-sholat` di `App.tsx`, sebagai sibling dari `/ibadah/tawaf` dan `/ibadah/sai`. Di halaman `Ibadah.tsx` (hub), tambahkan kartu akses ke Jadwal Sholat — pastikan tetap memenuhi prinsip maksimal 2 tap dari Beranda.
+6. Tambahkan juga satu lingkaran akses cepat untuk Jadwal Sholat di row 5-lingkaran Beranda (lihat Bagian 1) — JIKA itu berarti row jadi 6 lingkaran, biarkan row tetap horizontal-scroll (sudah direncanakan scroll di poin 2 atas), jangan dipaksa muat 6 dalam satu layar.
+
+Desain halaman ini tetap tenang dan jelas (prinsip Mode A — dipakai untuk lihat info, bukan aksi cepat darurat seperti Counter Tawaf), tapi boleh memiliki kesan sedikit lebih "hidup" dibanding Counter Tawaf karena sifatnya informasional bukan task-tracking.
+
+---
+
+## ATURAN YANG TETAP BERLAKU
+
+- Semua token warna, font, dan elemen mihrab card dari design system tetap dipakai persis sama.
+- Counter Tawaf dan Counter Sa'i TIDAK disentuh sama sekali oleh prompt ini.
+- Desktop (≥1024px) TIDAK disentuh oleh prompt ini.
+- Tidak ada logic perhitungan waktu sholat sungguhan (geolocation, API, dll) — semua data Jadwal Sholat untuk MVP ini bersifat dummy/statis, simpan di `src/data/` mengikuti pola file data lain yang sudah ada.
+- Hormati `prefers-reduced-motion`.
+- Touch target minimal 44px untuk semua elemen interaktif baru (lingkaran akses cepat, toggle, dsb).
+
+---
+
+## OUTPUT YANG DIHARAPKAN
+
+Sebelum membangun, tampilkan dulu rencana singkat: konfirmasi struktur baru Beranda (urutan 5 bagian di atas), dan struktur data dummy untuk Jadwal Sholat (interface TypeScript-nya).
+
+Build dimulai dari restyle Beranda, lalu halaman baru Jadwal Sholat, lalu update routing dan hub Ibadah.
+
+Setelah selesai, lakukan **self-review**: pastikan Counter Tawaf/Sa'i benar-benar tidak berubah, dan pastikan row lingkaran akses cepat di Beranda tidak terasa seperti meniru "story" media sosial (tidak ada badge LIVE, tidak ada kesan konten orang lain) — murni sebagai shortcut navigasi.

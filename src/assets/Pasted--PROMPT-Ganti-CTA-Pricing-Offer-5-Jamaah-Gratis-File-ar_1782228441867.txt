@@ -1,0 +1,115 @@
+# PROMPT: Ganti CTA Pricing — Offer 5 Jamaah Gratis
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Ganti penawaran CTA di pricing card dan hero jadi lebih konkret & menarik: **5 jamaah pertama GRATIS**. Ini jauh lebih powerful dari sekadar "coba gratis" karena owner travel bisa langsung buktikan value-nya tanpa bayar.
+
+---
+
+## PERUBAHAN 1 — Micro-copy di atas tombol pricing
+
+**Cari:**
+```
+Coba gratis dulu — tanpa risiko, tanpa komitmen.
+```
+**Ganti:**
+```
+Coba gratis untuk 5 jamaah pertama Anda — tanpa syarat.
+```
+
+---
+
+## PERUBAHAN 2 — Tombol utama pricing
+
+**Cari:**
+```
+Mulai Sekarang — Gratis Dulu
+```
+*(yang di dalam pricing card)*
+**Ganti:**
+```
+Mulai Gratis — 5 Jamaah Pertama
+```
+
+---
+
+## PERUBAHAN 3 — Sub-teks di bawah angka harga pricing
+
+**Cari:**
+```
+Investasi kecil per jamaah yang langsung terbayar dari hemat biaya cetak — dan terus memberi nilai di setiap keberangkatan.
+```
+**Ganti:**
+```
+Mulai dengan 5 jamaah pertama secara gratis. Rasakan sendiri sebelum memutuskan — tanpa risiko, tanpa komitmen.
+```
+
+---
+
+## PERUBAHAN 4 — Tombol CTA hero
+
+**Cari:**
+```
+Coba Gratis Sekarang
+```
+*(yang di hero section)*
+**Ganti:**
+```
+Coba Gratis — 5 Jamaah Pertama
+```
+
+---
+
+## PERUBAHAN 5 — Sub-heading section pricing
+
+**Cari:**
+```
+Bandingkan: buku doa cetak hanya memberi jamaah satu buku. Umrahme memberi 12 fitur lengkap, bermerek travel Anda — dengan biaya yang justru lebih ringan.
+```
+**Ganti:**
+```
+Mulai gratis dengan 5 jamaah pertama. Tidak perlu kartu kredit, tidak perlu kontrak — cukup daftar dan rasakan langsung.
+```
+
+---
+
+## PERUBAHAN 6 — Tombol CTA akhir (final CTA section)
+
+**Cari:**
+```
+Minta Demo Gratis via WhatsApp
+```
+**Ganti:**
+```
+Klaim 5 Jamaah Gratis via WhatsApp
+```
+
+**Cari:**
+```
+Pelajari Lebih Lanjut
+```
+*(tombol sekunder di CTA akhir)*
+**Ganti:**
+```
+Lihat Cara Kerjanya
+```
+
+---
+
+## PERUBAHAN 7 — Sub-teks final CTA
+
+**Cari:**
+```
+Jamaah lebih tenang. Muthowif lebih fokus. Travel Anda tampil lebih profesional. Mulai dengan demo gratis — kami setup langsung dengan nama travel Anda.
+```
+**Ganti:**
+```
+Daftar sekarang dan dapatkan 5 jamaah pertama secara gratis. Kami setup aplikasi dengan nama dan logo travel Anda — tanpa biaya, tanpa komitmen.
+```
+
+---
+
+## ATURAN
+- Jangan ubah warna, layout, logika, atau konten lain.
+- Pastikan konsisten: semua CTA sekarang bicara soal "5 jamaah gratis", bukan "demo gratis" yang lebih abstrak.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

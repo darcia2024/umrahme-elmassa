@@ -1,0 +1,52 @@
+# PROMPT FIX — Hapus Toggle Fase Manual + Tampilkan Info Fase Otomatis
+
+> Konteks: di `src/pages/Profil.tsx` masih ada toggle manual fase (Persiapan / Di Tanah Suci / Selesai) dengan keterangan "Ganti fase manual untuk demo. Pada versi final, fase berubah otomatis..." — ini harus DIHAPUS karena fase sekarang sudah otomatis dari `hitungFaseEfektif()` berdasarkan tanggal keberangkatan/kepulangan tenant.
+>
+> PENTING: Fase otomatis hanya bekerja kalau `tanggal_keberangkatan` tenant diisi. Untuk demo (tenant DEMO01), tambahkan fallback yang elegan kalau tanggal belum diisi.
+
+## 1. Hapus toggle manual di `Profil.tsx`
+
+Cari dan hapus SELURUH block UI toggle fase yang berisi tombol-tombol "Persiapan", "Di Tanah Suci", "Selesai" beserta keterangan "Ganti fase manual untuk demo..." — ada di 2 tempat (mobile dan desktop section).
+
+Ganti dengan tampilan informasi fase yang lebih informatif:
+
+```tsx
+{/* Fase info — gantikan toggle manual */}
+<div className="rounded-xl border border-hairline bg-surface-bone px-3.5 py-3 text-center">
+  <p className="font-mono text-[8px] uppercase tracking-[0.2em] text-mute mb-1">Fase Perjalanan</p>
+  <p className="text-[13px] font-semibold text-ink">
+    {jamaah.fase === 'persiapan' && 'Persiapan Keberangkatan'}
+    {jamaah.fase === 'tanah-suci' && 'Di Tanah Suci'}
+    {jamaah.fase === 'selesai' && 'Ibadah Selesai'}
+  </p>
+  <p className="text-[10px] text-mute mt-0.5">Diperbarui otomatis sesuai jadwal travel</p>
+</div>
+```
+
+## 2. Hapus juga di `Sertifikat.tsx`
+
+Cari keterangan "(Tombol untuk demo. Pada versi final, sertifikat terbit otomatis setelah ibadah..." dan hapus teks tersebut — tombol sertifikatnya boleh tetap ada, hanya keterangan demo-nya yang dihapus.
+
+## 3. Pastikan `hitungFaseEfektif` menangani demo dengan baik
+
+Di `src/data/jamaah.ts`, fungsi `hitungFaseEfektif` sudah ada. Pastikan ada komentar yang jelas bahwa untuk demo, admin harus mengisi `tanggal_keberangkatan` di tenant agar fase otomatis berjalan. Tambahkan komentar ini di atas fungsi:
+
+```ts
+/**
+ * UNTUK DEMO: pastikan tenant sudah diisi tanggal_keberangkatan dan tanggal_kepulangan
+ * di admin panel (/admin → edit tenant) agar fase berubah otomatis.
+ * Jika tanggal kosong, fase default ke 'persiapan'.
+ */
+```
+
+## YANG TIDAK BOLEH DIUBAH
+
+- Logic `hitungFaseEfektif` — tidak diubah
+- `PhaseIndicator` component — tetap ada di Profil
+- Semua fitur lain di Profil.tsx dan Sertifikat.tsx — tidak disentuh
+
+## OUTPUT
+
+1. `pnpm run typecheck` — 0 error
+2. `pnpm run build` — sukses
+3. Konfirmasi: tidak ada lagi teks "Ganti fase manual untuk demo" di seluruh codebase

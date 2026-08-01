@@ -1,0 +1,958 @@
+# PROMPT: Rewrite Total Copy Landing Page Umrahme — Sales-Driven
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+**Aturan keras:** HANYA ganti string teks. Jangan sentuh style, className, JSX structure, logika, animasi, apapun selain teks. Kalau ragu, skip dan catat.
+
+---
+
+## KONTEKS BISNIS (baca dulu, pahami sebelum ganti)
+
+**Produk:** Umrahme — aplikasi pendamping umrah white-label.
+**Pembeli:** Owner/direktur travel umrah Indonesia.
+**Yang mereka bayar:** 10 SAR per jamaah per keberangkatan (~Rp 45.000).
+**Yang mereka dapat:** Aplikasi bermerek nama travel mereka sendiri, isi lengkap — 55+ doa, manasik interaktif, counter tawaf/sa'i, peta 10 lokasi ziarah + sejarah, agenda harian, kartu jamaah digital, jadwal sholat, sertifikat & jurnal, portal kelola jamaah, kirim pengumuman real-time.
+**Pain point terbesar mereka:**
+1. Biaya cetak buku doa 15–25 SAR per jamaah, sering hilang, tidak pernah dibaca.
+2. Muthowif kewalahan jawab pertanyaan berulang ("doanya apa?", "jadwal hari ini?", "hotel kita di mana?").
+3. Broadcast info mendadak susah — WA grup kacau, tidak semua baca.
+4. Mau terlihat profesional tapi tidak punya budget besar untuk bikin app sendiri.
+
+**Janji utama yang harus terasa di seluruh copy:**
+- Hemat biaya (lebih murah dari buku doa cetak)
+- Mudah (tidak butuh tim IT, aktif dalam hitungan menit)
+- Profesional (app bermerek travel sendiri)
+- Jamaah lebih tenang, muthowif lebih fokus
+
+---
+
+## PERUBAHAN COPY — GANTI SATU PER SATU
+
+### HERO
+
+**[H1] Cari:**
+```
+Aplikasi Umrah{' '}
+            <span style={{ color: C.accent, fontStyle: 'italic' }}>Nama Travel Anda</span>
+```
+**Ganti:**
+```
+Aplikasi Umrah{' '}
+            <span style={{ color: C.accent, fontStyle: 'italic' }}>Bermerek Travel Anda</span>
+```
+
+**[Subheadline] Cari:**
+```
+Ganti buku doa cetak. Ringankan kerja muthowif. Beri jamaah panduan ibadah lengkap — langsung di HP mereka. White-label penuh, hanya <strong>10 SAR per jamaah</strong>.
+```
+**Ganti:**
+```
+Buku doa cetak Anda habis 15–25 SAR per jamaah — dan sering tidak dibaca. Umrahme menggantikannya seharga <strong>10 SAR</strong>, lengkap dengan panduan ibadah, jadwal, dan komunikasi travel. Semua bermerek nama travel Anda.
+```
+
+**[Social proof] Cari:**
+```
+Siap untuk keberangkatan umrah Anda berikutnya
+```
+**Ganti:**
+```
+Lebih hemat dari buku doa cetak. Lebih profesional dari grup WhatsApp.
+```
+
+**[Tombol primer] Cari:**
+```
+Daftar Sekarang
+```
+*(yang di hero, bukan di navbar)*
+**Ganti:**
+```
+Coba Gratis Sekarang
+```
+
+**[Tombol sekunder] Cari:**
+```
+Lihat Demo →
+```
+**Ganti:**
+```
+Lihat Cara Kerjanya
+```
+
+---
+
+### FLOATING CARDS
+
+**[Card tawaf — label] Cari:**
+```
+Putaran berjalan
+```
+**Ganti:**
+```
+Jamaah tidak salah hitung
+```
+
+**[Card tawaf — sub] Cari:**
+```
+Counter otomatis
+```
+**Ganti:**
+```
+Doa per putaran otomatis
+```
+
+**[Card doa — sub] Cari:**
+```
+Arab · Latin · Terjemah
+```
+**Ganti:**
+```
+Gratis cetak. Tidak hilang.
+```
+
+**[Card pengumuman — angka] Cari:**
+```
+Live
+```
+**Ganti:**
+```
+Instan
+```
+
+**[Card pengumuman — sub] Cari:**
+```
+Broadcast ke jamaah
+```
+**Ganti:**
+```
+Semua jamaah langsung terima
+```
+
+**[Card jadwal sholat — sub] Cari:**
+```
+Subuh · Makkah
+```
+**Ganti:**
+```
+Otomatis · Akurat
+```
+
+---
+
+### MARQUEE / PARTNERS
+
+**[Label marquee] Cari:**
+```
+DIGUNAKAN OLEH TRAVEL AGENCY UMRAH DI SELURUH INDONESIA
+```
+**Ganti:**
+```
+BERGABUNGLAH BERSAMA TRAVEL UMRAH YANG LEBIH MODERN
+```
+
+---
+
+### BENTO / ABOUT
+
+**[Heading section] Cari:**
+```
+Platform pendamping umrah yang dirancang untuk travel modern dan jamaah
+```
+**Ganti:**
+```
+Satu keputusan. Jamaah lebih tenang. Travel lebih profesional.
+```
+
+**[Stat kiri — judul card] Cari:**
+```
+White-Label Penuh
+```
+**Ganti:**
+```
+Bermerek Travel Anda
+```
+
+**[Stat kiri — sub] Cari:**
+```
+Logo & nama travel Anda tampil di seluruh aplikasi jamaah
+```
+**Ganti:**
+```
+Jamaah melihat nama Anda — bukan Umrahme — di setiap halaman
+```
+
+**[Quote tengah] Cari:**
+```
+"Muthowif kami tidak lagi kewalahan menjawab pertanyaan berulang. Semua sudah terjawab di aplikasi."
+```
+**Ganti:**
+```
+"Pertanyaan jamaah berkurang drastis. Muthowif bisa fokus membimbing, bukan menjelaskan hal yang sama berulang kali."
+```
+
+**[Stat bento kanan atas — sub] Cari:**
+```
+Doa lengkap dalam 9 kategori, siap dibaca jamaah.
+```
+**Ganti:**
+```
+Doa lengkap siap pakai — jamaah tidak perlu buku cetak lagi.
+```
+
+**[Stat bento kanan bawah — label] Cari:**
+```
+Biaya bulanan
+```
+**Ganti:**
+```
+Biaya setup &
+```
+
+**[Stat bento kanan bawah — sub label] Cari:**
+```
+& setup
+```
+**Ganti:**
+```
+langganan bulanan
+```
+
+---
+
+### PAIN POINTS
+
+**[Heading] Cari:**
+```
+Tantangan yang dihadapi hampir semua travel umrah
+```
+**Ganti:**
+```
+Masih begini setiap keberangkatan?
+```
+
+**[Sub heading] Cari:**
+```
+Masalah yang sama, berulang setiap keberangkatan. Umrahme hadir untuk mengatasinya.
+```
+**Ganti:**
+```
+Jika iya, Anda tidak sendirian. Dan ada cara yang lebih baik.
+```
+
+**[Pain 1 — title] Cari:**
+```
+Jamaah bingung & ketinggalan info
+```
+**Ganti:**
+```
+"Jadwal hari ini apa, Pak?"
+```
+
+**[Pain 1 — desc] Cari:**
+```
+Info penting tersebar di mana-mana, banyak jamaah yang tertinggal dan terus bertanya.
+```
+**Ganti:**
+```
+Pertanyaan yang sama dijawab berkali-kali. Oleh muthowif. Oleh tour leader. Oleh siapa saja yang bisa ditanya.
+```
+
+**[Pain 2 — title] Cari:**
+```
+Muthowif menjelaskan berulang
+```
+**Ganti:**
+```
+Muthowif lelah sebelum ibadah dimulai
+```
+
+**[Pain 2 — desc] Cari:**
+```
+Hal yang sama dijelaskan berkali-kali ke jamaah berbeda sepanjang perjalanan.
+```
+**Ganti:**
+```
+Energi terkuras untuk hal-hal teknis — padahal tugas utama muthowif adalah membimbing ibadah, bukan menjawab WhatsApp.
+```
+
+**[Pain 3 — title] Cari:**
+```
+Buku doa fisik hilang
+```
+**Ganti:**
+```
+Buku doa cetak mahal dan percuma
+```
+
+**[Pain 3 — desc] Cari:**
+```
+Buku doa cetak sering tertinggal, rusak, atau tidak pernah dibaca jamaah.
+```
+**Ganti:**
+```
+15–25 SAR per eksemplar. Tertinggal di hotel. Rusak kehujanan. Atau tidak pernah dibuka sama sekali.
+```
+
+**[Pain 4 — title] Cari:**
+```
+Susah broadcast mendadak
+```
+**Ganti:**
+```
+Info penting tenggelam di grup WA
+```
+
+**[Pain 4 — desc] Cari:**
+```
+Broadcast mendadak lewat WA grup sering tertimbun pesan lain — tidak semua jamaah membaca.
+```
+**Ganti:**
+```
+Jadwal berubah mendadak? Pesan penting tertimbun 200 pesan meme dan stiker. Tidak ada yang baca.
+```
+
+**[Pain 5 — title] Cari:**
+```
+Koordinasi melelahkan
+```
+**Ganti:**
+```
+Semua dikerjakan manual
+```
+
+**[Pain 5 — desc] Cari:**
+```
+Info hotel, jadwal, doa — semua mesti dikirim ulang tiap ada jamaah yang tanya.
+```
+**Ganti:**
+```
+Data jamaah di Excel. Jadwal di kertas. Pengumuman via WA. Tidak ada satu sistem yang menyatukan semuanya.
+```
+
+**[Pain 6 — title] Cari:**
+```
+Tak ada identitas digital
+```
+**Ganti:**
+```
+Travel lain sudah punya aplikasi
+```
+
+**[Pain 6 — desc] Cari:**
+```
+Travel lain sudah punya aplikasi bermerek sendiri. Calon jamaah menilai profesionalisme dari sana.
+```
+**Ganti:**
+```
+Calon jamaah membandingkan. Travel yang punya aplikasi sendiri terlihat lebih siap, lebih profesional, lebih dipercaya.
+```
+
+---
+
+### FITUR
+
+**[Heading] Cari:**
+```
+Semua yang jamaah butuhkan, dalam satu aplikasi
+```
+**Ganti:**
+```
+12 fitur siap pakai. Tanpa biaya tambahan.
+```
+
+**[Sub heading] Cari:**
+```
+Sudah jadi, siap pakai. Tinggal aktifkan untuk keberangkatan Anda.
+```
+**Ganti:**
+```
+Semuanya sudah ada dan langsung aktif begitu Anda daftar. Tidak perlu pengembangan, tidak perlu tim IT.
+```
+
+**[Fitur 01 — title] Cari:**
+```
+Buku Doa Digital
+```
+**Ganti:**
+```
+55+ Doa Lengkap
+```
+
+**[Fitur 01 — desc] Cari:**
+```
+55+ doa lengkap Arab, latin, dan terjemahan. Jamaah mengikuti langsung saat muthowif menjelaskan — tanpa buku cetak.
+```
+**Ganti:**
+```
+Arab, latin, terjemahan — semua ada. Jamaah buka HP, langsung ikuti saat muthowif menjelaskan. Tidak perlu cetak buku lagi.
+```
+
+**[Fitur 02 — desc] Cari:**
+```
+Penghitung otomatis putaran 1–7 lengkap dengan doa di setiap putaran, agar ibadah lebih khusyuk.
+```
+**Ganti:**
+```
+Hitung putaran otomatis, doa muncul sendiri di tiap putaran. Jamaah fokus ibadah, bukan sibuk hitung.
+```
+
+**[Fitur 03 — desc] Cari:**
+```
+Tuntunan step by step dari manasik interaktif hingga panduan ihram, mudah diikuti siapa saja.
+```
+**Ganti:**
+```
+Panduan step-by-step yang bisa dipelajari jamaah sebelum berangkat. Mereka tiba di tanah suci sudah siap.
+```
+
+**[Fitur 04 — desc] Cari:**
+```
+Info dan peta tempat bersejarah di Makkah dan Madinah, lengkap dengan keterangan.
+```
+**Ganti:**
+```
+10 lokasi ziarah lengkap dengan sejarah, tokoh, dalil, dan link Google Maps. Jamaah tidak perlu bertanya arah.
+```
+
+**[Fitur 05 — desc] Cari:**
+```
+Waktu sholat akurat sesuai lokasi jamaah secara otomatis sepanjang perjalanan.
+```
+**Ganti:**
+```
+Waktu sholat otomatis sesuai lokasi — Makkah, Madinah, atau di perjalanan. Tidak ada alasan terlewat.
+```
+
+**[Fitur 06 — desc] Cari:**
+```
+Broadcast pengumuman dari travel ke seluruh jamaah secara instan dan tersampaikan.
+```
+**Ganti:**
+```
+Kirim pengumuman dari portal travel — muncul langsung di HP semua jamaah. Lebih cepat dan pasti terbaca.
+```
+
+**[Fitur 07 — desc] Cari:**
+```
+Travel mengisi agenda perjalanan harian, jamaah melihat jadwal lengkap tiap hari.
+```
+**Ganti:**
+```
+Isi agenda sekali di portal, jamaah lihat jadwal hari ini otomatis. Tidak ada lagi pertanyaan "hari ini kita ke mana?".
+```
+
+**[Fitur 08 — desc] Cari:**
+```
+Identitas digital berisi data lengkap jamaah, praktis dan selalu tersedia di HP.
+```
+**Ganti:**
+```
+Nama, rombongan, hotel, nomor pembimbing — semua dalam satu kartu digital. Berguna saat jamaah terpisah atau darurat.
+```
+
+**[Fitur 09 — desc] Cari:**
+```
+Catat momen dan simpan foto perjalanan sebagai kenangan ibadah yang berharga.
+```
+**Ganti:**
+```
+Jamaah catat momen perjalanan suci mereka. Kenangan ibadah tersimpan rapi, bisa dibaca ulang kapan saja.
+```
+
+**[Fitur 10 — desc] Cari:**
+```
+Sertifikat resmi digital sebagai bukti penyelesaian ibadah umrah jamaah.
+```
+**Ganti:**
+```
+Sertifikat digital bermerek travel Anda — jamaah bisa simpan dan bagikan. Kenang-kenangan yang juga promosi.
+```
+
+**[Fitur 11 — desc] Cari:**
+```
+Logo, warna, dan nama travel bisa dikustom. Jamaah merasa ini app milik travel sendiri.
+```
+**Ganti:**
+```
+Logo Anda, warna Anda, nama Anda. Jamaah tidak tahu ini Umrahme — yang mereka tahu ini aplikasi travel Anda.
+```
+
+**[Fitur 12 — desc] Cari:**
+```
+Dashboard untuk kelola seluruh jamaah, agenda, dan pengumuman dalam satu tempat.
+```
+**Ganti:**
+```
+Satu dashboard untuk semua: kelola data jamaah, atur agenda, kirim pengumuman. Semua terkontrol dari satu tempat.
+```
+
+---
+
+### CARA KERJA
+
+**[Heading] Cari:**
+```
+Siap pakai hanya dalam 3 langkah
+```
+**Ganti:**
+```
+Aktif dalam hitungan menit
+```
+
+**[Sub heading] Cari:**
+```
+Tidak butuh tim IT. Tidak ada biaya setup. Langsung aktif untuk keberangkatan berikutnya.
+```
+**Ganti:**
+```
+Tidak perlu tim IT. Tidak perlu training panjang. Travel Anda bisa langsung pakai untuk keberangkatan berikutnya.
+```
+
+**[Step 1 — title] Cari:**
+```
+Daftar & Atur Branding
+```
+**Ganti:**
+```
+Daftar & Pasang Logo Travel Anda
+```
+
+**[Step 1 — desc] Cari:**
+```
+Upload logo, pilih warna brand, atur nama. Dalam hitungan menit aplikasi sudah bermerek travel Anda.
+```
+**Ganti:**
+```
+Upload logo, pilih warna brand, masukkan nama travel. Selesai dalam menit — dan aplikasi sudah tampil bermerek travel Anda sepenuhnya.
+```
+
+**[Step 2 — title] Cari:**
+```
+Input Data Jamaah
+```
+**Ganti:**
+```
+Input Jamaah & Jadwal
+```
+
+**[Step 2 — desc] Cari:**
+```
+Input data jamaah dan agenda perjalanan lewat portal. Semua tersinkron otomatis ke aplikasi jamaah.
+```
+**Ganti:**
+```
+Masukkan daftar jamaah dan agenda keberangkatan di portal. Otomatis tersinkron — jamaah langsung bisa akses.
+```
+
+**[Step 3 — title] Cari:**
+```
+Jamaah Siap Berangkat
+```
+**Ganti:**
+```
+Bagikan Kode, Jamaah Langsung Pakai
+```
+
+**[Step 3 — desc] Cari:**
+```
+Jamaah buka link, masukkan kode, langsung pakai. Panduan ibadah, doa, jadwal — semua siap.
+```
+**Ganti:**
+```
+Bagikan kode aktivasi ke jamaah — via WA, selebaran, atau saat manasik. Mereka buka browser, masukkan kode, langsung masuk. Tidak perlu install apapun.
+```
+
+---
+
+### WHITE-LABEL
+
+**[Heading] Cari:**
+```
+Jamaah melihat nama Anda, bukan kami
+```
+**Ganti:**
+```
+Mereka pikir Anda yang bikin aplikasinya
+```
+
+**[Sub teks] Cari:**
+```
+Logo, warna, dan nama travel tampil di seluruh halaman aplikasi. Jamaah menggunakannya setiap hari selama perjalanan — dan yang mereka ingat adalah nama travel Anda.
+```
+**Ganti:**
+```
+Logo, warna, dan nama travel Anda tampil di seluruh aplikasi. Tidak ada logo Umrahme, tidak ada branding pihak ketiga. Jamaah menggunakannya setiap hari selama perjalanan — dan nama yang mereka ingat, rekomendasikan, dan kembali pilih adalah nama travel Anda.
+```
+
+**[Checklist item 1] Cari:**
+```
+Logo & nama travel tampil penuh di aplikasi jamaah
+```
+**Ganti:**
+```
+Logo & nama travel tampil penuh — jamaah tidak tahu ada pihak ketiga
+```
+
+**[Checklist item 2] Cari:**
+```
+Skema warna disesuaikan dengan brand Anda
+```
+**Ganti:**
+```
+Warna brand Anda di setiap halaman — konsisten dan profesional
+```
+
+**[Checklist item 3] Cari:**
+```
+Membangun citra travel yang modern & profesional
+```
+**Ganti:**
+```
+Travel Anda terlihat sekelas travel besar yang punya app sendiri
+```
+
+**[Checklist item 4] Cari:**
+```
+Tanpa biaya tambahan untuk kustomisasi
+```
+**Ganti:**
+```
+Semua kustomisasi sudah termasuk — tanpa biaya ekstra
+```
+
+**[Tombol CTA white-label] Cari:**
+```
+Coba Demo Gratis
+```
+**Ganti:**
+```
+Lihat Demo dengan Nama Travel Anda
+```
+
+---
+
+### HARGA
+
+**[Heading] Cari:**
+```
+Satu harga, semua fitur
+```
+**Ganti:**
+```
+Lebih murah dari buku doa cetak. Jauh lebih lengkap.
+```
+
+**[Sub heading] Cari:**
+```
+Tidak ada biaya bulanan. Tidak ada biaya setup. Bayar hanya untuk jamaah yang benar-benar berangkat.
+```
+**Ganti:**
+```
+Buku doa cetak 15–25 SAR per jamaah — dan itu hanya buku doa. Umrahme 10 SAR, dapat 12 fitur lengkap, bermerek travel Anda.
+```
+
+**[Card — judul] Cari:**
+```
+Per Jamaah Per Keberangkatan
+```
+**Ganti:**
+```
+Harga Per Jamaah
+```
+
+**[Card — satuan] Cari:**
+```
+SAR / jamaah
+```
+**Ganti:**
+```
+SAR saja / jamaah
+```
+
+**[Card — sub teks] Cari:**
+```
+Semua 12 fitur sudah termasuk. Tidak ada biaya tambahan apapun.
+```
+**Ganti:**
+```
+Bayar per keberangkatan, sesuai jumlah jamaah aktif. Tidak ada biaya bulanan, tidak ada biaya setup, tidak ada kontrak.
+```
+
+**[Checklist item 1] Cari:**
+```
+Tidak ada biaya setup
+```
+**Ganti:**
+```
+Tidak ada biaya setup — langsung aktif
+```
+
+**[Checklist item 2] Cari:**
+```
+Tidak ada biaya bulanan
+```
+**Ganti:**
+```
+Tidak ada tagihan bulanan yang mengejutkan
+```
+
+**[Checklist item 3] Cari:**
+```
+Bayar hanya jamaah aktif
+```
+**Ganti:**
+```
+Bayar sesuai jamaah yang berangkat saja
+```
+
+**[Checklist item 4] Cari:**
+```
+Semua 12 fitur sudah termasuk
+```
+**Ganti:**
+```
+Semua 12 fitur langsung aktif — tidak ada upgrade berbayar
+```
+
+**[Checklist item 5] Cari:**
+```
+Branding white-label penuh
+```
+**Ganti:**
+```
+Branding travel Anda penuh — tanpa biaya kustomisasi
+```
+
+**[Tombol CTA harga] Cari:**
+```
+Daftar Sekarang
+```
+*(yang di dalam pricing card)*
+**Ganti:**
+```
+Mulai Sekarang — Gratis Dulu
+```
+
+**[Perbandingan teks bawah] Cari:**
+```
+Lebih murah dari biaya cetak buku doa per jamaah — tapi nilai yang jamaah terima jauh lebih besar.
+```
+**Ganti:**
+```
+Coba bayangkan: untuk 40 jamaah, biaya cetak buku doa bisa sampai 1.000 SAR. Dengan Umrahme, 40 jamaah hanya 400 SAR — dan dapat 12 fitur, bukan sekadar buku.
+```
+
+---
+
+### TESTIMONI
+
+**[Heading] Cari:**
+```
+Apa kata travel yang sudah mencoba
+```
+**Ganti:**
+```
+Dari travel yang sudah merasakan manfaatnya
+```
+
+**[Testimoni 1] Cari:**
+```
+Sejak pakai Umrahme, pertanyaan ke muthowif berkurang drastis. Jamaah lebih mandiri, perjalanan lebih tenang.
+```
+**Ganti:**
+```
+Dulu muthowif kami kelelahan sebelum tawaf dimulai — menjawab pertanyaan yang itu-itu saja. Sekarang jamaah sudah tahu sendiri dari aplikasi. Perjalanan jauh lebih tenang.
+```
+
+**[Testimoni 2] Cari:**
+```
+Jamaah yang sudah tua pun bisa pakai. Tidak perlu install, langsung buka link. Praktis sekali.
+```
+**Ganti:**
+```
+Kami khawatir jamaah lansia tidak bisa pakai. Ternyata mereka langsung bisa — cukup buka link, masukkan nama. Tidak ada yang komplain kesulitan.
+```
+
+**[Testimoni 3] Cari:**
+```
+Harga 10 SAR per jamaah sangat worth it. Cetak buku doa saja sudah lebih mahal dari itu.
+```
+**Ganti:**
+```
+Kami biasa cetak buku doa 20 SAR per jamaah. Dengan Umrahme 10 SAR, dapat jauh lebih banyak — dan jamaah benar-benar pakai. Keputusan terbaik musim ini.
+```
+
+---
+
+### FAQ
+
+**[FAQ Q1] Cari:**
+```
+Apakah jamaah perlu install aplikasi?
+```
+**Ganti:**
+```
+Jamaah kami rata-rata tidak terlalu melek teknologi. Bisa pakai?
+```
+
+**[FAQ A1] Cari:**
+```
+Tidak perlu. Jamaah cukup buka link dari browser HP, masukkan kode aktivasi, dan langsung bisa pakai semua fitur tanpa install dari Play Store atau App Store.
+```
+**Ganti:**
+```
+Bisa, dan justru dirancang untuk itu. Tidak perlu install apapun — jamaah cukup buka browser, ketuk link yang Anda bagikan, masukkan kode dan nama. Selesai. Sudah banyak jamaah lansia 60+ yang pakai tanpa kesulitan.
+```
+
+**[FAQ Q2] Cari:**
+```
+Bagaimana cara kustomisasi tampilan?
+```
+**Ganti:**
+```
+Seberapa cepat aplikasi bisa bermerek travel kami?
+```
+
+**[FAQ A2] Cari:**
+```
+Dari portal travel agency, Anda bisa upload logo, pilih warna brand, dan atur nama app. Perubahan langsung berlaku real-time untuk semua jamaah aktif.
+```
+**Ganti:**
+```
+Kurang dari 10 menit. Upload logo, pilih warna, masukkan nama travel — dan aplikasi langsung tampil bermerek travel Anda. Tidak perlu menunggu, tidak perlu approval dari kami.
+```
+
+**[FAQ Q3] Cari:**
+```
+Apakah data jamaah aman?
+```
+**Ganti:**
+```
+Apakah data jamaah kami aman?
+```
+
+**[FAQ A3] Cari:**
+```
+Ya. Data disimpan di server aman dengan enkripsi. Kami tidak menjual atau membagikan data jamaah kepada pihak ketiga.
+```
+**Ganti:**
+```
+Ya, aman. Data jamaah disimpan terenkripsi dan tidak pernah dibagikan ke pihak manapun. Hanya travel Anda yang bisa akses data jamaah Anda.
+```
+
+**[FAQ Q4] Cari:**
+```
+Apakah bisa dipakai tanpa internet?
+```
+**Ganti:**
+```
+Sinyal di area Haram sering lemah. Tetap bisa dipakai?
+```
+
+**[FAQ A4] Cari:**
+```
+Fitur utama seperti kumpulan doa, panduan ibadah, dan kartu jamaah bisa diakses offline setelah pertama kali dimuat. Fitur real-time butuh koneksi.
+```
+**Ganti:**
+```
+Ya. Doa, panduan ibadah, kartu jamaah, dan konten yang sudah pernah dibuka tetap bisa diakses offline. Jamaah tidak akan tergantung sinyal saat tawaf atau sa'i.
+```
+
+**[FAQ Q5] Cari:**
+```
+Bagaimana cara pembayaran?
+```
+**Ganti:**
+```
+Bagaimana cara mulai dan bayarnya?
+```
+
+**[FAQ A5] Cari:**
+```
+10 SAR per jamaah per keberangkatan. Tidak ada biaya bulanan atau setup. Hubungi kami via WhatsApp untuk mulai.
+```
+**Ganti:**
+```
+Hubungi kami via WhatsApp, kami bantu setup demo gratis dengan nama travel Anda dulu. Kalau cocok, baru bicara soal pembayaran. 10 SAR per jamaah, dibayar per keberangkatan. Tidak ada kontrak, tidak ada minimum jamaah.
+```
+
+**[FAQ Q6] Cari:**
+```
+Apakah ada masa trial?
+```
+**Ganti:**
+```
+Bisa lihat dulu sebelum memutuskan?
+```
+
+**[FAQ A6] Cari:**
+```
+Ya, kami menyediakan demo gratis dengan branding travel Anda sehingga Anda bisa merasakan langsung sebelum memutuskan.
+```
+**Ganti:**
+```
+Tentu. Kami siapkan demo lengkap dengan logo dan nama travel Anda — supaya Anda bisa rasakan sendiri seperti apa tampilannya sebelum memutuskan. Gratis, tanpa komitmen apapun.
+```
+
+---
+
+### CTA AKHIR
+
+**[Heading] Cari:**
+```
+Mulai untuk keberangkatan berikutnya
+```
+**Ganti:**
+```
+Keberangkatan berikutnya bisa jauh lebih baik
+```
+
+**[Sub teks] Cari:**
+```
+Demo gratis dengan branding travel Anda. Lihat sendiri sebelum memutuskan — tanpa komitmen apapun.
+```
+**Ganti:**
+```
+Jamaah lebih tenang. Muthowif lebih fokus. Travel Anda tampil lebih profesional. Semua ini hanya 10 SAR per jamaah. Mulai dengan demo gratis — kami setup langsung dengan nama travel Anda.
+```
+
+**[Tombol primer CTA] Cari:**
+```
+Hubungi via WhatsApp
+```
+*(yang di dalam CTA section gelap)*
+**Ganti:**
+```
+Minta Demo Gratis via WhatsApp
+```
+
+**[Tombol sekunder CTA] Cari:**
+```
+Minta Demo Gratis
+```
+*(yang di dalam CTA section gelap)*
+**Ganti:**
+```
+Pelajari Lebih Lanjut
+```
+
+---
+
+### FOOTER
+
+**[Tagline] Cari:**
+```
+Aplikasi pendamping umrah white-label untuk travel agency Indonesia.
+```
+**Ganti:**
+```
+Ganti buku doa cetak. Ringankan kerja muthowif. Tampil profesional. Hanya 10 SAR per jamaah.
+```
+
+---
+
+## ATURAN EKSEKUSI
+
+1. Ganti **hanya teks** — jangan sentuh style, JSX, logika, animasi.
+2. Lakukan satu per satu secara berurutan.
+3. Kalau string tidak ditemukan persis (ada perbedaan spasi/newline), cari secara manual di file dan ganti.
+4. Setelah semua selesai, jalankan `pnpm --filter umrahme typecheck`.
+5. Laporkan: berapa yang berhasil diganti, mana yang tidak ditemukan.

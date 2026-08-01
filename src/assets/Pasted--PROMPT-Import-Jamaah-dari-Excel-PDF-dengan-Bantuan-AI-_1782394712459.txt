@@ -1,0 +1,349 @@
+# PROMPT — Import Jamaah dari Excel/PDF dengan Bantuan AI (+ Review)
+
+## Konteks
+File utama: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx`
+File API: `api/ai-extract-jamaah.ts` (baru) — pola sama seperti `api/ai-ocr.ts` yang sudah ada
+File lib: `artifacts/umrahme/src/lib/supabase.ts`
+
+Tambahkan fitur di bagian "Daftar Jamaah" admin form: tombol **"Import dari Excel/PDF"**.
+Alur: upload file → AI ekstrak data jamaah → tampilkan **tabel review yang bisa diedit** →
+admin konfirmasi → bulk insert ke database.
+
+Field yang diekstrak per jamaah: **nama, nomor_jamaah, rombongan, nomor_paspor**.
+
+> Prasyarat: kolom `nomor_paspor` sudah ada di tabel `jamaah_accounts` & type `JamaahAccountRow`.
+> `OPENROUTER_API_KEY` sudah dikonfigurasi di Vercel (dipakai juga oleh ai-ocr.ts).
+
+---
+
+## LANGKAH 1 — Install Dependency (Excel parsing)
+
+Di folder `artifacts/umrahme/`, install SheetJS:
+```bash
+pnpm add xlsx
+```
+
+> SheetJS dipakai untuk parse Excel/CSV di browser (data terstruktur, tidak perlu AI untuk baca selnya).
+> AI hanya dipakai untuk: (a) mapping kolom Excel yang headernya bervariasi, (b) ekstraksi PDF.
+
+---
+
+## LANGKAH 2 — Fungsi Bulk Insert di `supabase.ts`
+
+Tambahkan setelah `createJamaah`:
+```ts
+export async function bulkInsertJamaah(tenantId: string, items: object[]): Promise<{ inserted: number }> {
+  const rows = items.map((item) => ({ ...item, tenant_id: tenantId }));
+  const { data, error } = await supabase.from('jamaah_accounts').insert(rows).select();
+  if (error) throw new Error(error.message);
+  return { inserted: (data ?? []).length };
+}
+```
+
+---
+
+## LANGKAH 3 — API Endpoint AI: `api/ai-extract-jamaah.ts`
+
+Buat file baru `api/ai-extract-jamaah.ts` (mirror pola `api/ai-ocr.ts`).
+Endpoint ini menerima 2 mode:
+- `mode: 'pdf'` → terima `fileBase64` + `mimeType` (PDF/gambar), AI vision ekstrak daftar jamaah
+- `mode: 'excel'` → terima `rows` (array of array hasil parse SheetJS), AI mapping kolom
+
+```ts
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'OPENROUTER_API_KEY belum dikonfigurasi.' });
+
+  const { mode, fileBase64, mimeType, rows } = req.body as {
+    mode: 'pdf' | 'excel';
+    fileBase64?: string;
+    mimeType?: string;
+    rows?: unknown[][];
+  };
+
+  const schema = `Format JSON yang WAJIB dikembalikan (HANYA JSON, tanpa penjelasan):
+{
+  "jamaah": [
+    { "nama": string, "nomor_jamaah": string, "rombongan": string | null, "nomor_paspor": string | null }
+  ]
+}
+Aturan:
+- Ekstrak SEMUA baris jamaah yang ditemukan.
+- "nama" = nama lengkap jamaah. "nomor_jamaah" = nomor urut/ID jamaah (kalau tidak ada, beri nomor urut "001","002",...).
+- "rombongan" & "nomor_paspor" = null jika tidak ada.
+- Abaikan baris header, total, atau baris kosong.`;
+
+  let messages;
+  if (mode === 'pdf') {
+    if (!fileBase64 || !mimeType) return res.status(400).json({ error: 'fileBase64 & mimeType wajib untuk mode pdf.' });
+    const prompt = `Kamu sistem ekstraksi data jamaah umrah dari dokumen (PDF/gambar manifest jamaah).\nAnalisis dokumen ini & ekstrak daftar jamaah.\n${schema}`;
+    messages = [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: `data:${mimeType};base64,${fileBase64}` } },
+      ],
+    }];
+  } else if (mode === 'excel') {
+    if (!rows || !Array.isArray(rows)) return res.status(400).json({ error: 'rows wajib untuk mode excel.' });
+    const prompt = `Kamu sistem normalisasi data jamaah umrah dari spreadsheet.\nBerikut data mentah hasil baca Excel/CSV (array baris, baris pertama kemungkinan header):\n\n${JSON.stringify(rows).slice(0, 12000)}\n\nPetakan ke struktur jamaah. Header bisa bervariasi (mis. "Nama"/"Nama Lengkap"/"NAMA", "No"/"No Jamaah"/"ID", "Rombongan"/"Grup", "Paspor"/"No Paspor"/"Passport").\n${schema}`;
+    messages = [{ role: 'user', content: prompt }];
+  } else {
+    return res.status(400).json({ error: 'mode harus "pdf" atau "excel".' });
+  }
+
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.APP_URL ?? 'https://umrahme.app',
+        'X-Title': 'Umrahme Admin',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-flash-1.5',
+        messages,
+        max_tokens: 4000,
+        temperature: 0.1,
+      }),
+    });
+    if (!response.ok) {
+      const err = await response.text();
+      return res.status(502).json({ error: `OpenRouter error: ${err}` });
+    }
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content ?? '';
+    const cleaned = content.replace(/```json|```/g, '').trim();
+    const extracted = JSON.parse(cleaned);
+    return res.status(200).json({ ok: true, jamaah: extracted.jamaah ?? [] });
+  } catch (err) {
+    return res.status(500).json({ error: String(err) });
+  }
+}
+```
+
+> CATATAN model: PDF perlu model vision. `google/gemini-flash-1.5` mendukung gambar & PDF di OpenRouter.
+> Kalau PDF multi-halaman bermasalah, alternatifnya konversi PDF→gambar per halaman dulu di client,
+> tapi untuk MVP kirim langsung base64 PDF-nya.
+
+---
+
+## LANGKAH 4 — UI Import di `AdminTenantForm.tsx`
+
+### 4a. State baru (di dekat state jamaah)
+```ts
+const [importOpen, setImportOpen] = useState(false);
+const [importLoading, setImportLoading] = useState(false);
+const [importError, setImportError] = useState('');
+const [importPreview, setImportPreview] = useState<Array<{ nama: string; nomor_jamaah: string; rombongan: string; nomor_paspor: string }>>([]);
+const [importSaving, setImportSaving] = useState(false);
+const importFileRef = useRef<HTMLInputElement>(null);
+```
+
+### 4b. Import library SheetJS & supabase fn
+```ts
+import * as XLSX from 'xlsx';
+import { bulkInsertJamaah } from '@/lib/supabase';  // sesuaikan dengan pola import yang ada
+```
+
+### 4c. Handler pilih file & ekstraksi
+```ts
+async function handleImportFile(e: ChangeEvent<HTMLInputElement>) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  setImportError('');
+  setImportLoading(true);
+  setImportPreview([]);
+  try {
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    let result: any[] = [];
+
+    if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      // Parse Excel/CSV di browser
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }); // array of array
+      const resp = await fetch('/api/ai-extract-jamaah', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'excel', rows }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Gagal ekstrak Excel.');
+      result = json.jamaah;
+    } else if (ext === 'pdf' || ['png','jpg','jpeg','webp'].includes(ext || '')) {
+      // PDF / gambar → base64 → AI vision
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const resp = await fetch('/api/ai-extract-jamaah', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'pdf', fileBase64: base64, mimeType: file.type }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || 'Gagal ekstrak PDF.');
+      result = json.jamaah;
+    } else {
+      throw new Error('Format tidak didukung. Pakai Excel (.xlsx/.csv) atau PDF.');
+    }
+
+    // Normalisasi ke struktur preview (string semua, biar mudah diedit)
+    const preview = (result || []).map((j: any, idx: number) => ({
+      nama: String(j.nama ?? '').trim(),
+      nomor_jamaah: String(j.nomor_jamaah ?? String(idx + 1).padStart(3, '0')).trim(),
+      rombongan: String(j.rombongan ?? '').trim(),
+      nomor_paspor: String(j.nomor_paspor ?? '').trim(),
+    })).filter((j) => j.nama);
+
+    if (preview.length === 0) throw new Error('Tidak ada data jamaah terbaca. Cek format file.');
+    setImportPreview(preview);
+  } catch (err: unknown) {
+    setImportError(err instanceof Error ? err.message : 'Gagal memproses file.');
+  } finally {
+    setImportLoading(false);
+    if (importFileRef.current) importFileRef.current.value = '';
+  }
+}
+```
+
+### 4d. Handler edit & hapus baris preview
+```ts
+function updatePreviewRow(idx: number, field: string, value: string) {
+  setImportPreview(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
+}
+function removePreviewRow(idx: number) {
+  setImportPreview(prev => prev.filter((_, i) => i !== idx));
+}
+```
+
+### 4e. Handler simpan (bulk insert)
+```ts
+async function confirmImport() {
+  if (importPreview.length === 0) return;
+  // Validasi minimal: semua punya nama & nomor_jamaah
+  const invalid = importPreview.some(r => !r.nama.trim() || !r.nomor_jamaah.trim());
+  if (invalid) { setImportError('Semua baris harus punya Nama & No. Jamaah.'); return; }
+  setImportSaving(true);
+  setImportError('');
+  try {
+    const payload = importPreview.map(r => ({
+      nama: r.nama.trim(),
+      nomor_jamaah: r.nomor_jamaah.trim(),
+      rombongan: r.rombongan.trim() || null,
+      nomor_paspor: r.nomor_paspor.trim() || null,
+      fase: 'persiapan',
+    }));
+    const { inserted } = await bulkInsertJamaah(id!, payload);
+    setImportPreview([]);
+    setImportOpen(false);
+    await loadJamaah();
+    alert(`${inserted} jamaah berhasil diimport.`);
+  } catch (err: unknown) {
+    setImportError(err instanceof Error ? err.message : 'Gagal menyimpan data.');
+  } finally {
+    setImportSaving(false);
+  }
+}
+```
+
+### 4f. UI — tombol & panel import
+
+Di bagian "Daftar Jamaah", dekat judul/tombol, tambahkan tombol import:
+```tsx
+<button type="button" onClick={() => { setImportOpen(o => !o); setImportError(''); setImportPreview([]); }}
+  className="inline-flex items-center gap-2 px-4 py-2 text-[12px] font-semibold rounded-xl transition-all duration-150"
+  style={{ background: 'rgba(67,56,202,0.07)', color: '#4338ca', border: '1px solid rgba(67,56,202,0.15)' }}>
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  Import dari Excel/PDF
+</button>
+```
+
+Lalu panel import (tampil kalau `importOpen`):
+```tsx
+{importOpen && (
+  <div className="rounded-2xl px-6 py-6 mb-4" style={{ ...cardStyle, border: '1px solid rgba(67,56,202,0.12)' }}>
+    <div className="flex items-center gap-2 mb-3">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em]" style={{ color: '#4338ca' }}>Import Jamaah dengan AI</p>
+    </div>
+    <p className="text-[12px] mb-4" style={{ color: '#6b7280' }}>
+      Upload file Excel (.xlsx/.csv) atau PDF berisi daftar jamaah. AI akan membaca & merapikan datanya, lalu Anda bisa review sebelum menyimpan.
+    </p>
+
+    {importPreview.length === 0 ? (
+      <div>
+        <button type="button" onClick={() => importFileRef.current?.click()} disabled={importLoading}
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-[12px] font-semibold rounded-xl transition-all disabled:opacity-60"
+          style={{ background: 'linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)', color: '#fff' }}>
+          {importLoading ? 'AI sedang membaca...' : 'Pilih File'}
+        </button>
+        <input ref={importFileRef} type="file" accept=".xlsx,.xls,.csv,application/pdf,image/png,image/jpeg,image/webp" onChange={handleImportFile} className="hidden" />
+        <p className="mt-2 text-[10px]" style={{ color: '#9ca3af' }}>Format: Excel, CSV, atau PDF. Maks ~10MB.</p>
+      </div>
+    ) : (
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[12px] font-semibold" style={{ color: '#374151' }}>{importPreview.length} jamaah terbaca — review & edit sebelum simpan:</p>
+        </div>
+        <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
+          <table className="w-full text-[12px]">
+            <thead><tr style={{ background: '#fafaf9' }}>
+              {['Nama', 'No. Jamaah', 'Rombongan', 'No. Paspor', ''].map(h => <th key={h} className="text-left px-3 py-2 font-mono text-[10px] uppercase" style={{ color: '#9ca3af' }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {importPreview.map((r, idx) => (
+                <tr key={idx} style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                  <td className="px-2 py-1.5"><input value={r.nama} onChange={e => updatePreviewRow(idx, 'nama', e.target.value)} className="w-full rounded px-2 py-1 text-[12px]" style={{ border: '1px solid rgba(0,0,0,0.1)' }} /></td>
+                  <td className="px-2 py-1.5"><input value={r.nomor_jamaah} onChange={e => updatePreviewRow(idx, 'nomor_jamaah', e.target.value)} className="w-full rounded px-2 py-1 text-[12px] font-mono" style={{ border: '1px solid rgba(0,0,0,0.1)' }} /></td>
+                  <td className="px-2 py-1.5"><input value={r.rombongan} onChange={e => updatePreviewRow(idx, 'rombongan', e.target.value)} className="w-full rounded px-2 py-1 text-[12px]" style={{ border: '1px solid rgba(0,0,0,0.1)' }} /></td>
+                  <td className="px-2 py-1.5"><input value={r.nomor_paspor} onChange={e => updatePreviewRow(idx, 'nomor_paspor', e.target.value)} className="w-full rounded px-2 py-1 text-[12px] font-mono" style={{ border: '1px solid rgba(0,0,0,0.1)' }} /></td>
+                  <td className="px-2 py-1.5 text-right"><button type="button" onClick={() => removePreviewRow(idx)} className="text-[11px] px-2 py-1 rounded" style={{ color: '#dc2626' }}>Hapus</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button type="button" onClick={confirmImport} disabled={importSaving}
+            className="px-5 py-2.5 text-[12px] font-semibold rounded-xl disabled:opacity-60"
+            style={{ background: 'linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)', color: '#fff' }}>
+            {importSaving ? 'Menyimpan...' : `Simpan ${importPreview.length} Jamaah`}
+          </button>
+          <button type="button" onClick={() => { setImportPreview([]); setImportError(''); }}
+            className="px-5 py-2.5 text-[12px] font-semibold rounded-xl" style={{ color: '#6b7280', border: '1px solid rgba(0,0,0,0.1)' }}>
+            Batal / Pilih Ulang
+          </button>
+        </div>
+      </div>
+    )}
+
+    {importError && <p className="mt-3 text-[12px]" style={{ color: '#dc2626' }}>{importError}</p>}
+  </div>
+)}
+```
+
+---
+
+## Catatan & Pertimbangan
+- **Excel/CSV diparse di browser** (SheetJS) — datanya terstruktur, AI cuma merapikan & mapping kolom. Hemat token & lebih akurat.
+- **PDF dikirim ke AI vision** — untuk manifest jamaah berbentuk PDF/scan. PDF besar/banyak halaman bisa kurang akurat; kalau perlu, ke depannya bisa split per halaman.
+- **Review wajib** — admin selalu lihat & bisa edit/hapus baris sebelum simpan. Tidak ada auto-save.
+- **Validasi**: tiap baris wajib punya nama & nomor_jamaah sebelum bisa disimpan.
+- **Privasi**: data jamaah (termasuk paspor) dikirim ke OpenRouter untuk diekstrak. Pastikan ini OK dari sisi kebijakan privasi travel — pertimbangkan menaruh disclaimer kecil di panel import. Kalau sensitif, Excel sebenarnya bisa di-mapping tanpa AI (deteksi header manual), tapi untuk MVP ini pakai AI agar fleksibel terhadap format apa pun.
+- **Limit**: tambahkan batas ukuran file (~10MB) di handler kalau perlu, dan batasi jumlah baris yang dikirim ke AI (sudah ada `.slice(0, 12000)` di prompt excel).
+- `nomor_paspor` harus sudah ada di DB & type sebelum fitur ini jalan.
+
+## Verifikasi Setelah Deploy
+- Tombol "Import dari Excel/PDF" muncul di bagian Daftar Jamaah
+- Upload .xlsx → AI mapping kolom → tabel review muncul → edit → simpan → jamaah bertambah
+- Upload .pdf manifest → AI ekstrak → review → simpan
+- Data hasil import muncul di daftar jamaah & bisa login

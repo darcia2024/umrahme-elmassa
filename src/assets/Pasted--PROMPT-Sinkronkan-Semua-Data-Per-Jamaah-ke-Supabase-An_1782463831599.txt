@@ -1,0 +1,155 @@
+# PROMPT: Sinkronkan Semua Data Per-Jamaah ke Supabase (Anti-Ilang)
+
+**Tujuan:** Data per-jamaah yang sekarang hanya di `localStorage` (hilang saat pindah device) dipindah/disinkronkan ke Supabase: **Checklist Persiapan, Progress Manasik, Counter Tawaf, Counter Sai**. (Jurnal pakai prompt terpisah `prompt-sinkron-jurnal.md`.)
+
+**Strategi penting (2 pola berbeda):**
+- **Counter Tawaf & Sai → OFFLINE-FIRST.** Counter dipakai saat tawaf/sai di depan Ka'bah (sinyal parah). WAJIB tetap instan via localStorage, lalu sync ke Supabase di background saat online. JANGAN bikin tiap tap menunggu jaringan.
+- **Checklist & Manasik → sinkron biasa** (load dari Supabase saat buka, simpan saat berubah; localStorage sebagai cache).
+
+**Arsitektur data:** satu tabel `jamaah_data` (key-value) untuk semua, identitas = `tenant_id + nomor_jamaah`. TIDAK membuat database/tabel terpisah per user (itu anti-pattern). Satu DB, satu tabel, tiap baris ditandai pemiliknya.
+
+**File terkait:**
+- SQL Supabase (`setup-jamaah-data.sql`)
+- `lib/supabase.ts` (helper generik get/set data jamaah)
+- `pages/Persiapan.tsx`, `data/manasikInteraktif.ts`, `pages/CounterTawaf.tsx`, `pages/CounterSai.tsx`
+
+Kerjakan bertahap, commit per bagian.
+
+---
+
+## LANGKAH 1 — SQL (Supabase SQL Editor)
+Jalankan `setup-jamaah-data.sql`. Membuat tabel `jamaah_data` (tenant_id, nomor_jamaah, data_key, data_value jsonb, unique per jamaah+key) + RLS.
+
+---
+
+## LANGKAH 2 — Helper generik di `lib/supabase.ts`
+
+```ts
+// Ambil satu nilai data jamaah berdasarkan key. Return null jika belum ada.
+export async function getJamaahData<T = unknown>(
+  tenantId: string, nomorJamaah: string, key: string
+): Promise<T | null> {
+  const { data, error } = await supabase
+    .from('jamaah_data')
+    .select('data_value')
+    .eq('tenant_id', tenantId)
+    .eq('nomor_jamaah', nomorJamaah)
+    .eq('data_key', key)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data?.data_value as T) ?? null;
+}
+
+// Simpan/replace nilai (upsert berdasarkan unique tenant+nomor+key).
+export async function setJamaahData(
+  tenantId: string, nomorJamaah: string, key: string, value: unknown
+): Promise<void> {
+  const { error } = await supabase
+    .from('jamaah_data')
+    .upsert(
+      { tenant_id: tenantId, nomor_jamaah: nomorJamaah, data_key: key, data_value: value, updated_at: new Date().toISOString() },
+      { onConflict: 'tenant_id,nomor_jamaah,data_key' }
+    );
+  if (error) throw new Error(error.message);
+}
+```
+
+---
+
+## LANGKAH 3 — Checklist Persiapan (sinkron biasa) — `pages/Persiapan.tsx`
+
+Ambil identitas: `const { jamaah, tenant } = useAuth();` → `tenant?.id`, `jamaah?.nomorJamaah`.
+
+- **Saat mount:** coba `getJamaahData(tenantId, nomor, 'persiapan')` dan `'persiapan.profil'`. Jika ada, pakai itu; jika null, fallback ke localStorage lama (migrasi). Tetap tulis ke localStorage sebagai cache offline.
+- **Saat berubah** (centang item / ubah profil): update state + localStorage (instan) + panggil `setJamaahData(...)` (await, boleh tanpa blok UI). Bungkus dengan try/catch agar gagal jaringan tidak merusak UX.
+
+Contoh pola simpan:
+```tsx
+function persistChecklist(next: string[]) {
+  localStorage.setItem('umrahme.persiapan', JSON.stringify(next)); // cache
+  if (tenantId && nomor) setJamaahData(tenantId, nomor, 'persiapan', next).catch(() => {});
+}
+```
+
+---
+
+## LANGKAH 4 — Progress Manasik (sinkron biasa) — `data/manasikInteraktif.ts`
+
+Fungsi `getModulProgress`/`saveModulProgress` saat ini sinkron-localStorage. Tambahkan lapisan Supabase TANPA mengubah signature yang dipakai komponen (agar minim perubahan):
+
+- Tetap simpan ke localStorage (instan, sumber kebenaran lokal).
+- Tambah fungsi async untuk sinkronisasi:
+```ts
+import { getJamaahData, setJamaahData } from '../lib/supabase';
+
+// dipanggil saat halaman manasik dibuka (punya tenantId+nomor)
+export async function syncManasikFromCloud(tenantId: string, nomor: string) {
+  const cloud = await getJamaahData<Record<string, ModulProgress>>(tenantId, nomor, 'manasik');
+  if (cloud) {
+    Object.entries(cloud).forEach(([modulId, prog]) => {
+      localStorage.setItem(`umrahme.manasik.${modulId}`, JSON.stringify(prog));
+    });
+  }
+}
+
+// dipanggil setelah saveModulProgress (push ke cloud)
+export async function pushManasikToCloud(tenantId: string, nomor: string) {
+  const all: Record<string, ModulProgress> = {};
+  for (const m of manasikModulList) {
+    all[m.id] = getModulProgress(m.id);
+  }
+  await setJamaahData(tenantId, nomor, 'manasik', all).catch(() => {});
+}
+```
+Di halaman Manasik (ManasikInteraktif/ManasikModulDetail): panggil `syncManasikFromCloud` saat mount, dan `pushManasikToCloud` (fire-and-forget) setiap selesai sebuah modul/tahap.
+
+---
+
+## LANGKAH 5 — Counter Tawaf & Sai (OFFLINE-FIRST) — `pages/CounterTawaf.tsx` & `pages/CounterSai.tsx`
+
+**INTI: counter HARUS tetap instan & jalan tanpa sinyal.** localStorage tetap jadi sumber kebenaran saat dipakai; Supabase hanya backup/restore.
+
+Pola untuk masing-masing counter (key: `'counter.tawaf'` dan `'counter.sai'`):
+
+```tsx
+const { jamaah, tenant } = useAuth();
+const tid = tenant?.id, nm = jamaah?.nomorJamaah;
+
+// 1. Saat mount: localStorage dulu (instan). Lalu coba tarik dari cloud HANYA jika
+//    cloud lebih besar dari lokal (mis. lanjut dari device lain) — opsional & aman.
+useEffect(() => {
+  if (!tid || !nm) return;
+  getJamaahData<number>(tid, nm, 'counter.tawaf').then((cloud) => {
+    if (typeof cloud === 'number' && cloud > count) {
+      setCount(cloud);
+      localStorage.setItem(STORAGE, String(cloud));
+    }
+  }).catch(() => {});
+}, [tid, nm]);
+
+// 2. Saat count berubah: localStorage SELALU (instan, anti-gagal),
+//    push ke cloud fire-and-forget (boleh gagal saat offline, tidak apa-apa).
+useEffect(() => {
+  localStorage.setItem(STORAGE, String(count));
+  if (tid && nm) setJamaahData(tid, nm, 'counter.tawaf', count).catch(() => {});
+}, [count]);
+```
+> Kunci: TIDAK ADA `await` yang memblokir tombol tap. Tap → setCount → localStorage langsung → cloud menyusul di background. Jika offline, cloud-sync gagal diam-diam dan counter tetap jalan sempurna. Saat online lagi, perubahan count berikutnya akan ter-push.
+
+Lakukan sama untuk CounterSai dengan key `'counter.sai'`.
+
+---
+
+## LANGKAH 6 — Migrasi data lama (opsional)
+Saat pertama kali load tiap fitur & cloud masih kosong tapi localStorage ada isinya: push localStorage lama ke cloud via `setJamaahData`. Agar data yang sudah terlanjur dibuat tidak hilang. Boleh dilewati jika masih early/demo.
+
+---
+
+## CATATAN PENTING
+- **Bukan database per-user.** Satu tabel `jamaah_data`, tiap baris ditandai `tenant_id + nomor_jamaah`. Ini cara yang benar & scalable.
+- **Setiap query WAJIB filter `tenant_id` + `nomor_jamaah`** — supaya data jamaah tidak tercampur/terbaca jamaah lain.
+- **Counter tetap offline-first** — jangan sampai sinkronisasi bikin counter gagal saat tanpa sinyal (justru saat itulah counter paling dipakai).
+- Konsisten dengan fitur PWA offline: localStorage sebagai cache lokal, Supabase sebagai sumber lintas-device.
+- Keamanan RLS `using(true)` untuk MVP; perketat sebelum skala besar (idealnya per-jamaah lewat token).
+- `pnpm --filter umrahme typecheck` harus nol error tiap tahap.
+- Commit & push ke GitHub per bagian.

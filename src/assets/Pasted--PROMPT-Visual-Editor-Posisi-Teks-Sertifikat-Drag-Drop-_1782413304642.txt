@@ -1,0 +1,227 @@
+# PROMPT: Visual Editor Posisi Teks Sertifikat (Drag & Drop)
+
+**Tujuan:** Tiap travel punya template sertifikat dengan desain berbeda. Admin bisa upload template lalu **menggeser tiap elemen teks (drag & drop)** ke posisi yang pas di atas template, atur ukuran/warna/font, dan simpan. Posisi tersimpan per tenant, lalu sertifikat jamaah dirender sesuai layout itu.
+
+**File terkait:**
+- SQL Supabase (tambah kolom `sertifikat_layout`)
+- `artifacts/umrahme/src/lib/supabase.ts` (tipe)
+- `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx` (editor drag-drop)
+- `artifacts/umrahme/src/pages/Sertifikat.tsx` (render pakai layout)
+
+Kerjakan BERTAHAP, commit per bagian.
+
+---
+
+## KONSEP DATA — Layout berbasis persen
+
+Posisi disimpan sebagai persen (0–100) relatif terhadap ukuran sertifikat, supaya konsisten di layar admin maupun saat render & download. Tiap elemen punya: `x`, `y` (titik acuan center), `fontSize` (% dari lebar, atau px pada basis lebar tetap), `color`, `align`, `fontFamily`, `bold`, dan `visible`.
+
+```ts
+export interface SertifikatField {
+  key: 'nama' | 'nomor' | 'tanggal' | 'nomor_sertifikat' | 'nama_travel' | 'judul' | 'subjudul' | 'keterangan';
+  label: string;       // label di editor, mis. "Nama Jamaah"
+  x: number;           // 0–100 (persen lebar), titik acuan
+  y: number;           // 0–100 (persen tinggi)
+  fontSize: number;    // px pada basis lebar 1000px (di-scale saat render)
+  color: string;       // hex
+  align: 'left' | 'center' | 'right';
+  fontFamily: 'display' | 'sans' | 'mono' | 'arab';
+  bold: boolean;
+  visible: boolean;
+}
+
+export interface SertifikatLayout {
+  fields: SertifikatField[];
+}
+```
+
+Field default (dipakai jika tenant belum punya layout):
+```ts
+export const DEFAULT_SERTIFIKAT_LAYOUT: SertifikatLayout = {
+  fields: [
+    { key: 'nama',             label: 'Nama Jamaah',      x: 50, y: 50, fontSize: 40, color: '#1a1a1a', align: 'center', fontFamily: 'display', bold: true,  visible: true },
+    { key: 'nomor',            label: 'Nomor Jamaah',     x: 50, y: 60, fontSize: 18, color: '#666666', align: 'center', fontFamily: 'mono',    bold: false, visible: true },
+    { key: 'tanggal',          label: 'Tanggal',          x: 30, y: 80, fontSize: 16, color: '#333333', align: 'center', fontFamily: 'sans',    bold: false, visible: false },
+    { key: 'nomor_sertifikat', label: 'No. Sertifikat',   x: 70, y: 80, fontSize: 16, color: '#333333', align: 'center', fontFamily: 'mono',    bold: false, visible: false },
+    { key: 'nama_travel',      label: 'Nama Travel',      x: 50, y: 90, fontSize: 18, color: '#1a1a1a', align: 'center', fontFamily: 'display', bold: true,  visible: false },
+    { key: 'judul',            label: 'Judul',            x: 50, y: 20, fontSize: 28, color: '#1a1a1a', align: 'center', fontFamily: 'display', bold: true,  visible: false },
+    { key: 'subjudul',         label: 'Sub Judul',        x: 50, y: 30, fontSize: 16, color: '#666666', align: 'center', fontFamily: 'sans',    bold: false, visible: false },
+    { key: 'keterangan',       label: 'Keterangan',       x: 50, y: 70, fontSize: 14, color: '#444444', align: 'center', fontFamily: 'sans',    bold: false, visible: false },
+  ],
+};
+```
+
+---
+
+## BAGIAN 1 — SQL (Supabase SQL Editor)
+
+```sql
+alter table tenants add column if not exists sertifikat_layout jsonb;
+```
+> Menyimpan seluruh layout sebagai satu JSON. Null = pakai DEFAULT_SERTIFIKAT_LAYOUT.
+
+Di `lib/supabase.ts`: tambah `sertifikat_layout: SertifikatLayout | null;` pada `TenantRow`, dan pastikan `updateTenant` bisa mengirim field ini.
+
+---
+
+## BAGIAN 2 — Editor Drag & Drop di Admin (AdminTenantForm, tab/section "Sertifikat")
+
+Buat section "Template & Tata Letak Sertifikat":
+
+### 2a. Upload template
+Field upload `sertifikat_template_url` (sudah ada) — pertahankan. Tambahkan preview.
+
+### 2b. Kanvas editor
+Tampilkan area kanvas rasio A4 landscape (1.414:1) dengan template sebagai background. Di atasnya, render tiap field yang `visible` sebagai elemen yang bisa di-drag.
+
+```tsx
+const [layout, setLayout] = useState<SertifikatLayout>(tenant?.sertifikat_layout ?? DEFAULT_SERTIFIKAT_LAYOUT);
+const [selectedField, setSelectedField] = useState<string | null>(null);
+const canvasRef = useRef<HTMLDivElement>(null);
+
+// contoh teks untuk preview tiap field
+const previewText: Record<string, string> = {
+  nama: 'Budi Santoso', nomor: 'TU-2026-001', tanggal: '15 Februari 2026',
+  nomor_sertifikat: 'UMR/2026/00123', nama_travel: 'Temanumrah',
+  judul: 'Sertifikat Umrah', subjudul: 'Dengan ini menerangkan bahwa', keterangan: 'telah menunaikan ibadah umrah',
+};
+```
+
+Kanvas + drag:
+```tsx
+<div ref={canvasRef}
+  className="relative w-full overflow-hidden rounded-xl border"
+  style={{ aspectRatio: '1.414 / 1', background: '#f3f0e8', borderColor: 'rgba(0,0,0,0.1)' }}>
+
+  {tenant?.sertifikat_template_url && (
+    <img src={tenant.sertifikat_template_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+  )}
+
+  {layout.fields.filter(f => f.visible).map((f) => (
+    <div
+      key={f.key}
+      onPointerDown={(e) => startDrag(e, f.key)}
+      onClick={() => setSelectedField(f.key)}
+      className="absolute cursor-move select-none whitespace-nowrap px-1"
+      style={{
+        left: `${f.x}%`, top: `${f.y}%`,
+        transform: `translate(${f.align === 'center' ? '-50%' : f.align === 'right' ? '-100%' : '0'}, -50%)`,
+        fontSize: `clamp(8px, ${f.fontSize / 10}cqw, 80px)`, // skala via container query width
+        color: f.color,
+        fontWeight: f.bold ? 700 : 400,
+        fontFamily: fontFamilyToCss(f.fontFamily),
+        outline: selectedField === f.key ? '2px dashed #4338ca' : 'none',
+        outlineOffset: '2px',
+      }}
+    >
+      {previewText[f.key]}
+    </div>
+  ))}
+</div>
+```
+> Tambahkan `containerType: 'inline-size'` pada kanvas agar unit `cqw` (container query width) bekerja, sehingga ukuran font skala mengikuti lebar kanvas — konsisten dengan render nanti.
+
+Logika drag (pointer events, hitung posisi relatif kanvas → persen):
+```tsx
+function startDrag(e: React.PointerEvent, key: string) {
+  e.preventDefault();
+  setSelectedField(key);
+  const canvas = canvasRef.current; if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+
+  function move(ev: PointerEvent) {
+    const x = Math.min(100, Math.max(0, ((ev.clientX - rect.left) / rect.width) * 100));
+    const y = Math.min(100, Math.max(0, ((ev.clientY - rect.top) / rect.height) * 100));
+    setLayout((prev) => ({
+      fields: prev.fields.map((f) => f.key === key ? { ...f, x: Math.round(x), y: Math.round(y) } : f),
+    }));
+  }
+  function up() { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+}
+```
+
+### 2c. Panel properti field terpilih
+Saat sebuah field dipilih, tampilkan panel untuk atur: visible (toggle), teks ukuran (slider/number fontSize), warna (color picker), align (kiri/tengah/kanan), font (display/sans/mono/arab), bold (toggle). Semua mengubah `layout` via setLayout.
+
+Daftar semua field dengan checkbox "tampilkan" agar admin bisa mengaktifkan elemen mana saja (nama, nomor, tanggal, no sertifikat, nama travel, judul, subjudul, keterangan).
+
+### 2d. Simpan
+Tombol "Simpan Tata Letak" → `updateTenant(tenant.id, { sertifikat_layout: layout })`. Beri toast sukses. Sediakan juga tombol "Reset ke Default".
+
+Helper:
+```tsx
+function fontFamilyToCss(f: string) {
+  switch (f) {
+    case 'display': return "'Bricolage Grotesque', sans-serif";
+    case 'mono': return "'JetBrains Mono', monospace";
+    case 'arab': return "'Amiri', serif";
+    default: return "'Inter', sans-serif";
+  }
+}
+```
+
+---
+
+## BAGIAN 3 — Render Sertifikat pakai Layout (Sertifikat.tsx)
+
+Ganti blok konten teks (yang tadinya `flex-col items-center justify-center` dengan posisi tetap) menjadi render absolut berbasis layout SAAT ada template:
+
+```tsx
+const layout: SertifikatLayout = tenant?.sertifikat_layout ?? DEFAULT_SERTIFIKAT_LAYOUT;
+
+const fieldValue: Record<string, string> = {
+  nama: jamaah.nama,
+  nomor: jamaah.nomorJamaah,
+  tanggal: tanggalSekarang,
+  nomor_sertifikat: nomorSertifikat(jamaah.nomorJamaah),
+  nama_travel: tenant?.nama_travel ?? jamaah.travel,
+  judul: 'Sertifikat Umrah',
+  subjudul: 'Dengan ini menerangkan bahwa',
+  keterangan: 'telah menunaikan ibadah umrah ke Baitullah dengan khusyuk',
+};
+
+// SAAT hasTemplate: render field absolut sesuai layout
+{hasTemplate && layout.fields.filter(f => f.visible).map((f) => (
+  <div
+    key={f.key}
+    className="pointer-events-none absolute whitespace-nowrap"
+    style={{
+      left: `${f.x}%`, top: `${f.y}%`,
+      transform: `translate(${f.align === 'center' ? '-50%' : f.align === 'right' ? '-100%' : '0'}, -50%)`,
+      fontSize: `clamp(8px, ${f.fontSize / 10}cqw, 80px)`,
+      color: f.color,
+      fontWeight: f.bold ? 700 : 400,
+      fontFamily: fontFamilyToCss(f.fontFamily),
+      textShadow: '0 1px 4px rgba(0,0,0,0.25)',
+    }}
+  >
+    {fieldValue[f.key]}
+  </div>
+))}
+```
+> Beri `style={{ containerType: 'inline-size' }}` pada wrapper sertifikat agar `cqw` konsisten antara editor & hasil render/download. Pastikan elemen wrapper yang sama dipakai html2canvas saat download, sehingga hasil PNG sesuai posisi.
+
+Saat TIDAK ada template: pertahankan tampilan default lama (ornamen + layout bawaan). Layout editor hanya berlaku untuk mode template.
+
+---
+
+## BAGIAN 4 — Catatan penting agar download akurat
+- Pakai unit relatif (`%` untuk posisi, `cqw` untuk fontSize) agar editor (lebar X) dan hasil download (lebar Y) tetap proporsional.
+- `html2canvas` (atau lib yang sudah dipakai) harus meng-capture elemen wrapper sertifikat yang sudah punya `containerType: inline-size`. Test: posisi di editor === posisi di PNG hasil download.
+- Jika `cqw` bermasalah dengan html2canvas, alternatif: hitung fontSize px = `(f.fontSize/1000) * lebarKanvasPx` secara manual via ref & state, lalu set ke px. Lebih kebal terhadap lib capture.
+
+---
+
+## URUTAN EKSEKUSI
+1. SQL tambah kolom `sertifikat_layout` + tipe di lib.
+2. Render Sertifikat.tsx pakai layout (pakai DEFAULT dulu) — pastikan tampil benar.
+3. Editor drag-drop di admin + simpan.
+4. Tes: upload template → atur posisi → simpan → buka sertifikat jamaah → download → cek posisi sama.
+
+## ATURAN
+- Kerjakan bertahap, commit tiap bagian.
+- Jangan rusak tampilan sertifikat default (tanpa template).
+- `pnpm --filter umrahme typecheck` harus nol error tiap tahap.
+- Commit & push ke GitHub.

@@ -1,0 +1,64 @@
+# PROMPT REVISI — Layout Desktop Umrahme
+
+> Konteks: project Umrahme (React+Vite+TS+Tailwind) sudah jalan bagus di mobile. Sekarang butuh layout desktop yang BENERAN didesain ulang — bukan cuma melebarkan container mobile. Prioritas: ini akan dipakai untuk demo ke calon klien travel umrah di laptop, jadi harus terasa seperti web app yang matang, bukan app HP yang dipaksa lebar.
+
+---
+
+## MASALAH SAAT INI
+
+`Layout.tsx` saat ini membungkus semua halaman dalam container `max-w-app` (460px) yang di-center, dengan bottom navigation 5 slot ala mobile app. Di layar desktop, ini menghasilkan satu kartu sempit mengambang di tengah dengan ruang kosong besar di kiri-kanan — bukan pengalaman desktop yang dirancang.
+
+## ARAH YANG DIMINTA
+
+Buat **dua mode layout terpisah berdasarkan breakpoint**, bukan satu layout yang di-stretch:
+
+- **Mobile (< 1024px / `lg` breakpoint ke bawah)**: PERTAHANKAN PERSIS layout yang sudah ada sekarang — kartu max-width, bottom navigation 5 slot, semua flow yang sudah berfungsi. Jangan ubah apapun di sini.
+- **Desktop (≥ 1024px)**: layout baru — sidebar navigasi kiri + area konten lebar di kanan, menggantikan bottom navigation sepenuhnya di breakpoint ini.
+
+Gunakan Tailwind responsive variants (`lg:`) untuk switching antara dua mode ini di komponen `Layout.tsx`, jangan buat file/route terpisah untuk desktop — ini harus tetap satu codebase yang sama, hanya berbeda presentasi sesuai ukuran layar.
+
+---
+
+## DESAIN SIDEBAR (DESKTOP)
+
+- Lebar tetap, sekitar 260–280px, menempel penuh di sisi kiri viewport (`h-screen`, `sticky` atau `fixed`)
+- Background `ink-900`, dengan border kanan tipis `ink-800` sebagai pemisah dari konten
+- Bagian atas sidebar: brand "Umrahme" (pakai font display Fraunces) + identitas jamaah yang sedang login (nama, nomor jamaah, nama travel white-label) — ini info yang di mobile cuma muncul di Beranda, di desktop selalu terlihat karena sidebar persistent
+- Navigasi utama: 5 item yang sama (Beranda, Panduan, Ibadah, Doa, Profil) tapi sebagai vertical list dengan ikon + label, BUKAN ikon-only — di desktop ada cukup ruang untuk label penuh selalu terlihat, jangan disembunyikan
+- Item "Ibadah" tetap diberi penekanan visual lebih (background sedikit lebih terang/border gold tipis saat aktif), konsisten dengan filosofi "paling sering diakses" dari versi mobile — tapi caranya beda dari mobile (bukan lagi bentuk lingkaran elevated, sesuaikan jadi treatment yang masuk akal untuk list vertikal, misal: divider tipis di atas-bawah item ini untuk memisahkannya secara visual dari 4 item lain)
+- Bagian bawah sidebar: indikator fase jamaah (Persiapan → Di Tanah Suci → Selesai) secara ringkas, dan tombol logout
+
+## DESAIN AREA KONTEN (DESKTOP)
+
+Area konten di kanan sidebar TIDAK boleh hanya menampilkan ulang kartu mobile yang dilebarkan kosong. Untuk setiap halaman, pertimbangkan secara spesifik bagaimana ruang ekstra dipakai secara bermakna — bukan sekadar padding lebih besar:
+
+- **Beranda**: grid akses cepat ke fitur (saat ini list/grid sederhana di mobile) jadi grid kartu yang lebih kaya — tiap kartu fitur boleh menampilkan sedikit preview/deskripsi yang di mobile disembunyikan karena keterbatasan ruang
+- **Kumpulan Doa**: ini paling diuntungkan dari layar lebar — gunakan layout **master-detail dua kolom**: kolom kiri (lebih sempit, dalam area konten) menampilkan list kategori+doa yang bisa di-scroll, kolom kanan menampilkan detail doa yang dipilih, tanpa perlu pindah halaman/route. Mirip pola email client atau dokumentasi. Jangan hilangkan kemampuan ini untuk tetap diakses sebagai halaman detail penuh kalau diakses langsung via URL.
+- **Counter Tawaf**: TETAP fokus/sederhana seperti mobile — JANGAN ditambah elemen demi mengisi ruang. Konteks pemakaian asli (Mode B, fokus, satu tugas) tidak hilang hanya karena dibuka di layar lebar (kemungkinan dibuka di laptop untuk demo, bukan dipakai sungguhan saat tawaf, tapi tetap pertahankan filosofi desainnya). Cukup pusatkan secara horizontal dengan ruang kosong di kiri-kanan yang tenang, jangan dipaksa diisi.
+- **Peta Lokasi**: grid kartu lokasi 2-3 kolom alih-alih list vertikal satu kolom
+- **Persiapan (checklist)**: kategori-kategori bisa ditampilkan sebagai kolom-kolom berdampingan alih-alih accordion vertikal yang collapse satu-satu
+- **Panduan Tata Cara & Panduan Ihram**: timeline/step yang di mobile vertikal-scroll, di desktop bisa memanfaatkan lebar untuk menampilkan step + deskripsi berdampingan secara lebih lega, tetap pertahankan urutan dan nomor step yang jelas
+- **Sertifikat**: tetap satu kartu sertifikat (jangan dilebarkan jadi distorsi), tapi diberi konteks tambahan di sekitarnya (misal panel info kecil di samping)
+
+Untuk halaman yang TIDAK disebut spesifik di atas (Login), cukup pastikan tetap center dan tidak melar — boleh dipercantik dengan elemen dekoratif di sisi kiri-kanan asal tidak mengubah fungsinya.
+
+---
+
+## ATURAN YANG TETAP BERLAKU (jangan dilanggar saat membuat versi desktop)
+
+- Semua token warna, font, dan elemen signature mihrab card dari design system yang sudah ada TETAP dipakai persis sama — desktop bukan alasan untuk membuat palet/tipografi baru
+- Hierarki visual tetap lewat ukuran dan whitespace, bukan menambah warna baru
+- Mode B (Counter Tawaf, dll) tetap memprioritaskan kesederhanaan meski di layar lebar
+- Konten data (`src/data/*.ts`) tidak berubah — ini murni perubahan presentasi/layout
+- Tetap hormati `prefers-reduced-motion`
+- Pastikan transisi antara breakpoint mobile (1023px) dan desktop (1024px) tidak menyebabkan layout yang patah/aneh di lebar transisi (cek juga tablet, sekitar 768-1023px, harus tetap memakai mode mobile yang sudah ada — jangan ada zona "rusak" di antara dua mode)
+
+---
+
+## OUTPUT YANG DIHARAPKAN
+
+Sebelum membangun, tampilkan dulu rencana singkat: konfirmasi struktur sidebar, dan untuk halaman Beranda + Kumpulan Doa secara spesifik jelaskan bagaimana ruang desktop dipakai secara bermakna (bukan sekadar dilebarkan).
+
+Build dimulai dari `Layout.tsx` (struktur sidebar + breakpoint switching), lalu Beranda, lalu Kumpulan Doa (master-detail, paling kompleks), baru halaman lainnya secara berurutan.
+
+Setelah selesai, lakukan **self-review**: buka tiap halaman di lebar viewport desktop dan pastikan tidak ada ruang kosong besar yang terasa "kosong tanpa alasan", dan pastikan halaman Counter Tawaf TIDAK ikut-ikutan diberi elemen tambahan yang tidak perlu hanya karena layar lebar tersedia.

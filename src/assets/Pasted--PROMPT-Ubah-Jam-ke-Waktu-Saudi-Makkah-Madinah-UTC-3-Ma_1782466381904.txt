@@ -1,0 +1,129 @@
+# PROMPT: Ubah Jam ke Waktu Saudi (Makkah/Madinah, UTC+3)
+
+**Masalah:** Jam yang tampil (terutama di Jadwal Sholat) memakai waktu device — kalau HP jamaah masih setelan WIB (Indonesia), jamnya salah 4 jam. Padahal jadwal sholat memakai waktu Makkah. Harus pakai **waktu Saudi (Asia/Riyadh, UTC+3)** terlepas dari setelan device.
+
+**File terkait:**
+- `artifacts/umrahme/src/lib/waktu.ts` (BARU — helper waktu Saudi)
+- `artifacts/umrahme/src/pages/JadwalSholat.tsx` (pakai waktu Saudi)
+- Cek juga komponen lain yang menampilkan jam berjalan (opsional)
+
+---
+
+## LANGKAH 1 — Buat helper `lib/waktu.ts`
+
+Helper yang mengembalikan komponen waktu (jam/menit/detik/tanggal) di zona **Asia/Riyadh**, apa pun setelan device:
+
+```ts
+// Zona waktu Arab Saudi (Makkah & Madinah): Asia/Riyadh = UTC+3, tanpa DST.
+const TZ = 'Asia/Riyadh';
+
+export interface WaktuSaudi {
+  jam: number;        // 0-23
+  menit: number;      // 0-59
+  detik: number;      // 0-59
+  hari: number;       // 0=Minggu .. 6=Sabtu
+  tanggal: number;    // 1-31
+  bulan: number;      // 0-11
+  tahun: number;
+  totalMenit: number; // jam*60 + menit (untuk progress timeline)
+}
+
+/** Ambil waktu Saudi saat ini dari sebuah Date (default: sekarang). */
+export function getWaktuSaudi(base: Date = new Date()): WaktuSaudi {
+  // Format ke bagian-bagian tanggal/waktu dalam TZ Saudi
+  const fmt = new Intl.DateTimeFormat('en-US', {
+    timeZone: TZ,
+    hour12: false,
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    weekday: 'short',
+  });
+  const parts = fmt.formatToParts(base);
+  const get = (t: string) => parts.find(p => p.type === t)?.value ?? '0';
+
+  const jam = parseInt(get('hour'), 10) % 24; // '24' → 0
+  const menit = parseInt(get('minute'), 10);
+  const detik = parseInt(get('second'), 10);
+  const tanggal = parseInt(get('day'), 10);
+  const bulan = parseInt(get('month'), 10) - 1;
+  const tahun = parseInt(get('year'), 10);
+
+  const hariMap: Record<string, number> = { Sun:0, Mon:1, Tue:2, Wed:3, Thu:4, Fri:5, Sat:6 };
+  const hari = hariMap[get('weekday')] ?? 0;
+
+  return { jam, menit, detik, hari, tanggal, bulan, tahun, totalMenit: jam * 60 + menit };
+}
+```
+
+---
+
+## LANGKAH 2 — Pakai di `JadwalSholat.tsx`
+
+Ganti perhitungan waktu yang berbasis `now.getHours()` dll menjadi pakai `getWaktuSaudi`.
+
+Cari:
+```tsx
+const [now, setNow] = useState(() => new Date());
+
+useEffect(() => {
+  const id = setInterval(() => setNow(new Date()), 1000);
+  return () => clearInterval(id);
+}, []);
+
+const jam    = now.getHours().toString().padStart(2, '0');
+const menit  = now.getMinutes().toString().padStart(2, '0');
+const detik  = now.getSeconds().toString().padStart(2, '0');
+const progressMenit = now.getHours() * 60 + now.getMinutes();
+
+const tanggal = `${HARI[now.getDay()]}, ${now.getDate()} ${BULAN[now.getMonth()]} ${now.getFullYear()}`;
+```
+
+Ganti dengan:
+```tsx
+import { getWaktuSaudi } from '../lib/waktu';
+
+const [ws, setWs] = useState(() => getWaktuSaudi());
+
+useEffect(() => {
+  const id = setInterval(() => setWs(getWaktuSaudi()), 1000);
+  return () => clearInterval(id);
+}, []);
+
+const jam    = ws.jam.toString().padStart(2, '0');
+const menit  = ws.menit.toString().padStart(2, '0');
+const detik  = ws.detik.toString().padStart(2, '0');
+const progressMenit = ws.totalMenit;
+
+const tanggal = `${HARI[ws.hari]}, ${ws.tanggal} ${BULAN[ws.bulan]} ${ws.tahun}`;
+```
+
+`sholatBerikutnya` tetap memakai `progressMenit` (sudah waktu Saudi), tidak perlu diubah.
+
+---
+
+## LANGKAH 3 — Tambah label "Waktu Saudi" agar jelas
+
+Di hero Jadwal Sholat, dekat kota/tanggal, tambahkan penanda kecil bahwa jam memakai waktu Saudi (biar jamaah paham, terutama yang belum berangkat / masih di Indonesia):
+```tsx
+<span className="font-mono text-[8.5px] uppercase tracking-wider text-ash">Waktu Saudi (WAS)</span>
+```
+(Boleh menggantikan atau menemani badge "Data statis" yang sudah ada.)
+
+---
+
+## LANGKAH 4 — Cek tempat lain yang menampilkan jam berjalan (opsional)
+Periksa apakah ada komponen lain yang menampilkan JAM AKTUAL (bukan sekadar tanggal entri):
+- `components/dashboard/TravelCompanionFlow.tsx`
+- `pages/Beranda.tsx`
+
+Jika ada yang menampilkan jam/sapaan berbasis waktu (mis. "Selamat pagi/siang" dari `getHours()`), dan itu dimaksudkan untuk konteks di tanah suci, ganti juga pakai `getWaktuSaudi().jam`. TAPI jika itu sapaan berdasarkan waktu LOKAL jamaah (mis. masih di Indonesia sebelum berangkat), biarkan pakai waktu device — sesuaikan dengan maksudnya. Untuk jam ibadah/jadwal → SELALU waktu Saudi.
+
+> Catatan: tanggal pada jurnal, agenda, created_at, dll TIDAK perlu diubah — itu timestamp data, bukan jam dinding ibadah.
+
+---
+
+## ATURAN
+- Jam ibadah (Jadwal Sholat) WAJIB waktu Saudi (Asia/Riyadh), apa pun setelan device.
+- Helper `getWaktuSaudi` reusable untuk kebutuhan waktu Saudi lain ke depan.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

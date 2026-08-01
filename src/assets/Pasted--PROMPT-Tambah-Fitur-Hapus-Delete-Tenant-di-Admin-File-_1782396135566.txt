@@ -1,0 +1,174 @@
+# PROMPT: Tambah Fitur Hapus (Delete) Tenant di Admin
+
+**File terkait:**
+- `artifacts/umrahme/src/lib/supabase.ts` (tambah helper `deleteTenant`)
+- `artifacts/umrahme/src/pages/admin/AdminTenantList.tsx` (tombol hapus + modal konfirmasi)
+
+Tambahkan kemampuan menghapus tenant dari halaman Daftar Tenant. Karena ini aksi destruktif (menghapus data travel beserta relasinya), WAJIB pakai konfirmasi yang aman — bukan langsung hapus saat diklik.
+
+---
+
+## LANGKAH 1 — Tambah helper `deleteTenant` di `lib/supabase.ts`
+
+Setelah fungsi `updateTenant`, tambahkan:
+```ts
+export async function deleteTenant(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('tenants')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+}
+```
+
+> Catatan tentang data relasi: jika tabel `agenda_items`, `travel_announcements`, `jamaah_accounts`, `tenant_users` punya foreign key ke `tenants` TANPA `ON DELETE CASCADE`, penghapusan tenant akan gagal karena masih ada baris anak. Dua opsi:
+> - **(Disarankan)** Pastikan FK pakai `ON DELETE CASCADE` di Supabase (lihat LANGKAH 4 — SQL opsional).
+> - **Atau** hapus baris anak lebih dulu di `deleteTenant` sebelum hapus tenant:
+> ```ts
+> export async function deleteTenant(id: string): Promise<void> {
+>   // hapus data anak dulu (jika tidak ada ON DELETE CASCADE)
+>   await supabase.from('agenda_items').delete().eq('tenant_id', id);
+>   await supabase.from('travel_announcements').delete().eq('tenant_id', id);
+>   await supabase.from('jamaah_accounts').delete().eq('tenant_id', id);
+>   await supabase.from('tenant_users').delete().eq('tenant_id', id);
+>   const { error } = await supabase.from('tenants').delete().eq('id', id);
+>   if (error) throw error;
+> }
+> ```
+> Pilih salah satu. Jika sudah ada CASCADE, versi pertama (singkat) cukup.
+
+---
+
+## LANGKAH 2 — Tambah state & handler di `AdminTenantList.tsx`
+
+Tambah import:
+```ts
+import { fetchTenants, deleteTenant, type TenantRow } from '../../lib/supabase';
+```
+
+Tambah state untuk modal konfirmasi & proses hapus:
+```tsx
+const [hapusTarget, setHapusTarget] = useState<TenantRow | null>(null);
+const [konfirmText, setKonfirmText] = useState('');
+const [deleting, setDeleting] = useState(false);
+```
+
+Tambah handler:
+```tsx
+async function handleDelete() {
+  if (!hapusTarget) return;
+  setDeleting(true);
+  try {
+    await deleteTenant(hapusTarget.id);
+    setTenants((prev) => prev.filter((t) => t.id !== hapusTarget.id));
+    setToast(`Tenant "${hapusTarget.nama_travel}" berhasil dihapus.`);
+    setHapusTarget(null);
+    setKonfirmText('');
+  } catch (err) {
+    setToast(err instanceof Error ? `Gagal menghapus: ${err.message}` : 'Gagal menghapus tenant.');
+  } finally {
+    setDeleting(false);
+  }
+}
+```
+
+---
+
+## LANGKAH 3 — Tambah tombol Hapus di kartu + modal konfirmasi
+
+### 3a. Tombol Hapus (di samping tombol Edit)
+Di dalam kartu, setelah `<Link>` Edit, tambahkan tombol hapus (ikon tempat sampah, warna merah halus):
+```tsx
+<button
+  onClick={() => { setHapusTarget(t); setKonfirmText(''); }}
+  className="flex-none inline-flex items-center justify-center rounded-lg transition-all duration-150"
+  style={{ width: '32px', height: '32px', color: '#dc2626', border: '1px solid rgba(220,38,38,0.2)' }}
+  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.07)'; }}
+  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+  title="Hapus tenant"
+  aria-label={`Hapus ${t.nama_travel}`}
+>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+</button>
+```
+(Bungkus tombol Edit + Hapus dalam wrapper `flex items-center gap-2` agar rapi.)
+
+### 3b. Modal konfirmasi (letakkan sebelum `</AdminLayout>`)
+Konfirmasi aman: admin harus MENGETIK nama travel persis untuk mengaktifkan tombol hapus. Mencegah kepencet tidak sengaja.
+```tsx
+{hapusTarget && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}
+       onClick={() => !deleting && setHapusTarget(null)}>
+    <div className="w-full max-w-md rounded-2xl p-6" style={{ background: '#ffffff' }} onClick={e => e.stopPropagation()}>
+      <div className="flex items-center gap-3">
+        <div className="flex-none flex items-center justify-center rounded-full" style={{ width: '40px', height: '40px', background: 'rgba(220,38,38,0.1)' }}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>
+        </div>
+        <div>
+          <h3 className="text-[16px] font-bold" style={{ color: '#111827' }}>Hapus Tenant</h3>
+          <p className="text-[12px]" style={{ color: '#6b7280' }}>Tindakan ini tidak dapat dibatalkan.</p>
+        </div>
+      </div>
+
+      <p className="mt-4 text-[13px] leading-relaxed" style={{ color: '#374151' }}>
+        Menghapus <b>{hapusTarget.nama_travel}</b> akan menghapus seluruh data terkait (agenda, pengumuman, akun jamaah). Ketik nama travel di bawah untuk konfirmasi:
+      </p>
+
+      <input
+        type="text"
+        value={konfirmText}
+        onChange={e => setKonfirmText(e.target.value)}
+        placeholder={hapusTarget.nama_travel}
+        className="mt-3 w-full rounded-xl px-3 py-2.5 text-[14px] outline-none"
+        style={{ border: '1px solid rgba(0,0,0,0.15)' }}
+        autoFocus
+      />
+
+      <div className="mt-5 flex items-center justify-end gap-2">
+        <button
+          onClick={() => { setHapusTarget(null); setKonfirmText(''); }}
+          disabled={deleting}
+          className="px-4 py-2 rounded-xl text-[13px] font-semibold"
+          style={{ color: '#374151', border: '1px solid rgba(0,0,0,0.15)' }}
+        >
+          Batal
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={deleting || konfirmText.trim() !== hapusTarget.nama_travel.trim()}
+          className="px-4 py-2 rounded-xl text-[13px] font-semibold transition-all duration-150"
+          style={{
+            background: (deleting || konfirmText.trim() !== hapusTarget.nama_travel.trim()) ? 'rgba(220,38,38,0.4)' : '#dc2626',
+            color: '#ffffff',
+            cursor: (deleting || konfirmText.trim() !== hapusTarget.nama_travel.trim()) ? 'not-allowed' : 'pointer',
+          }}
+        >
+          {deleting ? 'Menghapus…' : 'Hapus Permanen'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+```
+
+---
+
+## LANGKAH 4 (OPSIONAL) — SQL untuk ON DELETE CASCADE di Supabase
+
+Jika ingin pakai `deleteTenant` versi singkat dan penghapusan otomatis merembet ke data anak, jalankan di Supabase SQL editor (sesuaikan nama constraint bila perlu):
+```sql
+-- contoh untuk agenda_items; ulangi untuk tabel anak lainnya
+ALTER TABLE agenda_items DROP CONSTRAINT IF EXISTS agenda_items_tenant_id_fkey;
+ALTER TABLE agenda_items ADD CONSTRAINT agenda_items_tenant_id_fkey
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE;
+```
+Lakukan serupa untuk `travel_announcements`, `jamaah_accounts`, `tenant_users`. **Hati-hati:** CASCADE menghapus semua data anak otomatis. Jika ragu, pakai `deleteTenant` versi yang menghapus anak manual (LANGKAH 1 opsi kedua) dan lewati langkah ini.
+
+---
+
+## ATURAN
+- WAJIB modal konfirmasi dengan ketik-nama — jangan hapus langsung saat klik.
+- Setelah hapus sukses: hilangkan dari list (state) + tampilkan toast.
+- Jangan ubah fungsi fetch/Edit yang sudah ada.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

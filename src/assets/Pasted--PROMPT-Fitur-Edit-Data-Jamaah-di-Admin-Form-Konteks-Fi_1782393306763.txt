@@ -1,0 +1,220 @@
+# PROMPT — Fitur Edit Data Jamaah di Admin Form
+
+## Konteks
+File: `artifacts/umrahme/src/pages/admin/AdminTenantForm.tsx`
+
+Saat ini daftar jamaah di admin form hanya bisa: tambah, hapus, dan ubah fase.
+Tambahkan kemampuan **EDIT** data jamaah yang sudah terdaftar: nama, no. jamaah,
+rombongan, dan no. paspor — lewat inline edit di tabel (klik "Edit" → baris jadi input → "Simpan").
+
+> Prasyarat: fungsi `updateJamaah` SUDAH ADA (dipakai untuk fase_override). Kolom
+> `nomor_paspor` sudah ditambahkan ke DB & type (dari prompt "Ganti Chip Paspor").
+> Kalau `nomor_paspor` belum ada, jalankan dulu:
+> `ALTER TABLE jamaah_accounts ADD COLUMN IF NOT EXISTS nomor_paspor TEXT;`
+> dan tambahkan `nomor_paspor: string | null` ke type `JamaahAccountRow`.
+
+---
+
+## LANGKAH 1 — State untuk Mode Edit
+
+Di dekat state jamaah lain (sekitar `const [jmNama, setJmNama]...`), tambahkan state untuk baris yang sedang diedit:
+
+```ts
+// State edit jamaah (inline)
+const [editingJamaahId, setEditingJamaahId] = useState<string | null>(null);
+const [editNama, setEditNama] = useState('');
+const [editNomorJamaah, setEditNomorJamaah] = useState('');
+const [editRombongan, setEditRombongan] = useState('');
+const [editPaspor, setEditPaspor] = useState('');
+const [editSaving, setEditSaving] = useState(false);
+const [editError, setEditError] = useState('');
+```
+
+---
+
+## LANGKAH 2 — Handler Mulai Edit, Simpan, Batal
+
+Tambahkan 3 fungsi ini di dekat `handleDeleteJamaah` / `handleUpdateJamaahFase`:
+
+```ts
+function startEditJamaah(j: JamaahAccountRow) {
+  setEditingJamaahId(j.id);
+  setEditNama(j.nama);
+  setEditNomorJamaah(j.nomor_jamaah);
+  setEditRombongan(j.rombongan ?? '');
+  setEditPaspor(j.nomor_paspor ?? '');
+  setEditError('');
+}
+
+function cancelEditJamaah() {
+  setEditingJamaahId(null);
+  setEditError('');
+}
+
+async function saveEditJamaah(jamaahId: string) {
+  if (!editNama.trim()) { setEditError('Nama wajib diisi.'); return; }
+  if (!editNomorJamaah.trim()) { setEditError('No. Jamaah wajib diisi.'); return; }
+  setEditSaving(true);
+  setEditError('');
+  try {
+    const payload = {
+      nama: editNama.trim(),
+      nomor_jamaah: editNomorJamaah.trim(),
+      rombongan: editRombongan.trim() || null,
+      nomor_paspor: editPaspor.trim() || null,
+    };
+    await updateJamaah(id!, jamaahId, payload as Partial<JamaahAccountRow>);
+    // Update list lokal tanpa reload penuh
+    setJamaahList(prev => prev.map(j => j.id === jamaahId ? { ...j, ...payload } : j));
+    setEditingJamaahId(null);
+  } catch (err: unknown) {
+    setEditError(err instanceof Error ? err.message : 'Gagal menyimpan perubahan.');
+  } finally {
+    setEditSaving(false);
+  }
+}
+```
+
+---
+
+## LANGKAH 3 — Update Tabel: Tambah Kolom Paspor + Mode Edit per Baris
+
+Cari header tabel jamaah:
+```tsx
+{['Nama', 'No. Jamaah', 'Rombongan', 'Fase', ''].map(h => <th key={h} ...>{h}</th>)}
+```
+
+Ganti jadi (tambah kolom "No. Paspor"):
+```tsx
+{['Nama', 'No. Jamaah', 'Rombongan', 'No. Paspor', 'Fase', ''].map(h => <th key={h} className="text-left font-mono text-[10px] uppercase tracking-[0.12em] px-5 py-3" style={{ color: '#9ca3af' }}>{h}</th>)}
+```
+
+Lalu ganti seluruh blok `<tr>` di dalam `jamaahList.map(...)` dengan versi yang mendukung mode edit:
+
+```tsx
+{jamaahList.map((j, i) => {
+  const isEditing = editingJamaahId === j.id;
+  const rowBorder = { borderBottom: i < jamaahList.length - 1 ? '1px solid rgba(0,0,0,0.04)' : 'none' };
+
+  if (isEditing) {
+    return (
+      <tr key={j.id} style={{ ...rowBorder, background: 'rgba(67,56,202,0.03)' }}>
+        <td className="px-5 py-3">
+          <input value={editNama} onChange={e => setEditNama(e.target.value)}
+            className="w-full rounded-lg px-2 py-1.5 text-[13px] focus:outline-none"
+            style={{ border: '1px solid rgba(67,56,202,0.25)', background: '#fff', color: '#111827' }} />
+        </td>
+        <td className="px-5 py-3">
+          <input value={editNomorJamaah} onChange={e => setEditNomorJamaah(e.target.value)}
+            className="w-full rounded-lg px-2 py-1.5 text-[12px] font-mono focus:outline-none"
+            style={{ border: '1px solid rgba(67,56,202,0.25)', background: '#fff', color: '#374151' }} />
+        </td>
+        <td className="px-5 py-3">
+          <input value={editRombongan} onChange={e => setEditRombongan(e.target.value)} placeholder="—"
+            className="w-full rounded-lg px-2 py-1.5 text-[12px] focus:outline-none"
+            style={{ border: '1px solid rgba(67,56,202,0.25)', background: '#fff', color: '#374151' }} />
+        </td>
+        <td className="px-5 py-3">
+          <input value={editPaspor} onChange={e => setEditPaspor(e.target.value)} placeholder="—"
+            className="w-full rounded-lg px-2 py-1.5 text-[12px] font-mono focus:outline-none"
+            style={{ border: '1px solid rgba(67,56,202,0.25)', background: '#fff', color: '#374151' }} />
+        </td>
+        <td className="px-5 py-3.5 text-[11px]" style={{ color: '#9ca3af' }}>—</td>
+        <td className="px-5 py-3.5 text-right whitespace-nowrap">
+          <button type="button" onClick={() => saveEditJamaah(j.id)} disabled={editSaving}
+            className="font-mono text-[11px] px-3 py-1.5 rounded-lg transition-all duration-150 disabled:opacity-60 mr-1.5"
+            style={{ background: 'linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)', color: '#fff' }}>
+            {editSaving ? '...' : 'Simpan'}
+          </button>
+          <button type="button" onClick={cancelEditJamaah} disabled={editSaving}
+            className="font-mono text-[11px] px-3 py-1.5 rounded-lg transition-all duration-150"
+            style={{ color: '#9ca3af', border: '1px solid rgba(0,0,0,0.07)' }}>
+            Batal
+          </button>
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <tr key={j.id} style={rowBorder}>
+      <td className="px-5 py-3.5 text-[13px] font-semibold" style={{ color: '#111827' }}>{j.nama}</td>
+      <td className="px-5 py-3.5 font-mono text-[12px]" style={{ color: '#6b7280' }}>{j.nomor_jamaah}</td>
+      <td className="px-5 py-3.5 text-[12px]" style={{ color: '#6b7280' }}>{j.rombongan ?? '—'}</td>
+      <td className="px-5 py-3.5 font-mono text-[12px]" style={{ color: '#6b7280' }}>{j.nomor_paspor ?? '—'}</td>
+      <td className="px-5 py-3.5">
+        <select value={j.fase_override ?? ''} onChange={e => handleUpdateJamaahFase(j.id, e.target.value)} className="text-[11px] rounded-lg px-2 py-1 focus:outline-none transition-all" style={{ border: '1px solid rgba(0,0,0,0.09)', background: '#fafaf9', color: '#374151' }}>
+          <option value="">Otomatis (dari jadwal)</option>
+          {FASE_OPTIONS.map(f => <option key={f.value} value={f.value}>{f.label}</option>)}
+        </select>
+      </td>
+      <td className="px-5 py-3.5 text-right whitespace-nowrap">
+        <button type="button" onClick={() => startEditJamaah(j)}
+          className="font-mono text-[11px] px-3 py-1.5 rounded-lg transition-all duration-150 mr-1.5"
+          style={{ color: '#4338ca', border: '1px solid rgba(67,56,202,0.2)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(67,56,202,0.06)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
+          Edit
+        </button>
+        <button type="button" onClick={() => handleDeleteJamaah(j.id, j.nama)}
+          className="font-mono text-[11px] px-3 py-1.5 rounded-lg transition-all duration-150"
+          style={{ color: '#9ca3af', border: '1px solid rgba(0,0,0,0.07)' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#dc2626'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(220,38,38,0.25)'; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(220,38,38,0.05)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#9ca3af'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,0,0,0.07)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
+          Hapus
+        </button>
+      </td>
+    </tr>
+  );
+})}
+```
+
+---
+
+## LANGKAH 4 — Tampilkan Error Edit (opsional tapi disarankan)
+
+Tepat di bawah `</table>` (setelah tabel jamaah ditutup, masih di dalam container), tambahkan:
+```tsx
+{editError && (
+  <p className="px-5 py-2 text-[12px]" style={{ color: '#dc2626' }}>{editError}</p>
+)}
+```
+
+---
+
+## LANGKAH 5 — Tambah No. Paspor di Form TAMBAH Jamaah (biar konsisten)
+
+Di form `handleAddJamaah` (grid 3 kolom Rombongan/Bus/Kamar), tambahkan input paspor.
+Tambahkan state `jmPaspor`:
+```ts
+const [jmPaspor, setJmPaspor] = useState('');
+```
+
+Di grid input, tambahkan field paspor (boleh jadikan grid 4 kolom atau baris baru):
+```tsx
+<div><p className="text-[11px] font-semibold mb-1.5" style={{ color: '#374151' }}>No. Paspor</p><StyledInput type="text" value={jmPaspor} onChange={e => setJmPaspor(e.target.value)} placeholder="C1234567" /></div>
+```
+
+Di `handleAddJamaah`, tambahkan `nomor_paspor` ke payload `createJamaah`:
+```ts
+await createJamaah(id!, { nama: jmNama.trim(), nomor_jamaah: jmNomorJamaah.trim(), rombongan: jmRombongan.trim() || null, nomor_bus: jmBus.trim() || null, nomor_kamar: jmKamar.trim() || null, nomor_paspor: jmPaspor.trim() || null, fase: jmFase });
+```
+
+Dan reset `setJmPaspor('')` di baris reset setelah create berhasil.
+
+---
+
+## Catatan
+- Fungsi `updateJamaah(tenantId, jamaahId, payload)` SUDAH ADA — kita reuse, tidak perlu bikin baru
+- Edit memakai inline edit (baris berubah jadi input), bukan modal — lebih ringan & cepat
+- Hanya 1 baris bisa diedit dalam satu waktu (`editingJamaahId`)
+- Setelah simpan, list di-update lokal (tidak reload penuh) supaya cepat
+- Kolom No. Paspor ditambah ke tabel — pastikan tabel tidak overflow di layar admin (biasanya admin diakses desktop, jadi aman)
+- Jangan ubah fungsi tambah/hapus/fase yang sudah ada (selain menambah paspor di form tambah)
+
+## Verifikasi Setelah Deploy
+- Tiap baris jamaah ada tombol "Edit" → klik → baris jadi input field
+- Edit nama/no.jamaah/rombongan/paspor → "Simpan" → data terupdate
+- "Batal" → kembali tanpa perubahan
+- Validasi: nama & no. jamaah wajib diisi saat simpan
+- Kolom No. Paspor muncul di tabel

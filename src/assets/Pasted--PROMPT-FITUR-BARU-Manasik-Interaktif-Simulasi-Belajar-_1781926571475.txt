@@ -1,0 +1,94 @@
+# PROMPT FITUR BARU — Manasik Interaktif (Simulasi Belajar)
+
+> Konteks: project Umrahme sudah punya halaman "Tata Cara Umrah" (referensi linear/bacaan) dan "Live Ritual Navigator" (wizard praktis untuk dipakai real-time saat hari-H, dibangun terpisah). Fitur ini BEDA TUJUAN dari keduanya: Manasik Interaktif adalah MEDIA BELAJAR sebelum berangkat — dibuat agar jamaah yang awam bisa memahami rangkaian umrah dengan cara yang menyenangkan dan mudah diingat, bukan sekadar membaca teks panjang.
+
+Ini fitur paling kompleks dari seluruh permintaan — perlakukan sebagai mini-aplikasi belajar tersendiri di dalam Umrahme, bukan sekadar halaman tambahan.
+
+## TUJUAN & BATASAN PENTING
+
+- Sasaran pengguna: jamaah AWAM yang belum familiar dengan rangkaian umrah — bahasa dan visual harus sangat sederhana, hindari istilah fiqih tanpa penjelasan.
+- Ini BUKAN tempat untuk konten ibadah baru yang belum diverifikasi — semua materi yang dipakai dalam simulasi ini HARUS mengacu/menggunakan data yang SUDAH ADA dan SUDAH BENAR di codebase (dari `src/data/doa.ts`, `src/data/ritualSteps.ts` jika sudah dibuat, halaman Tata Cara Umrah, Panduan Ihram). JANGAN mengarang skenario atau fakta ibadah baru yang tidak bersumber dari data yang sudah divalidasi di project ini.
+- "Game/simulasi" di sini berarti INTERAKSI dan GAMIFIKASI RINGAN (pertanyaan, drag-drop urutan, skor pemahaman, ilustrasi visual) — BUKAN game hiburan dengan avatar/karakter/dunia virtual yang tidak perlu. Tetap jaga nuansa tenang dan islami sesuai design system, jangan jadi terasa seperti game kasual generik.
+
+## STRUKTUR
+
+Buat sebagai sub-area dengan beberapa "modul" pembelajaran, masing-masing modul mengikuti satu tahap besar dari rangkaian umrah. Modul yang diusulkan (sesuaikan dengan urutan resmi yang sudah ada di codebase):
+
+1. Modul: Ihram & Miqat
+2. Modul: Tawaf
+3. Modul: Sa'i
+4. Modul: Tahallul & Penutup
+
+### Format tiap modul (3 bagian, berurutan)
+
+**Bagian A — Kenali (penjelasan visual ringkas)**: 3-5 kartu/slide singkat dengan ilustrasi sederhana (gunakan SVG ilustratif sesuai design system, BUKAN foto atau ikon generik) yang menjelaskan inti tahap ini dengan bahasa sangat sederhana. Tiap kartu: satu ide saja, judul pendek, 1-2 kalimat penjelasan. Navigasi swipe/tap "lanjut" antar kartu.
+
+**Bagian B — Urutkan (drag-and-drop atau tap-urutkan)**: tantangan kecil di mana jamaah menyusun ulang langkah-langkah dalam modul itu ke urutan yang benar (mis. untuk modul Tawaf: "Mulai dari Hajar Aswad" harus diurutkan sebelum "Posisi Ka'bah di sebelah kiri" dst — gunakan langkah yang SUDAH ADA datanya, jangan buat sendiri). Jika drag-and-drop kompleks untuk diimplementasikan dengan baik, GANTI dengan format tap-pilih-urutan (user tap item satu per satu sesuai urutan yang menurutnya benar) — pilih format yang lebih realistis untuk dieksekusi dengan kualitas baik daripada memaksakan drag-and-drop yang janggal.
+
+**Bagian C — Uji Paham (kuis pilihan ganda ringan)**: 3-5 pertanyaan pilihan ganda sederhana seputar modul itu (mis. "Berapa kali jamaah mengelilingi Ka'bah saat tawaf?" dengan pilihan jawaban). SEMUA pertanyaan dan jawaban HARUS berbasis fakta yang sudah ada di data project (jangan mengarang angka/aturan). Beri feedback langsung benar/salah dengan penjelasan singkat, bukan hanya skor di akhir.
+
+### Penutup modul
+Setelah Bagian C selesai, tampilkan ringkasan modul: skor sederhana (mis. "4 dari 5 benar"), tombol untuk mengulang bagian yang salah, dan tombol "Lanjut ke modul berikutnya" — atau jika ini modul terakhir, arahkan ke layar "Semua Modul Selesai" dengan nuansa pencapaian ringan (BUKAN sertifikat resmi — itu domain halaman Sertifikat yang sudah ada dan berarti khusus untuk umrah yang benar-benar selesai dijalankan, jangan tumpang tindih makna).
+
+## STRUKTUR DATA
+
+```
+interface ManasikKartu {
+  id: string;
+  modulId: string;
+  judul: string;
+  penjelasan: string;
+  ilustrasiSvgRef?: string; // referensi ke SVG/komponen ilustrasi
+}
+
+interface ManasikUrutanItem {
+  id: string;
+  modulId: string;
+  teks: string;
+  urutanBenar: number;
+}
+
+interface ManasikKuisSoal {
+  id: string;
+  modulId: string;
+  pertanyaan: string;
+  pilihan: string[];
+  jawabanBenarIndex: number;
+  penjelasanSingkat: string; // ditampilkan setelah dijawab
+}
+
+interface ManasikModul {
+  id: string;
+  judul: string;
+  urutan: number;
+}
+```
+
+Simpan di `src/data/manasikInteraktif.ts`. Isi datanya HARUS diturunkan dari data yang sudah ada di project (doa.ts, ritualSteps.ts, atau konten Tata Cara Umrah/Panduan Ihram yang sudah ada) — bukan dikarang baru.
+
+## HALAMAN
+
+Buat `ManasikInteraktif.tsx` sebagai halaman daftar modul (diakses dari halaman hub "Panduan", tambahkan kartu akses baru) dan `ManasikModulDetail.tsx` untuk menjalankan satu modul (rute dinamis `/panduan/manasik-interaktif/:modulId`).
+
+Halaman daftar modul: tiap modul sebagai kartu dengan status (Belum dimulai / Sedang berjalan / Selesai dengan skor), progress keseluruhan di atas.
+
+Halaman detail modul: tiga bagian (A, B, C) berjalan berurutan dalam satu sesi, dengan indikator bagian mana yang sedang aktif.
+
+## DESAIN
+
+- Tetap dalam design system Umrahme (hitam-pink, mihrab card, Fraunces/Plus Jakarta Sans) — TAPI boleh sedikit lebih playful dibanding halaman lain (animasi transisi kartu yang lebih hidup, micro-interaction saat jawaban benar) karena ini konteks belajar yang memang ingin terasa ringan, bukan konteks ibadah langsung yang harus sangat tenang.
+- Progress per modul ditampilkan jelas dan memotivasi, tanpa terasa seperti tekanan/ujian formal.
+- Hormati `prefers-reduced-motion` — sediakan versi tanpa animasi untuk semua interaksi gamifikasi.
+
+## ATURAN
+
+- TIDAK ada konten ibadah baru yang dikarang — semua materi merujuk data yang sudah ada dan tervalidasi di project.
+- TIDAK menggantikan halaman Tata Cara Umrah atau Panduan Ihram yang sudah ada — ini pelengkap cara belajar, bukan pengganti referensi.
+- TIDAK menggunakan istilah "sertifikat" atau elemen yang bisa dirancukan dengan halaman Sertifikat resmi.
+- Skor/progress modul ini cukup disimpan di state lokal atau localStorage (pola yang sama dengan fitur lain) — tidak perlu backend.
+
+## OUTPUT
+
+Sebelum membangun, tampilkan rencana singkat: daftar modul final dan untuk SETIAP modul, sebutkan secara eksplisit data sumber mana di codebase yang akan dipakai untuk mengisi Bagian A/B/C-nya (agar bisa dicek tidak ada konten yang dikarang sebelum coding dimulai).
+
+Build satu modul penuh dulu (disarankan mulai dari Modul Tawaf, karena datanya paling lengkap dari Counter Tawaf yang sudah ada) sebagai pola, baru lanjutkan ke modul lainnya mengikuti pola yang sama.

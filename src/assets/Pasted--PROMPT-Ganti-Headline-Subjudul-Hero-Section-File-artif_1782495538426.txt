@@ -1,0 +1,52 @@
+# PROMPT: Ganti Headline & Subjudul Hero Section
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Ganti judul (headline) dan subjudul di hero section dengan teks baru di bawah. Pertahankan styling, layout, animasi, dan warna aksen hijau yang sudah ada — HANYA ganti teksnya dan atur bagian mana yang diberi warna aksen.
+
+---
+
+## TEKS BARU
+
+**Headline:**
+> Aplikasi Pendamping Umrah, **Atas Nama Travel Anda**
+
+**Subjudul:**
+> Dampingi setiap jamaah dengan jadwal, doa, panduan ibadah, info hotel, dan pengumuman perjalanan — lengkap dalam satu aplikasi bermerek travel Anda.
+
+---
+
+## CARA PASANG
+
+### 1. Headline
+Cari elemen judul hero saat ini (yang berbunyi "Satu Aplikasi Umrah, Bermerek Travel Anda" atau sejenisnya). Ganti teksnya menjadi:
+- Baris/bagian biasa (warna teks utama): **"Aplikasi Pendamping Umrah,"**
+- Bagian beraksen hijau (warna `accent` / `#a3e635` — pakai class/style aksen yang SUDAH dipakai sebelumnya, mis. teks hijau + italic jika sebelumnya begitu): **"Atas Nama Travel Anda"**
+
+Contoh pola (sesuaikan dengan struktur JSX & nama warna yang ada di file):
+```tsx
+<h1 className="...kelas-heading-yang-sudah-ada...">
+  Aplikasi Pendamping Umrah,{' '}
+  <span className="...kelas-aksen-hijau-yang-sudah-ada...">
+    Atas Nama Travel Anda
+  </span>
+</h1>
+```
+> Jika sebelumnya kata aksen memakai italic (seperti "Bermerek Travel Anda" yang miring di desain lama), pertahankan italic itu pada "Atas Nama Travel Anda" agar konsisten.
+
+### 2. Subjudul
+Ganti paragraf deskripsi hero menjadi:
+```tsx
+<p className="...kelas-subjudul-yang-sudah-ada...">
+  Dampingi setiap jamaah dengan jadwal, doa, panduan ibadah, info hotel, dan pengumuman perjalanan — lengkap dalam satu aplikasi bermerek travel Anda.
+</p>
+```
+
+---
+
+## ATURAN
+- HANYA ganti teks headline + subjudul. Jangan ubah tombol CTA, gambar latar, animasi, ukuran font, atau layout.
+- Pertahankan warna aksen hijau pada frasa "Atas Nama Travel Anda" (sama persis dengan gaya aksen yang dipakai headline lama).
+- Pastikan tanda "—" ditulis sebagai karakter em-dash langsung (—), bukan escape.
+- `pnpm --filter umrahme typecheck` harus nol error.
+- Commit & push ke GitHub.

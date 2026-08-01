@@ -1,0 +1,79 @@
+# PROMPT: Bersihkan Hero — Hapus Marquee, Floating Cards, Ganti Copy
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Tiga perubahan. Jangan ubah warna, logika, animasi, atau bagian lain.
+
+---
+
+## 1. HAPUS Partners Marquee (nama-nama travel di bawah hero)
+
+Hapus SELURUH blok ini:
+```jsx
+{/* ══════════ PARTNERS MARQUEE ══════════ */}
+<div style={{ padding: '90px 0 50px', borderBottom: `1px solid ${C.line}`, overflow: 'hidden' }}>
+  <p style={{ textAlign: 'center', color: C.muted, fontSize: 13, fontWeight: 600, marginBottom: 26 }}>
+    BERGABUNGLAH BERSAMA TRAVEL UMRAH YANG LEBIH MODERN
+  </p>
+  <MarqueeStrip />
+</div>
+```
+
+Hapus juga komponen `MarqueeStrip` dan konstanta `PARTNERS` di bagian atas file (sudah tidak terpakai).
+
+---
+
+## 2. HAPUS Floating Cards (penyebab gradasi/area putih transisi)
+
+Di dalam HERO section, hapus SELURUH blok floating cards ini:
+```jsx
+{/* floating cards */}
+<div className="lp-float-wrap" style={{ position: 'relative', zIndex: 3, marginTop: 50, marginBottom: -90, ... }}>
+  {[
+    { delay: 0 },
+    ...
+  ].map((_, i) => (
+    ...
+  ))}
+</div>
+```
+(seluruh blok dari komentar `{/* floating cards */}` sampai `</div>` penutupnya, tepat sebelum `</section>` hero).
+
+Setelah dihapus, hero section berakhir bersih setelah div konten utama. Hapus juga `marginBottom` negatif yang tadi ada di floating cards — sudah otomatis hilang karena bloknya dihapus.
+
+Tambahkan padding bawah pada hero section supaya ada ruang nafas: ubah `padding: '150px 0 0'` menjadi `padding: '120px 0 70px'`.
+
+Hapus juga aturan CSS `.lp-float-wrap` di dalam `<style>` (di media query manapun) karena sudah tidak dipakai.
+
+---
+
+## 3. GANTI Judul & Deskripsi Hero (lebih simpel & sesuai produk)
+
+**Headline** — ganti:
+```jsx
+Aplikasi Umrah{' '}
+<span style={{ color: C.accent, fontStyle: 'italic' }}>Bermerek Travel Anda</span>
+```
+Menjadi:
+```jsx
+Pendamping Umrah Digital{' '}
+<span style={{ color: C.accent, fontStyle: 'italic' }}>untuk Travel Anda</span>
+```
+
+**Deskripsi** — ganti seluruh isi `<motion.p>` deskripsi:
+```
+Buku doa cetak Anda habis 15–25 SAR per jamaah — dan sering tidak dibaca. Umrahme menggantikannya seharga 10 SAR, lengkap dengan panduan ibadah, jadwal, dan komunikasi travel. Semua bermerek nama travel Anda.
+```
+Menjadi:
+```
+Doa, panduan ibadah, jadwal, dan komunikasi travel — semua dalam satu aplikasi bermerek nama Anda. Cukup 10 SAR per jamaah.
+```
+
+**Social proof bawah** — biarkan apa adanya (`Lebih hemat dari buku doa cetak. Lebih profesional dari grup WhatsApp.`).
+
+---
+
+## Aturan
+- Jangan ubah warna brand, animasi, atau section lain.
+- Pastikan tidak ada referensi `MarqueeStrip`, `PARTNERS`, atau `.lp-float-wrap` yang tersisa (akan error kalau ada).
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.

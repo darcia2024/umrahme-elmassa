@@ -1,0 +1,92 @@
+# PROMPT: Revisi Total Copywriting Bento Stat Cards
+
+**File:** `artifacts/umrahme/src/pages/LandingPage.tsx`
+
+Copywriting di 4 stat card section "Tentang Umrahme" lemah dan masih menyebut "10 SAR" (harga harus HANYA di pricing). Revisi total agar setiap kartu: angka = bukti, label atas = benefit yang meyakinkan. Jangan ubah warna, layout, atau logika — hanya teks dan angka.
+
+---
+
+## PRINSIP COPY STAT CARD
+
+Tiap kartu punya 2 elemen teks:
+- **Label kecil (atas)** = benefit/janji, kalimat pendek yang menjual
+- **Angka besar (bawah)** = bukti konkret yang memperkuat label
+
+Angka harus terasa membuktikan sesuatu, bukan fakta hambar. Hindari menyebut harga "10 SAR" di sini.
+
+---
+
+## REVISI 4 STAT CARD
+
+Cari 4 kartu di section bento dan ganti teks + angkanya. Susun ulang jadi seperti ini (urut: kartu 1 biru, kartu 2 putih, kartu 3 accent hijau, kartu 4 ink gelap):
+
+### Kartu 1 (biru gradient) — fokus WHITE-LABEL
+- **Label atas:** `Tampil sebagai aplikasi travel Anda sendiri`
+- **Angka besar:** `100%`
+- **Sub-teks bawah angka (jika ada):** `Logo, nama, dan warna brand Anda — tanpa jejak pihak ketiga`
+
+### Kartu 2 (putih) — fokus KELENGKAPAN ISI
+- **Label atas:** `Doa & panduan ibadah siap pakai`
+- **Angka besar:** `55+`
+- **Sub-teks bawah angka (jika ada):** `Lengkap dengan Arab, latin, dan terjemahan`
+
+### Kartu 3 (accent hijau) — fokus FITUR LENGKAP
+- **Label atas:** `Fitur premium, langsung aktif`
+- **Angka besar:** `12`
+- **Sub-teks bawah angka (jika ada):** `Semua termasuk — tanpa biaya tambahan`
+
+### Kartu 4 (ink gelap) — fokus TANPA BIAYA TERSEMBUNYI
+- **Label atas:** `Biaya setup & langganan bulanan`
+- **Angka besar:** `Rp 0`
+- **Sub-teks bawah angka (jika ada):** `Bayar hanya saat jamaah berangkat`
+
+**PENTING:** Hapus kartu/teks apapun yang masih menyebut `10 SAR` atau `Harga per jamaah` di bento. Ganti dengan salah satu kartu di atas. Harga hanya boleh muncul di section Pricing.
+
+Jika ada kartu yang berisi quote testimoni panjang (`"Pertanyaan jamaah berkurang drastis..."`), HAPUS quote itu — bento murni stat, bukan testimoni.
+
+---
+
+## REVISI HEADING SECTION
+
+Heading section bento saat ini:
+```
+Satu keputusan. Jamaah lebih tenang. Travel lebih profesional.
+```
+atau
+```
+Satu langkah kecil. Lompatan besar untuk travel Anda.
+```
+
+Ganti dengan yang lebih kuat dan spesifik:
+```
+Bukan sekadar aplikasi. Ini wajah baru travel Anda.
+```
+
+Sub-heading (jika ada / tambahkan jika belum ada, di bawah h2):
+```
+Empat alasan kenapa travel modern memilih Umrahme.
+```
+
+---
+
+## CONTOH STRUKTUR JSX (sesuaikan dengan kode aktual)
+
+Tiap kartu kira-kira begini polanya — JANGAN ubah style/warna, hanya teks:
+```jsx
+{/* Kartu 1 */}
+<div style={{ ...biru gradient... }}>
+  <div style={{ fontSize: 13, fontWeight: 600 }}>Tampil sebagai aplikasi travel Anda sendiri</div>
+  <div style={{ fontSize: 38, fontWeight: 800, margin: '8px 0' }}>100%</div>
+  <div style={{ fontSize: 12.5, opacity: 0.9 }}>Logo, nama, dan warna brand Anda — tanpa jejak pihak ketiga</div>
+</div>
+```
+Pertahankan struktur visual yang sudah ada (label atas → angka → sub-teks). Hanya ganti isi teksnya sesuai 4 kartu di atas.
+
+---
+
+## ATURAN
+- Tidak boleh ada "10 SAR" atau penyebutan harga di section bento.
+- Angka besar tiap kartu: `100%`, `55+`, `12`, `Rp 0`.
+- Jangan ubah warna, layout grid, animasi.
+- Jalankan `pnpm --filter umrahme typecheck` — pastikan nol error.
+- Laporkan hasil.

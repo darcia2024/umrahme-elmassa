@@ -1,0 +1,244 @@
+# PROMPT — Travel Portal Setara Admin (Scoped Tenant Sendiri) + Konsistensi Form Jamaah
+
+## Konteks & Tujuan
+File utama: `artifacts/umrahme/src/pages/travel/TravelDashboard.tsx`
+Pendukung: `artifacts/umrahme/src/lib/supabase.ts`, `api/ai-extract-jamaah.ts` (sudah ada)
+
+Travel portal saat ini cuma bisa kelola jamaah (tambah/hapus/edit fase) dan masih pakai
+pola LAMA (`fetchJamaah(tenant.id)`) — padahal struktur data sudah berubah jadi
+**tenant → keberangkatan → (jamaah, agenda, pengumuman)**. Jadi travel dashboard sekarang
+kemungkinan sudah tidak sinkron.
+
+**Tujuan:** Beri travel portal kemampuan setara admin — kelola **keberangkatan, jamaah
+(termasuk paspor & import AI), agenda, dan pengumuman** — TAPI **terkunci hanya untuk tenant
+miliknya sendiri**. Travel TIDAK BOLEH bisa mengakses/melihat tenant lain.
+
+---
+
+## PRINSIP KEAMANAN (WAJIB)
+
+1. **Sumber tenant HANYA dari context**: selalu pakai `tenant.id` dari `useTravelAuth()`.
+   JANGAN pernah terima tenant_id dari input user, URL, atau parameter yang bisa dimanipulasi.
+2. **Travel auth sudah aman by design**: `TravelAuthContext` ambil tenant via mapping
+   `tenant_users` (user_id → tenant_id), jadi `tenant.id` PASTI milik travel yang login.
+   Selama semua fungsi pakai `tenant.id` ini, scoping sudah benar.
+3. **Jangan tambah route apa pun** yang menerima `:tenantId` di portal travel. Travel hanya
+   punya satu tenant — tidak perlu (dan tidak boleh) memilih tenant.
+4. **Verifikasi kepemilikan di fungsi**: fungsi seperti `deleteJamaah`, `deleteAgenda`,
+   `deleteAnnouncement` sudah menerima `tenantId` dan memfilter `.eq('tenant_id', tenantId)`.
+   Pastikan pemanggilan dari travel selalu mengirim `tenant.id` dari context.
+
+> CATATAN RLS (penting untuk keamanan sejati): idealnya tabel `jamaah_accounts`,
+> `agenda_items`, `travel_announcements`, `keberangkatan` punya Row Level Security di Supabase
+> yang memastikan user travel hanya bisa baca/tulis baris milik tenant-nya (lewat join ke
+> `tenant_users`). Filter di kode adalah lapis pertama; RLS adalah lapis pengaman sebenarnya.
+> Kalau RLS belum ada, catat sebagai TODO keamanan — tapi di luar scope prompt ini.
+
+---
+
+## STRUKTUR DATA (yang harus dipahami)
+
+```
+tenant (punya travel)
+  └── keberangkatan (batch keberangkatan, mis. "Umrah Maret 2026")
+        ├── jamaah_accounts (fetchJamaah(keberangkatanId))
+        ├── agenda_items     (fetchAgenda(keberangkatanId))
+        └── travel_announcements (fetchAnnouncements(keberangkatanId))
+```
+
+Semua data operasional digantung ke **keberangkatan**, bukan langsung ke tenant.
+Jadi travel HARUS punya selector keberangkatan dulu, baru kelola jamaah/agenda/pengumuman
+di dalam keberangkatan terpilih — PERSIS seperti admin.
+
+Fungsi supabase yang dipakai (semua SUDAH ADA, tinggal dipakai dari travel):
+```
+fetchKeberangkatan(tenantId)            createKeberangkatan(tenantId, payload)
+updateKeberangkatan(id, payload)        deleteKeberangkatan(id)
+fetchJamaah(keberangkatanId)            createJamaah(tenantId, keberangkatanId, payload)
+updateJamaah(tenantId, jamaahId, p)     deleteJamaah(tenantId, jamaahId)
+bulkInsertJamaah(tenantId, keberangkatanId, items)
+fetchAgenda(keberangkatanId)            createAgenda(tenantId, keberangkatanId, payload)
+deleteAgenda(tenantId, agendaId)
+fetchAnnouncements(keberangkatanId)     createAnnouncement(tenantId, keberangkatanId, payload)
+deleteAnnouncement(tenantId, annId)
+```
+
+---
+
+## PENDEKATAN: Reuse Pola Admin
+
+`AdminTenantForm.tsx` sudah punya SEMUA logika ini (tab Keberangkatan, Jamaah, Agenda,
+Pengumuman, dengan selector keberangkatan, import AI, edit inline, paspor). Cara paling aman
+& cepat: **port pola itu ke TravelDashboard**, dengan beda kunci:
+- Admin ambil `tenant.id` dari URL param (`id`) → Travel ambil dari `tenant.id` context.
+- Travel TIDAK punya tab "Profil" branding & "Akun" (itu hak admin). Travel fokus operasional:
+  **Keberangkatan, Jamaah, Agenda, Pengumuman**.
+- Travel TIDAK bisa buat/hapus tenant, tidak bisa kelola akun travel-user lain.
+
+---
+
+## LANGKAH 1 — Restruktur TravelDashboard Jadi Tab
+
+Ubah `TravelDashboard.tsx` jadi punya tab seperti admin (tanpa Profil/Akun):
+
+```tsx
+type TravelTabId = 'keberangkatan' | 'jamaah' | 'agenda' | 'pengumuman';
+const TRAVEL_TABS: { id: TravelTabId; label: string }[] = [
+  { id: 'keberangkatan', label: 'Keberangkatan' },
+  { id: 'jamaah', label: 'Jamaah' },
+  { id: 'agenda', label: 'Agenda' },
+  { id: 'pengumuman', label: 'Pengumuman' },
+];
+const [activeTab, setActiveTab] = useState<TravelTabId>('jamaah');
+```
+
+Pertahankan header dashboard yang sudah ada (kartu kode aktivasi & link slug branded) di atas tab.
+
+---
+
+## LANGKAH 2 — Selector Keberangkatan (fondasi semua tab)
+
+Tambahkan state & loader keberangkatan (port dari admin), pakai `tenant.id` dari context:
+
+```tsx
+const { tenant } = useTravelAuth();
+const [keberangkatanList, setKeberangkatanList] = useState<KeberangkatanRow[]>([]);
+const [selectedKeberangkatan, setSelectedKeberangkatan] = useState('');
+
+const loadKeberangkatan = useCallback(async () => {
+  if (!tenant?.id) return;
+  const list = await fetchKeberangkatan(tenant.id);
+  setKeberangkatanList(list);
+  if (list.length > 0 && !selectedKeberangkatan) setSelectedKeberangkatan(list[0].id);
+}, [tenant?.id, selectedKeberangkatan]);
+
+useEffect(() => { loadKeberangkatan(); }, [loadKeberangkatan]);
+```
+
+Di tab Keberangkatan: tampilkan daftar keberangkatan + form tambah (createKeberangkatan dengan
+`tenant.id`), edit (updateKeberangkatan), hapus (deleteKeberangkatan). Port UI dari admin.
+
+Di tab lain (Jamaah/Agenda/Pengumuman): tampilkan dropdown pemilih keberangkatan di atas,
+lalu data mengikuti `selectedKeberangkatan`. Kalau belum ada keberangkatan, tampilkan empty
+state: "Buat keberangkatan dulu di tab Keberangkatan."
+
+---
+
+## LANGKAH 3 — Tab Jamaah (KONSISTEN dengan Admin: paspor + import AI + edit)
+
+Ganti seluruh logika jamaah travel yang lama. Pakai pola admin:
+
+### 3a. Load jamaah pakai keberangkatan (BUKAN tenant.id lagi)
+```tsx
+const loadJamaah = useCallback(async () => {
+  if (!selectedKeberangkatan) { setJamaahList([]); return; }
+  setJamaahLoading(true);
+  fetchJamaah(selectedKeberangkatan).then(setJamaahList).catch(() => {}).finally(() => setJamaahLoading(false));
+}, [selectedKeberangkatan]);
+useEffect(() => { loadJamaah(); }, [loadJamaah]);
+```
+
+### 3b. Form tambah jamaah — TAMBAH paspor, BUANG Bus/Kamar dari tampilan utama
+Konsistenkan dengan admin: field **Nama, No. Jamaah, Rombongan, No. Paspor, Fase**.
+```tsx
+await createJamaah(tenant!.id, selectedKeberangkatan, {
+  nama: jmNama.trim(),
+  nomor_jamaah: jmNomorJamaah.trim(),
+  rombongan: jmRombongan.trim() || null,
+  nomor_paspor: jmPaspor.trim() || null,
+  fase: jmFase,
+});
+```
+> Bus/Kamar boleh tetap ada sebagai field opsional kalau admin form-nya juga masih punya,
+> tapi yang WAJIB konsisten: paspor ADA di form travel sekarang. Samakan field & urutan
+> dengan form tambah jamaah di AdminTenantForm.
+
+### 3c. Edit inline jamaah (port dari admin)
+Port fitur edit inline admin (state `editingJamaahId`, `startEditJamaah`, `saveEditJamaah`,
+`cancelEditJamaah`) ke travel. Edit: nama, no. jamaah, rombongan, paspor.
+`saveEditJamaah` panggil `updateJamaah(tenant!.id, jamaahId, payload)`.
+
+### 3d. Import AI Excel/PDF (port dari admin)
+Port fitur import AI (tombol "Import dari Excel/PDF", panel review, `handleImportFile`,
+`confirmImport`) dari admin ke travel. Bedanya `confirmImport` pakai:
+```tsx
+await bulkInsertJamaah(tenant!.id, selectedKeberangkatan, payload);
+```
+Endpoint `/api/ai-extract-jamaah` sama, tidak perlu diubah.
+
+### 3e. Kolom tabel jamaah
+Samakan dengan admin: Nama, No. Jamaah, Rombongan, No. Paspor, Fase, Aksi (Edit/Hapus).
+
+---
+
+## LANGKAH 4 — Tab Agenda (port dari admin)
+
+Port section agenda admin ke travel:
+- `fetchAgenda(selectedKeberangkatan)` untuk load
+- Form tambah: tanggal, jam, judul, deskripsi, lokasi → `createAgenda(tenant!.id, selectedKeberangkatan, payload)`
+- Hapus → `deleteAgenda(tenant!.id, agendaId)`
+
+UI & validasi ikut admin.
+
+---
+
+## LANGKAH 5 — Tab Pengumuman (port dari admin)
+
+Port section pengumuman admin ke travel:
+- `fetchAnnouncements(selectedKeberangkatan)` untuk load
+- Form tambah: judul, isi, penting (flag) → `createAnnouncement(tenant!.id, selectedKeberangkatan, payload)`
+- Hapus → `deleteAnnouncement(tenant!.id, annId)`
+
+---
+
+## LANGKAH 6 — Update Import di TravelDashboard.tsx
+
+Tambahkan import fungsi & tipe yang sekarang dipakai:
+```tsx
+import {
+  fetchKeberangkatan, createKeberangkatan, updateKeberangkatan, deleteKeberangkatan,
+  fetchJamaah, createJamaah, updateJamaah, deleteJamaah, bulkInsertJamaah,
+  fetchAgenda, createAgenda, deleteAgenda,
+  fetchAnnouncements, createAnnouncement, deleteAnnouncement,
+  type JamaahAccountRow, type KeberangkatanRow, type AgendaItemRow, type TravelAnnouncementRow,
+} from '../../lib/supabase';
+import * as XLSX from 'xlsx';
+```
+
+---
+
+## LANGKAH 7 — Update TravelLayout (opsional, kalau perlu nav)
+
+`components/travel/TravelLayout.tsx` saat ini cuma punya 1 link. Karena tab ditangani di
+dalam dashboard (bukan route terpisah), TravelLayout TIDAK perlu nav tambahan. Biarkan.
+(Jangan tambah route baru — semua tetap di `/travel` dengan tab internal.)
+
+---
+
+## Catatan Konsistensi & Keamanan
+- **Scoping**: setiap pemanggilan fungsi tulis (create/update/delete/bulk) WAJIB pakai
+  `tenant.id` dari `useTravelAuth()`. Tidak ada jalan bagi travel untuk menyebut tenant lain.
+- **Keberangkatan milik travel**: `fetchKeberangkatan(tenant.id)` hanya mengembalikan
+  keberangkatan milik tenant tersebut, jadi `selectedKeberangkatan` pasti milik travel itu.
+- **Form jamaah konsisten**: setelah ini, admin & travel sama-sama punya field paspor,
+  import AI, dan edit inline. Tidak ada lagi perbedaan field Bus/Kamar vs Paspor.
+- **Jangan duplikasi fungsi DB**: semua fungsi sudah ada di `supabase.ts`. Travel cukup
+  memanggilnya dengan argumen yang benar. JANGAN bikin fungsi baru yang melonggarkan scoping.
+- **Tab Profil & Akun TETAP hak admin** — travel tidak boleh ubah branding tenant (logo,
+  warna, slug, hero, sertifikat) atau kelola akun travel-user. Itu domain admin.
+
+## Verifikasi Setelah Deploy
+- Travel login → dashboard punya tab: Keberangkatan, Jamaah, Agenda, Pengumuman
+- Travel bisa buat keberangkatan, lalu kelola jamaah/agenda/pengumuman DI DALAM keberangkatan itu
+- Form tambah jamaah travel punya No. Paspor (konsisten dengan admin)
+- Import AI Excel/PDF berfungsi di travel
+- Edit inline jamaah berfungsi di travel
+- Travel TIDAK punya akses ke tenant lain — coba cek tidak ada cara memilih tenant lain
+- Data yang dibuat travel muncul benar di app jamaah (agenda harian, pengumuman, dll)
+- Admin tetap bisa semua hal seperti sebelumnya (tidak ada yang rusak)
+
+## Saran Tambahan (di luar scope, untuk dipertimbangkan)
+- **Aktifkan RLS di Supabase** untuk `jamaah_accounts`, `agenda_items`, `travel_announcements`,
+  `keberangkatan` — agar keamanan tidak hanya bergantung pada filter di kode. Policy: user
+  travel hanya bisa akses baris yang `tenant_id`-nya terhubung ke `user_id` mereka via
+  `tenant_users`. Ini lapis pengaman sebenarnya kalau ada bug di frontend.

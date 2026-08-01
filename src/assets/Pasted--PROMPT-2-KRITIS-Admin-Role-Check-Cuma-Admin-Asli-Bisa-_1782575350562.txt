@@ -1,0 +1,121 @@
+# PROMPT #2 (KRITIS) — Admin Role Check (Cuma Admin Asli Bisa Masuk /admin)
+
+## Konteks
+File: `artifacts/umrahme/src/context/AdminAuthContext.tsx` &
+`artifacts/umrahme/src/components/admin/AdminProtectedRoute.tsx`
+
+Saat ini `/admin` hanya mengecek "sudah login Supabase", TIDAK mengecek apakah user benar-benar
+admin. Artinya travel-user yang login bisa berpotensi masuk `/admin`. Perbaikan: verifikasi
+user ada di tabel `app_admins` (sudah dibuat di Tahap 1).
+
+> Database sudah siap (`app_admins` + akun admin sudah terdaftar). Ini mengubah kode frontend.
+
+---
+
+## LANGKAH 1 — `AdminAuthContext.tsx`: tambah `isAdmin`
+
+### 1a. Tambah `isAdmin` ke interface
+```ts
+interface AdminAuthValue {
+  session: Session | null;
+  email: string | null;
+  isAdmin: boolean;        // ← tambah
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+```
+
+### 1b. Tambah state & fungsi cek admin di `AdminAuthProvider`
+```ts
+const [session, setSession] = useState<Session | null>(null);
+const [isAdmin, setIsAdmin] = useState(false);     // ← tambah
+const [loading, setLoading] = useState(true);
+
+async function checkAdmin(userId: string | undefined): Promise<boolean> {
+  if (!userId) { setIsAdmin(false); return false; }
+  const { data, error } = await supabase
+    .from('app_admins')
+    .select('user_id')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const ok = !error && !!data;
+  setIsAdmin(ok);
+  return ok;
+}
+```
+
+### 1c. Panggil `checkAdmin` saat memuat session & saat auth berubah
+```ts
+useEffect(() => {
+  supabase.auth.getSession().then(async ({ data }) => {
+    setSession(data.session);
+    await checkAdmin(data.session?.user?.id);
+    setLoading(false);
+  });
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, s) => {
+    setSession(s);
+    await checkAdmin(s?.user?.id);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+```
+
+### 1d. Di `login`, tolak kalau bukan admin
+```ts
+const login = async (email: string, password: string) => {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(error.message);
+  const ok = await checkAdmin(data.user?.id);
+  if (!ok) {
+    await supabase.auth.signOut();
+    throw new Error('Akun ini tidak memiliki akses admin.');
+  }
+};
+```
+
+### 1e. Masukkan `isAdmin` ke provider value
+```ts
+<AdminAuthContext.Provider value={{ session, email: session?.user?.email ?? null, isAdmin, loading, login, signOut }}>
+```
+
+---
+
+## LANGKAH 2 — `AdminProtectedRoute.tsx`: gate by isAdmin
+
+Ganti:
+```tsx
+const { email, loading } = useAdminAuth();
+```
+jadi:
+```tsx
+const { email, isAdmin, loading } = useAdminAuth();
+```
+
+Ganti kondisi tolak:
+```tsx
+if (!email) {
+  return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+}
+```
+jadi:
+```tsx
+if (!email || !isAdmin) {
+  return <Navigate to="/admin/login" replace state={{ from: location.pathname }} />;
+}
+```
+
+---
+
+## Catatan
+- Akun admin kamu sudah terdaftar di `app_admins` (UUID `32ea223f-...`), jadi kamu tetap bisa login.
+- Travel-user yang coba login di `/admin/login` akan ditolak dengan pesan "tidak memiliki akses admin".
+- Ini lapis kedua; RLS di database adalah lapis pertama. Keduanya saling melengkapi.
+
+## Verifikasi Setelah Deploy
+- Login `/admin` pakai akun admin kamu → BERHASIL
+- Login `/admin` pakai akun travel (kalau dicoba) → DITOLAK ("tidak memiliki akses admin")
+- Buka `/admin` tanpa login → redirect ke `/admin/login`
+- Travel portal (`/travel`) tetap berfungsi normal seperti biasa
