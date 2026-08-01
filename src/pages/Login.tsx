@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { validasiKode } from '../data/jamaah';
+import loginBg from '@assets/el_massa_login.png';
 
 export default function Login() {
   const { login } = useAuth();
@@ -41,22 +42,18 @@ export default function Login() {
       {/* Outer White Card Container */}
       <div className="w-full max-w-4xl bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_32px_128px_rgba(0,0,0,0.5)] grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         
-        {/* Left Side: Dark Hero Banner (Matching Reference Image) */}
+        {/* Left Side: Dark Hero Banner (With User's Custom El Massa Login Image) */}
         <div className="md:col-span-5 relative bg-[#09090b] rounded-[24px] overflow-hidden p-8 sm:p-10 flex flex-col justify-between min-h-[340px] md:min-h-[460px] text-white">
           
-          {/* Subtle Warm Amber Light Flares at Bottom (Reference Design Flare) */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {/* Soft Ambient Glow */}
-            <div className="absolute bottom-[-10%] left-[-10%] right-[-10%] h-3/5 bg-gradient-to-t from-[#ea580c] via-[#b45309]/40 to-transparent opacity-80 blur-2xl" />
-            
-            {/* Vertical Light Columns/Pillars */}
-            <div className="absolute bottom-0 left-[15%] w-12 h-48 bg-gradient-to-t from-[#f97316] via-[#ea580c]/60 to-transparent blur-lg transform -skew-x-6" />
-            <div className="absolute bottom-0 left-[45%] w-16 h-56 bg-gradient-to-t from-[#fb923c] via-[#ea580c]/70 to-transparent blur-md transform -skew-x-3" />
-            <div className="absolute bottom-0 right-[20%] w-10 h-40 bg-gradient-to-t from-[#f97316] via-[#d97706]/50 to-transparent blur-lg transform skew-x-6" />
-            
-            {/* Dark texture overlay */}
-            <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-5" />
-          </div>
+          {/* Custom El Massa Login Background Image */}
+          <img
+            src={loginBg}
+            alt="El Massa Login Hero"
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          />
+
+          {/* Dark Overlay for Text Legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/40 pointer-events-none" />
 
           {/* Top Content: Calligraphy & Badge */}
           <div className="relative z-10 space-y-3">
