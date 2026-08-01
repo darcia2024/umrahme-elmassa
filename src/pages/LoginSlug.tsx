@@ -64,121 +64,140 @@ export default function LoginSlug() {
     );
   }
 
-  const brandColor = tenant.primary_color || '#111111';
-  const brandDeep  = tenant.primary_deep_color || '#111111';
+  const brandColor = tenant.primary_color || '#ea580c';
+  const brandDeep  = tenant.primary_deep_color || '#d97706';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0efed] p-0 sm:p-6">
-      <div className="relative w-full sm:max-w-[390px] h-screen sm:h-auto flex flex-col sm:rounded-[32px] sm:shadow-[0_16px_64px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.08)] overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#221204] p-4 sm:p-8 font-sans">
+      {/* Outer White Card Container */}
+      <div className="w-full max-w-4xl bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_32px_128px_rgba(0,0,0,0.5)] grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        
+        {/* Left Side: Dark Hero Banner (Matching Reference Image) */}
+        <div className="md:col-span-5 relative bg-[#09090b] rounded-[24px] overflow-hidden p-8 sm:p-10 flex flex-col justify-between min-h-[340px] md:min-h-[460px] text-white">
+          
+          {/* Subtle Warm Amber Light Flares at Bottom (Reference Design Flare) */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute bottom-[-10%] left-[-10%] right-[-10%] h-3/5 bg-gradient-to-t from-[#ea580c] via-[#b45309]/40 to-transparent opacity-80 blur-2xl" />
+            <div className="absolute bottom-0 left-[15%] w-12 h-48 bg-gradient-to-t from-[#f97316] via-[#ea580c]/60 to-transparent blur-lg transform -skew-x-6" />
+            <div className="absolute bottom-0 left-[45%] w-16 h-56 bg-gradient-to-t from-[#fb923c] via-[#ea580c]/70 to-transparent blur-md transform -skew-x-3" />
+            <div className="absolute bottom-0 right-[20%] w-10 h-40 bg-gradient-to-t from-[#f97316] via-[#d97706]/50 to-transparent blur-lg transform skew-x-6" />
+            <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-5" />
+          </div>
 
-        {/* Background foto Masjidil Haram */}
-        <img
-          src={heroBg}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          style={{ objectPosition: 'center 45%', transform: 'scale(1.04)', transformOrigin: 'center 45%' }}
-        />
-
-        {/* Gradient gelap di atas */}
-        <div className="pointer-events-none absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.10) 60%, transparent 100%)' }}
-        />
-
-        {/* Header — logo + nama travel */}
-        <div className="relative flex flex-col items-center justify-center gap-3 px-8 pt-12 pb-4" style={{ zIndex: 1 }}>
-          {tenant.logo_url && (
-            <img
-              src={tenant.logo_url}
-              alt={tenant.nama_travel}
-              className="h-12 w-auto object-contain drop-shadow-md"
-            />
-          )}
-          <div className="text-center">
-            <p className="font-mono text-[9px] uppercase tracking-[0.28em]"
-              style={{ color: 'rgba(255,255,255,0.60)', textShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
-              Aplikasi Jamaah
-            </p>
-            <h1 className="font-bold text-white mt-1"
-              style={{ fontSize: 'clamp(18px, 5.5vw, 24px)', textShadow: '0 2px 12px rgba(0,0,0,0.5)', letterSpacing: '-0.3px' }}>
+          {/* Top Content: Logo & Travel Name */}
+          <div className="relative z-10 space-y-3">
+            {tenant.logo_url ? (
+              <img src={tenant.logo_url} alt={tenant.nama_travel} className="h-10 w-auto object-contain drop-shadow" />
+            ) : (
+              <p className="font-arab text-amber-200/90 text-xl tracking-wide">
+                لَبَّيْكَ اللّٰهُمَّ لَبَّيْكَ
+              </p>
+            )}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] font-bold uppercase tracking-widest text-amber-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
               {tenant.nama_travel}
+            </div>
+          </div>
+
+          {/* Main Headline */}
+          <div className="relative z-10 space-y-3 my-auto">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-[1.25] text-white">
+              Convert your pilgrimage into a blessed journey.
             </h1>
+            <p className="text-xs text-stone-300 font-medium leading-relaxed">
+              Portal Aplikasi Jamaah {tenant.nama_travel}.
+            </p>
+          </div>
+
+          {/* Bottom Footer note */}
+          <div className="relative z-10 pt-4 border-t border-white/10 text-[11px] text-stone-400 flex items-center justify-between">
+            <span>Verified Travel Partner</span>
+            <span className="text-amber-400 font-semibold">2026 Edition</span>
           </div>
         </div>
 
-        {/* Spacer — jendela foto */}
-        <div className="flex-shrink-0" style={{ height: 'clamp(100px, 24vw, 160px)' }} />
-
-        {/* Form sheet putih */}
-        <div className="relative flex flex-col flex-1 px-6 pb-6"
-          style={{ paddingTop: '20px', marginTop: '-16px', borderRadius: '24px 24px 0 0', background: 'white', zIndex: 1 }}>
-
-          <div className="text-center mb-4">
-            <h2 className="font-display font-bold text-ink" style={{ fontSize: 'clamp(20px, 6vw, 26px)', letterSpacing: '-0.5px' }}>
-              Selamat Datang!
-            </h2>
-            <p className="mt-0.5 text-[13px] text-charcoal">Masukkan nama Anda untuk masuk.</p>
+        {/* Right Side: Clean Form Container */}
+        <div className="md:col-span-7 flex flex-col justify-center px-2 sm:px-6 py-4 space-y-6">
+          
+          {/* Logo / Header */}
+          <div className="space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#ea580c]">
+              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2L14.4 7.2L20 8L16 12L17.2 17.6L12 15L6.8 17.6L8 12L4 8L9.6 7.2L12 2Z" />
+              </svg>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+                Selamat Datang
+              </h2>
+              <p className="text-xs text-stone-500 font-normal mt-1">
+                Aplikasi Jamaah {tenant.nama_travel} — Masukkan nama Anda untuk masuk.
+              </p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3 flex-1">
+          <hr className="border-stone-100" />
 
-            {/* Input nama */}
-            <div className="rounded-2xl border px-4 py-3"
-              style={{ borderColor: 'rgba(0,0,0,0.10)', background: '#fafaf9' }}>
-              <p className="font-mono text-[8.5px] uppercase tracking-[0.20em] text-mute mb-1.5">
-                Nama Jamaah
-              </p>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Input Nama Jamaah */}
+            <div className="space-y-1.5">
+              <label htmlFor="nama" className="text-xs font-semibold text-stone-600 block">
+                Nama Lengkap Jamaah *
+              </label>
               <input
+                id="nama"
+                type="text"
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
                 placeholder="nama sesuai paspor"
                 autoComplete="name"
                 autoFocus
-                className="w-full bg-transparent text-[15px] text-ink placeholder:text-stone-300 focus:outline-none"
+                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-900 bg-white placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
               />
             </div>
 
-            {/* Error */}
+            {/* Error Message */}
             {error && (
-              <div role="alert"
-                className="flex items-start gap-2.5 rounded-2xl px-4 py-3"
-                style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.16)' }}>
-                <span className="flex-none mt-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-red-500/15 text-red-500 font-bold text-[10px]">!</span>
-                <p className="text-[12.5px] leading-relaxed text-red-700">{error}</p>
+              <div
+                role="alert"
+                className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-xs"
+              >
+                <span className="flex-none mt-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-red-100 text-red-600 font-bold text-[10px]">!</span>
+                <p className="leading-relaxed font-medium">{error}</p>
               </div>
             )}
 
-            {/* Tombol masuk */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading || !nama.trim()}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl text-[15px] font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40"
-              style={{
-                minHeight: '52px',
-                background: loading || !nama.trim() ? 'rgba(0,0,0,0.18)' : brandColor,
-                boxShadow: loading || !nama.trim() ? 'none' : `0 4px 16px ${brandDeep}55`,
-              }}
+              className="w-full py-3.5 px-6 rounded-xl text-sm font-bold text-white transition-all flex items-center justify-center gap-2 shadow-md hover:brightness-110 active:scale-[0.99] disabled:opacity-50 mt-2"
+              style={{ background: brandColor }}
             >
               {loading ? (
                 <>
-                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
                     <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                   </svg>
-                  Memeriksa…
+                  <span>Memeriksa…</span>
                 </>
-              ) : 'Masuk'}
+              ) : (
+                <span>Masuk Ke Akun Saya →</span>
+              )}
             </button>
-
-            {/* Link ke login kode aktivasi */}
-            <p className="text-center text-[12px] text-ash pt-1">
-              Punya kode aktivasi?{' '}
-              <a href="/login" className="font-semibold hover:underline underline-offset-2" style={{ color: brandColor }}>
-                Login di sini
-              </a>
-            </p>
           </form>
+
+          {/* Footer note */}
+          <div className="pt-2 text-center text-xs text-stone-500">
+            Belum terdaftar? <span className="font-semibold text-stone-900 underline">Hubungi Admin {tenant.nama_travel}</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );

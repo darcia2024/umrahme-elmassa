@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { validasiKode } from '../data/jamaah';
-import heroBg from '@assets/photo-1635829576353-1a14caec2f6f_1781969073425.avif';
 
 export default function Login() {
   const { login } = useAuth();
@@ -38,64 +37,85 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0efed] p-0 sm:p-6 font-sans">
-      {/* Card — image is absolute background, content flows on top */}
-      <div className="relative w-full sm:max-w-[400px] h-screen sm:h-auto flex flex-col sm:rounded-[32px] sm:shadow-[0_16px_64px_rgba(0,0,0,0.14),0_4px_16px_rgba(0,0,0,0.08)] overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-[#221204] p-4 sm:p-8 font-sans">
+      {/* Outer White Card Container */}
+      <div className="w-full max-w-4xl bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_32px_128px_rgba(0,0,0,0.5)] grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+        
+        {/* Left Side: Dark Hero Banner (Matching Reference Image) */}
+        <div className="md:col-span-5 relative bg-[#09090b] rounded-[24px] overflow-hidden p-8 sm:p-10 flex flex-col justify-between min-h-[340px] md:min-h-[460px] text-white">
+          
+          {/* Subtle Warm Amber Light Flares at Bottom (Reference Design Flare) */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {/* Soft Ambient Glow */}
+            <div className="absolute bottom-[-10%] left-[-10%] right-[-10%] h-3/5 bg-gradient-to-t from-[#ea580c] via-[#b45309]/40 to-transparent opacity-80 blur-2xl" />
+            
+            {/* Vertical Light Columns/Pillars */}
+            <div className="absolute bottom-0 left-[15%] w-12 h-48 bg-gradient-to-t from-[#f97316] via-[#ea580c]/60 to-transparent blur-lg transform -skew-x-6" />
+            <div className="absolute bottom-0 left-[45%] w-16 h-56 bg-gradient-to-t from-[#fb923c] via-[#ea580c]/70 to-transparent blur-md transform -skew-x-3" />
+            <div className="absolute bottom-0 right-[20%] w-10 h-40 bg-gradient-to-t from-[#f97316] via-[#d97706]/50 to-transparent blur-lg transform skew-x-6" />
+            
+            {/* Dark texture overlay */}
+            <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-5" />
+          </div>
 
-        {/* Background image fills entire card */}
-        <img
-          src={heroBg}
-          alt="UmrahMe Cover"
-          aria-hidden
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-          style={{ objectPosition: 'center 45%', transform: 'scale(1.04)', transformOrigin: 'center 45%' }}
-        />
-
-        {/* Gradient Overlay */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 60%, transparent 100%)' }}
-        />
-
-        {/* Arabic calligraphy Header */}
-        <div className="relative flex flex-col items-center justify-center gap-2 px-8 pt-12 pb-4" style={{ zIndex: 1 }}>
-          <p
-            className="font-arab text-center text-white"
-            style={{ fontSize: 'clamp(20px, 6vw, 28px)', direction: 'rtl', textShadow: '0 2px 12px rgba(0,0,0,0.6)', lineHeight: 1.7 }}
-          >
-            لَبَّيْكَ اللّٰهُمَّ لَبَّيْكَ
-          </p>
-          <div className="flex items-center gap-2.5">
-            <span className="h-px w-6 bg-white/40" />
-            <p className="font-sans text-[10px] uppercase tracking-[0.25em] font-extrabold text-white/80">
-              UmrahMe × El Massa
+          {/* Top Content: Calligraphy & Badge */}
+          <div className="relative z-10 space-y-3">
+            <p className="font-arab text-amber-200/90 text-xl tracking-wide">
+              لَبَّيْكَ اللّٰهُمَّ لَبَّيْكَ
             </p>
-            <span className="h-px w-6 bg-white/40" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[10px] font-bold uppercase tracking-widest text-amber-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+              UmrahMe × El Massa
+            </div>
+          </div>
+
+          {/* Main Headline (Reference Style Bold Statement) */}
+          <div className="relative z-10 space-y-3 my-auto">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-[1.25] text-white">
+              Convert your pilgrimage into a blessed journey.
+            </h1>
+            <p className="text-xs text-stone-300 font-medium leading-relaxed">
+              Panduan ibadah pintar terintegrasi langsung dengan travel Anda.
+            </p>
+          </div>
+
+          {/* Bottom Footer note */}
+          <div className="relative z-10 pt-4 border-t border-white/10 text-[11px] text-stone-400 flex items-center justify-between">
+            <span>Live Sync Supabase</span>
+            <span className="text-amber-400 font-semibold">2026 Edition</span>
           </div>
         </div>
 
-        {/* Image window spacer */}
-        <div className="flex-shrink-0" style={{ height: 'clamp(120px, 28vw, 170px)' }} />
-
-        {/* White Form Sheet */}
-        <div
-          className="relative flex flex-col flex-1 px-6 pb-8 bg-white"
-          style={{ paddingTop: '24px', marginTop: '-16px', borderRadius: '24px 24px 0 0', zIndex: 1 }}
-        >
-          <div className="text-center mb-5 space-y-1">
-            <h2 className="font-display font-black text-2xl text-stone-900 tracking-tight">
-              Selamat Datang Jamaah!
-            </h2>
-            <p className="text-xs text-stone-500 font-normal">
-              Cukup masukkan Nama Lengkap Anda untuk langsung masuk.
-            </p>
+        {/* Right Side: Clean Form Container (Matching Reference Image) */}
+        <div className="md:col-span-7 flex flex-col justify-center px-2 sm:px-6 py-4 space-y-6">
+          
+          {/* Logo / Header (Reference Starburst Icon) */}
+          <div className="space-y-3">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#ea580c]">
+              {/* Sunburst/Kaaba SVG icon from reference */}
+              <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2L14.4 7.2L20 8L16 12L17.2 17.6L12 15L6.8 17.6L8 12L4 8L9.6 7.2L12 2Z" />
+              </svg>
+            </div>
+            
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+                Selamat Datang Jamaah
+              </h2>
+              <p className="text-xs text-stone-500 font-normal mt-1">
+                Selamat Datang di UmrahMe — Cukup masukkan nama Anda untuk masuk.
+              </p>
+            </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 flex-1">
+          <hr className="border-stone-100" />
 
-            {/* Input Nama Jamaah (Single Input Login) */}
-            <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-1.5 focus-within:border-pink-300 focus-within:bg-white transition-all">
-              <label htmlFor="nama" className="font-sans text-[10px] uppercase tracking-wider font-extrabold text-pink-600 block">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Input Nama Jamaah */}
+            <div className="space-y-1.5">
+              <label htmlFor="nama" className="text-xs font-semibold text-stone-600 block">
                 Nama Lengkap Jamaah *
               </label>
               <input
@@ -106,7 +126,7 @@ export default function Login() {
                 placeholder="cth. H. Rusli Suparman / Daru"
                 autoComplete="name"
                 autoFocus
-                className="w-full bg-transparent text-sm font-bold text-stone-900 placeholder:text-stone-300 focus:outline-none"
+                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-900 bg-white placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
               />
             </div>
 
@@ -114,21 +134,18 @@ export default function Login() {
             {error && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-2xl px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-xs"
+                className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-red-50 border border-red-200 text-red-700 text-xs"
               >
                 <span className="flex-none mt-0.5 h-4 w-4 flex items-center justify-center rounded-full bg-red-100 text-red-600 font-bold text-[10px]">!</span>
-                <p className="leading-relaxed">{error}</p>
+                <p className="leading-relaxed font-medium">{error}</p>
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* Submit Button (Matching Reference Solid Orange Button) */}
             <button
               type="submit"
               disabled={loading || !nama.trim()}
-              className="w-full h-12 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 shadow-md"
-              style={{
-                background: loading || !nama.trim() ? '#d6d3d1' : 'linear-gradient(135deg, #e11d48 0%, #be185d 100%)',
-              }}
+              className="w-full py-3.5 px-6 rounded-xl text-sm font-bold text-white bg-[#ea580c] hover:bg-[#d97706] active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-md shadow-orange-500/20 mt-2"
             >
               {loading ? (
                 <>
@@ -143,8 +160,16 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          {/* Footer note */}
+          <div className="pt-2 text-center text-xs text-stone-500">
+            Belum terdaftar? <span className="font-semibold text-stone-900 underline">Hubungi Admin Travel El Massa</span>
+          </div>
+
         </div>
+
       </div>
     </div>
   );
 }
+
