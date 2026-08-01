@@ -68,7 +68,7 @@ export default function LoginSlug() {
   const brandDeep  = tenant.primary_deep_color || '#d97706';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#221204] p-4 sm:p-8 font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-[#831843] p-4 sm:p-8 font-sans">
       {/* Outer White Card Container */}
       <div className="w-full max-w-4xl bg-white rounded-[32px] p-4 sm:p-8 shadow-[0_32px_128px_rgba(0,0,0,0.5)] grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch">
         
@@ -86,7 +86,7 @@ export default function LoginSlug() {
           
           {/* Logo / Header */}
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#ea580c]">
+            <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-[#be185d]">
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                 <path d="M12 2L14.4 7.2L20 8L16 12L17.2 17.6L12 15L6.8 17.6L8 12L4 8L9.6 7.2L12 2Z" />
               </svg>
@@ -97,7 +97,7 @@ export default function LoginSlug() {
                 Selamat Datang
               </h2>
               <p className="text-xs text-stone-500 font-normal mt-1">
-                Aplikasi Jamaah {tenant.nama_travel} — Masukkan nama Anda untuk masuk.
+                Cukup masukkan nama Anda untuk masuk.
               </p>
             </div>
           </div>
@@ -117,10 +117,10 @@ export default function LoginSlug() {
                 type="text"
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
-                placeholder="nama sesuai paspor"
+                placeholder="cth. Budi Santoso"
                 autoComplete="name"
                 autoFocus
-                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-900 bg-white placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
+                className="w-full px-4 py-3.5 rounded-xl border border-stone-200 text-sm font-medium text-stone-900 bg-white placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all shadow-sm"
               />
             </div>
 
