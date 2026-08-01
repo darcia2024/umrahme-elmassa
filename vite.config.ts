@@ -1,7 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 import { VitePWA } from "vite-plugin-pwa";
@@ -27,7 +26,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    runtimeErrorOverlay(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'favicon.svg', 'logo.png'],
