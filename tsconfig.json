@@ -1,6 +1,6 @@
 {
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts", "src/assets/**/*"],
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,

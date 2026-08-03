@@ -1,11 +1,14 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export function UploadBuktiBayar() {
+  const { tenant } = useAuth();
+  const namaTravel = tenant?.nama_travel || "PT. Al Massa Azka Wisata";
   const [bookingCode, setBookingCode] = useState("BK-202607-001");
   const [customerName, setCustomerName] = useState("H. Rusli Suparman");
   const [amount, setAmount] = useState("50000000");
   const [paymentType, setPaymentType] = useState("DP");
-  const [bankDestination, setBankDestination] = useState("BCA - 8440-888-999 a.n PT AL MASSA AZKA WISATA");
+  const [bankDestination, setBankDestination] = useState(`BCA - 8440-888-999 a.n ${namaTravel}`);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
 
@@ -48,7 +51,7 @@ export function UploadBuktiBayar() {
           Upload Bukti Setoran Pembayaran
         </h3>
         <p className="text-[10px] text-stone-400 mt-0.5 truncate">
-          Kirim bukti transfer bank ke Keuangan PT. Al Massa Azka Wisata.
+          Kirim bukti transfer bank ke Keuangan {namaTravel}.
         </p>
       </div>
 

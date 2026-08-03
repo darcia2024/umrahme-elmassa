@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export type DocumentStatusProps = {
   bookingCode?: string;
@@ -16,6 +17,8 @@ export type DocumentStatusProps = {
 };
 
 export function TransparansiBerkas() {
+  const { tenant } = useAuth();
+  const namaTravel = tenant?.nama_travel || "PT. Al Massa Azka Wisata";
   const [searchCode, setSearchCode] = useState("BK-202607-001");
   const [data] = useState<DocumentStatusProps>({
     bookingCode: "BK-202607-001",
@@ -48,7 +51,7 @@ export function TransparansiBerkas() {
             Transparansi Berkas & Status Jamaah
           </h2>
           <p className="text-xs text-stone-500 mt-0.5 font-normal">
-            Dioperasikan resmi oleh PT. Al Massa Azka Wisata (Izin PPIU No. 10032300465890002)
+            Dioperasikan resmi oleh {namaTravel}
           </p>
         </div>
 

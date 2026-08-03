@@ -21,15 +21,15 @@ export default function TopNavbar() {
       {/* Brand Logo & Name */}
       <div className="flex items-center gap-3 flex-none">
         <img
-          src="/logo-elmassa.png"
-          alt="El Massa Logo"
+          src={tenant?.logo_url || "/logo-elmassa.png"}
+          alt={tenant?.nama_travel || "Travel Logo"}
           className="h-9 w-auto object-contain"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = tenant?.logo_url || '/favicon.png';
+            (e.currentTarget as HTMLImageElement).src = '/favicon.png';
           }}
         />
         <span className="font-extrabold text-base tracking-tight text-stone-900 font-display">
-          UmrahMe <span className="text-xs font-normal text-pink-600">× El Massa</span>
+          UmrahMe <span className="text-xs font-normal text-pink-600">× {tenant?.nama_travel || "Travel"}</span>
         </span>
       </div>
 

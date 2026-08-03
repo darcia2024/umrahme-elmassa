@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export function KuitansiInvoiceViewer() {
   const [selectedDoc, setSelectedDoc] = useState<"kuitansi" | "invoice">("kuitansi");
+  const { tenant } = useAuth();
+  const namaTravel = tenant?.nama_travel || "El Massa Tour & Travel";
 
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4 font-sans max-w-full overflow-hidden">
@@ -13,7 +16,7 @@ export function KuitansiInvoiceViewer() {
             Kuitansi & Invoice Digital
           </h3>
           <p className="text-xs text-stone-500 mt-0.5 font-normal truncate">
-            Dioperasikan resmi oleh El Massa Tour & Travel
+            Dioperasikan resmi oleh {namaTravel}
           </p>
         </div>
 

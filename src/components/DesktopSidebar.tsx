@@ -23,11 +23,11 @@ export default function DesktopSidebar() {
       {/* Brand Header & Official Logo */}
       <div className="px-6 pt-6 pb-5 border-b border-stone-200/60 space-y-3">
         <img
-          src="/logo-elmassa.png"
-          alt="El Massa Tour & Travel"
+          src={tenant?.logo_url || "/logo-elmassa.png"}
+          alt={tenant?.nama_travel || "Travel Umrah"}
           className="h-10 w-auto object-contain"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = tenant?.logo_url || '/favicon.png';
+            (e.currentTarget as HTMLImageElement).src = '/favicon.png';
           }}
         />
         <div>

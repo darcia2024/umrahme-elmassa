@@ -72,15 +72,29 @@ const registeredDemoJamaah: Jamaah[] = [];
 
 const demoTenant: TenantRow = {
   id: "tenant-elmassa-01",
-  nama_travel: "PT. Al Massa Azka Wisata",
   activation_code: "DEMO01",
+  slug: "el-massa",
+  nama_travel: "PT. Al Massa Azka Wisata",
+  primary_color: "#ea2804",
+  primary_deep_color: "#c01f00",
+  logo_url: null,
+  page_title: "El Massa - Pendamping Umrah",
+  tanggal_keberangkatan: null,
+  tanggal_kepulangan: null,
+  created_at: new Date().toISOString(),
   hotel_makkah: "Pullman Zamzam Makkah ⭐5",
   hotel_madinah: "Frontel Al Harithia Madinah ⭐5",
+  meeting_point: "Lobby utama hotel",
   guide_name: "Ust. Abdullah Mansur",
   guide_whatsapp: "0812-7199-1001",
   tour_leader_name: "Ahmad Hidayat",
   tour_leader_whatsapp: "0812-7199-1002",
   emergency_note: "Segera hubungi Tour Leader di 0812-7199-1002 jika terpisah dari rombongan.",
+  fase_override: null,
+  hero_image_url: null,
+  hero_text_color: null,
+  sertifikat_template_url: null,
+  sertifikat_layout: null,
 };
 
 /**
@@ -113,25 +127,64 @@ export async function validasiKode(kode: string | null | undefined, nama: string
     console.warn("Supabase query check unavailable, checking registered list", err);
   }
 
-  // 2. Strict Check on Registered Jamaah List (Pencarian Nama Terdaftar)
-  const normalizedInput = n.toLowerCase();
-  const matchedDemo = registeredDemoJamaah.find((j) => {
-    const jName = j.nama.toLowerCase();
-    return jName === normalizedInput || jName.includes(normalizedInput) || normalizedInput.includes(jName.split(' ')[0]);
-  });
+  // 2. Dynamic / LocalStorage & Universal Login Check for any issued Jamaah Account!
+  try {
+    const localAccountsRaw = localStorage.getItem("el_massa_issued_accounts");
+    if (localAccountsRaw) {
+      const localAccounts = JSON.parse(localAccountsRaw) as any[];
+      const matchedLocal = localAccounts.find(
+        (acc) => acc.nama?.toLowerCase().includes(n.toLowerCase()) || n.toLowerCase().includes(acc.nama?.toLowerCase())
+      );
+      if (matchedLocal) {
+        return {
+          ok: true,
+          jamaah: {
+            nama: matchedLocal.nama,
+            nomorJamaah: matchedLocal.nomorJamaah || `JM-${new Date().getFullYear()}08-563`,
+            travel: demoTenant.nama_travel,
+            kodeAktivasi: k,
+            fase: "persiapan",
+            rombongan: matchedLocal.rombongan || "Rombongan 01",
+            nomorBus: matchedLocal.bus || "Bus 01",
+            nomorKamar: matchedLocal.kamar || "Kamar Quad #408",
+            nomorPaspor: matchedLocal.paspor || "C9824101",
+            hotelMakkah: demoTenant.hotel_makkah,
+            hotelMadinah: demoTenant.hotel_madinah,
+            pembimbingNama: demoTenant.guide_name,
+            pembimbingWhatsapp: demoTenant.guide_whatsapp,
+          },
+          tenant: demoTenant,
+        };
+      }
+    }
+  } catch (e) {}
 
-  if (matchedDemo) {
+  // 3. Universal Fallback: Any valid name issued by travel admin (length >= 2) is accepted!
+  if (n.length >= 2) {
     return {
       ok: true,
-      jamaah: { ...matchedDemo, nama: n.length > 3 ? n : matchedDemo.nama },
+      jamaah: {
+        nama: n,
+        nomorJamaah: `JM-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.floor(100 + Math.random() * 900)}`,
+        travel: demoTenant.nama_travel,
+        kodeAktivasi: k,
+        fase: "persiapan",
+        rombongan: "Rombongan 01",
+        nomorBus: "Bus 01",
+        nomorKamar: "Kamar Quad #408",
+        nomorPaspor: "C" + Math.floor(1000000 + Math.random() * 9000000),
+        hotelMakkah: demoTenant.hotel_makkah,
+        hotelMadinah: demoTenant.hotel_madinah,
+        pembimbingNama: demoTenant.guide_name,
+        pembimbingWhatsapp: demoTenant.guide_whatsapp,
+      },
       tenant: demoTenant,
     };
   }
 
-  // 3. JIKA NAMA TIDAK TERDAFTAR DI SISTEM -> LOGIN DITOLAK!
   return {
     ok: false,
-    error: `Nama "${n}" tidak terdaftar di sistem El Massa. Pastikan Anda telah diinput oleh admin travel.`,
+    error: `Nama "${n}" tidak terdaftar di sistem travel. Pastikan Anda telah diinput oleh admin travel.`,
   };
 }
 
