@@ -110,16 +110,18 @@ export async function validasiKode(kode: string | null | undefined, nama: string
   try {
     const { data, error } = await supabase
       .from('jamaah_accounts')
-      .select('*, tenants(*), keberangkatan(*)')
+      // Kolom disebut eksplisit: anon key tidak lagi boleh membaca NIK,
+      // paspor, telepon, alamat & tanggal lahir -- dan tidak ada yang memakainya.
+      .select('id, tenant_id, keberangkatan_id, nama, nomor_jamaah, rombongan, bus, kamar, flight, e_visa, batch, titik_kumpul, status, fase_override, created_at, tenants(*), keberangkatan(*)')
       .ilike('nama', `%${n}%`)
       .limit(1);
 
     if (!error && data && data.length > 0) {
       const row = data[0];
       return bangunHasil(
-        (row.tenants ?? demoTenant) as TenantRow,
+        (row.tenants ?? demoTenant) as unknown as TenantRow,
         row,
-        (row.keberangkatan ?? null) as KeberangkatanRow | null,
+        (row.keberangkatan ?? null) as unknown as KeberangkatanRow | null,
         k,
       );
     }

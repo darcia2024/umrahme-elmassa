@@ -372,7 +372,7 @@ function dariDb(row: Record<string, unknown>): JamaahAccountRow {
 export async function fetchJamaah(keberangkatanId: string): Promise<JamaahAccountRow[]> {
   const { data, error } = await supabase
     .from('jamaah_accounts')
-    .select('*')
+    .select('id, tenant_id, keberangkatan_id, nama, nomor_jamaah, rombongan, bus, kamar, flight, e_visa, batch, titik_kumpul, status, fase_override, created_at')
     .eq('keberangkatan_id', keberangkatanId)
     .order('nama', { ascending: true });
   if (error) throw new Error(error.message);
