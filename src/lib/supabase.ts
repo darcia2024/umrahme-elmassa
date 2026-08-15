@@ -330,6 +330,45 @@ export async function deleteAnnouncement(tenantId: string, annId: string): Promi
 
 // ── Jamaah ────────────────────────────────────────────────────
 
+/**
+ * `jamaah_accounts` dipakai bersama dengan sistem web travel (El Massa Web),
+ * yang lebih dulu membuat tabel ini memakai nama kolom `bus` / `kamar` /
+ * `paspor`. Aplikasi ini terlanjur memakai `nomor_bus` / `nomor_kamar` /
+ * `nomor_paspor` di sekitar 30 tempat, jadi penerjemahannya dikerjakan di sini
+ * saja -- satu-satunya lapisan yang benar-benar menyentuh database. Kode UI
+ * tidak perlu diubah, dan database tidak perlu kolom kembar.
+ */
+const KOLOM_DB: Record<string, string> = {
+  nomor_bus: 'bus',
+  nomor_kamar: 'kamar',
+  nomor_paspor: 'paspor',
+};
+
+/**
+ * Bentuk aplikasi -> bentuk database. `fase` sengaja dibuang: itu bukan kolom,
+ * melainkan turunan tanggal keberangkatan (lihat hitungFaseEfektif). Menyimpannya
+ * berarti nilainya basi begitu tanggal lewat tanpa ada yang meng-update baris.
+ */
+function keDb(payload: object): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (key === 'fase') continue;
+    out[KOLOM_DB[key] ?? key] = value;
+  }
+  return out;
+}
+
+/** Bentuk database -> bentuk aplikasi. */
+function dariDb(row: Record<string, unknown>): JamaahAccountRow {
+  const out: Record<string, unknown> = { ...row };
+  for (const [aplikasi, db] of Object.entries(KOLOM_DB)) {
+    out[aplikasi] = row[db] ?? null;
+    delete out[db];
+  }
+  out.fase = row.fase_override ?? 'persiapan';
+  return out as unknown as JamaahAccountRow;
+}
+
 export async function fetchJamaah(keberangkatanId: string): Promise<JamaahAccountRow[]> {
   const { data, error } = await supabase
     .from('jamaah_accounts')
@@ -337,11 +376,11 @@ export async function fetchJamaah(keberangkatanId: string): Promise<JamaahAccoun
     .eq('keberangkatan_id', keberangkatanId)
     .order('nama', { ascending: true });
   if (error) throw new Error(error.message);
-  return data as JamaahAccountRow[];
+  return (data ?? []).map(dariDb);
 }
 
 export async function bulkInsertJamaah(tenantId: string, keberangkatanId: string, items: object[]): Promise<{ inserted: number }> {
-  const rows = items.map((item) => ({ ...item, tenant_id: tenantId, keberangkatan_id: keberangkatanId }));
+  const rows = items.map((item) => ({ ...keDb(item), tenant_id: tenantId, keberangkatan_id: keberangkatanId }));
   const { data, error } = await supabase.from('jamaah_accounts').insert(rows).select();
   if (error) throw new Error(error.message);
   return { inserted: (data ?? []).length };
@@ -350,7 +389,7 @@ export async function bulkInsertJamaah(tenantId: string, keberangkatanId: string
 export async function createJamaah(tenantId: string, keberangkatanId: string | null, payload: object): Promise<JamaahAccountRow> {
   const { data, error } = await supabase
     .from('jamaah_accounts')
-    .insert({ ...payload, tenant_id: tenantId, keberangkatan_id: keberangkatanId })
+    .insert({ ...keDb(payload), tenant_id: tenantId, keberangkatan_id: keberangkatanId })
     .select()
     .single();
   if (error) {
@@ -360,19 +399,19 @@ export async function createJamaah(tenantId: string, keberangkatanId: string | n
     }
     throw new Error(msg);
   }
-  return data as JamaahAccountRow;
+  return dariDb(data);
 }
 
 export async function updateJamaah(tenantId: string, jamaahId: string, payload: object): Promise<JamaahAccountRow> {
   const { data, error } = await supabase
     .from('jamaah_accounts')
-    .update(payload)
+    .update(keDb(payload))
     .eq('id', jamaahId)
     .eq('tenant_id', tenantId)
     .select()
     .single();
   if (error) throw new Error(error.message);
-  return data as JamaahAccountRow;
+  return dariDb(data);
 }
 
 export async function deleteJamaah(tenantId: string, jamaahId: string): Promise<{ ok: boolean }> {

@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Environment. Vite inlines every VITE_-prefixed value into the browser bundle,
+# so treat what goes in here as shipped-to-the-client -- and keep the file out
+# of git regardless. Plain `.env` was not covered before, only `*.local`.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
