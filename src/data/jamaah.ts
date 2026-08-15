@@ -108,20 +108,25 @@ export async function validasiKode(kode: string | null | undefined, nama: string
 
   // 1. Coba Query ke Database Supabase
   try {
-    const { data, error } = await supabase
-      .from('jamaah_accounts')
-      // Kolom disebut eksplisit: anon key tidak lagi boleh membaca NIK,
-      // paspor, telepon, alamat & tanggal lahir -- dan tidak ada yang memakainya.
-      .select('id, tenant_id, keberangkatan_id, nama, nomor_jamaah, rombongan, bus, kamar, flight, e_visa, batch, titik_kumpul, status, fase_override, created_at, tenants(*), keberangkatan(*)')
-      .ilike('nama', `%${n}%`)
-      .limit(1);
+    // Lewat fungsi jamaah_login(), bukan query tabel: anon key ada di dalam
+    // bundle browser, jadi akses langsung ke tabel berarti siapa pun bisa
+    // menarik seluruh daftar jamaah satu travel. Fungsi ini hanya
+    // mengembalikan baris yang kode aktivasi DAN namanya benar-benar cocok.
+    const { data, error } = await supabase.rpc('jamaah_login', { p_kode: k, p_nama: n });
 
-    if (!error && data && data.length > 0) {
+    if (!error && Array.isArray(data) && data.length > 0) {
       const row = data[0];
+      const [tenant, kb] = await Promise.all([
+        supabase.from('tenants').select('*').eq('id', row.tenant_id).maybeSingle(),
+        row.keberangkatan_id
+          ? supabase.from('keberangkatan').select('*').eq('id', row.keberangkatan_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+      ]);
+
       return bangunHasil(
-        (row.tenants ?? demoTenant) as unknown as TenantRow,
+        (tenant.data ?? demoTenant) as unknown as TenantRow,
         row,
-        (row.keberangkatan ?? null) as unknown as KeberangkatanRow | null,
+        (kb.data ?? null) as unknown as KeberangkatanRow | null,
         k,
       );
     }
