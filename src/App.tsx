@@ -38,6 +38,7 @@ import Pengumuman from './pages/Pengumuman';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminTenantList from './pages/admin/AdminTenantList';
 import AdminTenantForm from './pages/admin/AdminTenantForm';
+import AdminQuota from './pages/admin/AdminQuota';
 
 import TravelLogin from './pages/travel/TravelLogin';
 import TravelDashboard from './pages/travel/TravelDashboard';
@@ -95,6 +96,14 @@ export default function App() {
         element={
           <AdminProtectedRoute>
             <AdminTenantList />
+          </AdminProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/kuota"
+        element={
+          <AdminProtectedRoute>
+            <AdminQuota />
           </AdminProtectedRoute>
         }
       />

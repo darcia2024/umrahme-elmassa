@@ -607,3 +607,69 @@ export async function uploadHeroImage(file: File): Promise<string> {
   const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(data.path);
   return publicUrl;
 }
+
+// ── Kuota Lisensi (vendor) ────────────────────────────────────
+
+/**
+ * Kuota yang dijual penyedia UmrahMe ke travel, satu kuota per akun jamaah.
+ *
+ * Penambahan HANYA lewat RPC license_topup(); tabelnya sendiri tidak bisa
+ * ditulis dari klien (RLS hanya mengizinkan SELECT). Pemotongan terjadi di
+ * sistem travel saat akun diterbitkan, lewat license_consume(), di dalam
+ * transaksi yang sama dengan penulisan akun -- jadi akun tidak bisa terbit
+ * tanpa kuota berkurang.
+ */
+export type QuotaRow = {
+  tenant_id: string;
+  balance: number;
+  price_per_unit: number;
+  updated_at: string;
+};
+
+export type QuotaLedgerRow = {
+  id: number;
+  tenant_id: string;
+  delta: number;
+  kind: 'topup' | 'pemakaian' | 'koreksi';
+  note: string;
+  reference: string;
+  actor: string;
+  created_at: string;
+};
+
+export async function fetchQuotas(): Promise<QuotaRow[]> {
+  const { data, error } = await supabase
+    .from('license_quota')
+    .select('*')
+    .order('tenant_id', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as QuotaRow[];
+}
+
+export async function fetchQuotaLedger(tenantId: string, limit = 30): Promise<QuotaLedgerRow[]> {
+  const { data, error } = await supabase
+    .from('license_ledger')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .order('id', { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(error.message);
+  return (data ?? []) as QuotaLedgerRow[];
+}
+
+/** Mengembalikan saldo terbaru. Melempar kalau jumlahnya tidak masuk akal. */
+export async function topupQuota(
+  tenantId: string,
+  qty: number,
+  note: string,
+  actor: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc('license_topup', {
+    p_tenant: tenantId,
+    p_qty: qty,
+    p_note: note,
+    p_actor: actor,
+  });
+  if (error) throw new Error(error.message);
+  return Number(data);
+}

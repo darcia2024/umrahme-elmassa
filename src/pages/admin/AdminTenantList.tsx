@@ -57,6 +57,9 @@ export default function AdminTenantList() {
           <h1 className="font-bold leading-tight" style={{ fontSize: '24px', color: '#111827', letterSpacing: '-0.02em' }}>Daftar Tenant</h1>
           <p className="font-mono text-[11px] mt-0.5" style={{ color: '#9ca3af', letterSpacing: '0.01em' }}>{loading ? '—' : `${tenants.length} tenant terdaftar`}</p>
         </div>
+        <Link to="/admin/kuota" className="inline-flex items-center gap-2 font-semibold text-[13px] px-4 py-2.5 rounded-xl transition-all duration-150 active:scale-[0.98] mr-2" style={{ background: '#ffffff', color: '#374151', border: '1px solid #e5e7eb' }}>
+          Kuota Lisensi
+        </Link>
         <Link to="/admin/tenants/baru" className="inline-flex items-center gap-2 font-semibold text-[13px] px-4 py-2.5 rounded-xl transition-all duration-150 active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #4338ca 0%, #4f46e5 100%)', color: '#ffffff', boxShadow: '0 2px 8px rgba(67,56,202,0.26), 0 1px 2px rgba(67,56,202,0.18)' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           Tenant Baru
