@@ -13,6 +13,7 @@ import { daftarLokasi } from '../data/lokasi';
 import { fetchAgenda, type AgendaItemRow } from '../lib/supabase';
 import { getWaktuSaudi, formatTanggalHeader } from '../lib/waktu';
 import { tintPrimary as tint } from '../lib/colorUtils';
+import { POLA_BINTANG_URL, POLA_BINTANG_UKURAN } from '../lib/polaHero';
 import { SosModal } from '../components/SosModal';
 import type { Fase } from '../types';
 import {
@@ -385,20 +386,100 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-function TenantMark({ logo }: { logo?: string | null }) {
-  const [gagal, setGagal] = useState(false);
-  if (logo && !gagal) {
-    // Logo travel di atas chip putih: aman untuk logo berwarna apa pun.
+// Logo putih: berkas bernama "<logo>-putih.<ext>" di samping logo aslinya (konvensi). Kalau tidak ada,
+// logo asli ditaruh di chip putih supaya aman untuk warna apa pun.
+function varianPutih(logo: string): string | null {
+  const v = logo.replace(/(\.(?:png|webp|svg))(\?.*)?$/i, '-putih$1$2');
+  return v !== logo ? v : null;
+}
+
+function TenantMark({ logo, nama }: { logo?: string | null; nama: string }) {
+  const putih = logo ? varianPutih(logo) : null;
+  const [mode, setMode] = useState<'putih' | 'asli' | 'ikon'>(putih ? 'putih' : logo ? 'asli' : 'ikon');
+
+  if (mode === 'putih' && putih) {
     return (
-      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-white p-1.5 shadow-md shadow-black/15">
-        <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setGagal(true)} />
-      </span>
+      <div className="flex min-w-0 items-center gap-3">
+        <img
+          src={putih}
+          alt={nama}
+          className="h-[52px] w-auto flex-none object-contain drop-shadow-[0_2px_6px_rgba(0,0,0,0.18)]"
+          onError={() => setMode(logo ? 'asli' : 'ikon')}
+        />
+        <span className="h-9 w-px flex-none bg-white/35" aria-hidden />
+        <div className="min-w-0 leading-tight">
+          <p className="font-mono text-[8.5px] uppercase tracking-[0.26em] text-white/70">UmrahMe</p>
+          <p className="text-[12.5px] font-semibold text-white">Pendamping Umrah</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      {mode === 'asli' && logo ? (
+        <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-white p-1.5 shadow-md shadow-black/15">
+          <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setMode('ikon')} />
+        </span>
+      ) : (
+        <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-md">
+          <IconMasjid className="h-5 w-5" />
+        </span>
+      )}
+      <div className="min-w-0 leading-tight">
+        <p className="font-mono text-[8.5px] uppercase tracking-[0.26em] text-white/60">UmrahMe</p>
+        <p className="truncate text-[12.5px] font-semibold text-white">{nama}</p>
+      </div>
+    </div>
+  );
+}
+
+type HeroTenant = {
+  hero_image_url?: string | null;
+  primary_color?: string | null;
+  primary_deep_color?: string | null;
+} | null;
+
+/**
+ * Latar banner. Hero buatan tenant ditampilkan apa adanya. Hero bawaan: gradasi pink tenant
+ * (terang di atas, lebih dalam di bawah supaya sapaan terbaca), tekstur daun dari gambar lama,
+ * pola bintang Islam yang memudar dari pojok kanan atas, dan kilau lembut. Harus ditaruh
+ * di dalam elemen `relative overflow-hidden`.
+ */
+function HeroBackdrop({ tenant }: { tenant: HeroTenant }) {
+  const gambar = tenant?.hero_image_url;
+  if (gambar) {
+    const bawah = tenant?.primary_color
+      ? hexToRgba(tenant.primary_deep_color ?? tenant.primary_color, 0.88)
+      : 'rgba(5,10,20,0.92)';
+    return (
+      <>
+        <img src={gambar} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: 'center 38%' }} />
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: `linear-gradient(to top, ${bawah} 0%, rgba(0,0,0,0.04) 52%, transparent 80%), linear-gradient(to bottom, rgba(0,0,0,0.16) 0%, transparent 30%)` }} />
+      </>
     );
   }
   return (
-    <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-md">
-      <IconMasjid className="h-5 w-5" />
-    </span>
+    <>
+      <div className="absolute inset-0"
+        style={{ background: 'linear-gradient(165deg, color-mix(in srgb, var(--color-primary) 80%, white) 0%, var(--color-primary) 42%, var(--color-primary-deep) 100%)' }} />
+      {/* Gambar lama memuat logo di kiri atas; diperbesar dari pojok kanan bawah supaya logo itu
+          keluar bingkai dan hanya tekstur daunnya yang tersisa. */}
+      <img src={heroBg} alt="" aria-hidden className="absolute inset-0 h-full w-full object-cover"
+        style={{ objectPosition: 'center 38%', transform: 'scale(1.8)', transformOrigin: '100% 100%', mixBlendMode: 'soft-light', opacity: 0.4 }} />
+      <div className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: POLA_BINTANG_URL,
+          backgroundSize: POLA_BINTANG_UKURAN,
+          backgroundPosition: 'right top',
+          opacity: 0.2,
+          WebkitMaskImage: 'radial-gradient(ellipse 85% 75% at 100% 0%, #000 0%, rgba(0,0,0,0.55) 38%, transparent 72%)',
+          maskImage: 'radial-gradient(ellipse 85% 75% at 100% 0%, #000 0%, rgba(0,0,0,0.55) 38%, transparent 72%)',
+        }} />
+      <div className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(circle at 92% 6%, rgba(255,255,255,0.30) 0%, transparent 42%), linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 28%)' }} />
+    </>
   );
 }
 
@@ -426,52 +507,18 @@ export default function Beranda() {
   const phaseActions = getPhaseActions(jamaah.fase);
   const tanggal = formatTanggalHeader();
 
-  const heroOverlayTop = tenant?.primary_deep_color
-    ? hexToRgba(tenant.primary_deep_color, 0.60)
-    : 'rgba(5,10,20,0.55)';
-  const heroOverlayBottom = tenant?.primary_color
-    ? hexToRgba(tenant.primary_deep_color ?? tenant.primary_color, 0.88)
-    : 'rgba(5,10,20,0.92)';
-
   return (
     <>
       {/* ==================== MOBILE ==================== */}
       <div className="lg:hidden min-h-screen bg-canvas overflow-x-hidden">
 
         {/* ── HERO HEADER ─────────────────────────────── */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            height: 'clamp(264px, 66vw, 350px)',
-            // Hero bawaan: gradasi pink tenant (terang di atas, lebih dalam di bawah supaya sapaan terbaca);
-            // gambarnya hanya jadi tekstur. Hero buatan tenant ditampilkan apa adanya.
-            background: tenant?.hero_image_url
-              ? undefined
-              : 'linear-gradient(165deg, color-mix(in srgb, var(--color-primary) 80%, white) 0%, var(--color-primary) 42%, var(--color-primary-deep) 100%)',
-          }}
-        >
-          {/* Gambar bawaan memuat logo lama di kiri atas; diperbesar dari pojok kanan bawah
-              supaya logo itu keluar bingkai dan tidak bertabrakan dengan header. */}
-          <img src={tenant?.hero_image_url || heroBg} alt="" aria-hidden
-            className="absolute inset-0 h-full w-full object-cover"
-            style={tenant?.hero_image_url
-              ? { objectPosition: 'center 38%' }
-              : { objectPosition: 'center 38%', transform: 'scale(1.8)', transformOrigin: '100% 100%', mixBlendMode: 'soft-light', opacity: 0.55 }} />
-
-          <div className="pointer-events-none absolute inset-0"
-            style={{ background: tenant?.hero_image_url
-              ? `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(0,0,0,0.04) 52%, transparent 80%), linear-gradient(to bottom, rgba(0,0,0,0.16) 0%, transparent 30%)`
-              : 'linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, transparent 28%)' }} />
+        <div className="relative overflow-hidden" style={{ height: 'clamp(264px, 66vw, 350px)' }}>
+          <HeroBackdrop tenant={tenant} />
 
           {/* Header: identitas travel + SOS */}
           <div className="absolute inset-x-5 top-4 z-20 flex items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <TenantMark logo={tenant?.logo_url} />
-              <div className="min-w-0 leading-tight">
-                <p className="font-mono text-[8.5px] uppercase tracking-[0.26em] text-white/60">UmrahMe</p>
-                <p className="truncate text-[12.5px] font-semibold text-white">{namaTravel}</p>
-              </div>
-            </div>
+            <TenantMark logo={tenant?.logo_url} nama={namaTravel} />
 
             <button
               type="button"
@@ -619,12 +666,10 @@ export default function Beranda() {
 
           {/* 3. SEPARATE STANDALONE BANNER IMAGE CARD (PROPER FIT) */}
           <div className="relative rounded-2xl overflow-hidden h-56 border border-stone-200/80 shadow-sm">
-            <img
-              src={tenant?.hero_image_url || heroBg}
-              alt="Banner UmrahMe"
-              className="w-full h-full object-cover object-center"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-950/75 via-stone-950/20 to-transparent" />
+            <HeroBackdrop tenant={tenant} />
+            <div className="absolute left-7 top-5 z-10">
+              <TenantMark logo={tenant?.logo_url} nama={namaTravel} />
+            </div>
             <div className="absolute bottom-5 left-7 text-white space-y-1 font-sans">
               <span className="text-xs font-extrabold tracking-widest text-white/85 uppercase font-display block">
                 {namaTravel} • Program Umrah 1448H
