@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { validasiKode } from '../data/jamaah';
+import { validasiSlug } from '../data/jamaah';
+import { DEFAULT_TENANT_SLUG } from '../config/site';
 import loginBg from '@assets/el_massa_login.png';
 
 export default function Login() {
@@ -23,7 +24,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const hasil = await validasiKode(null, nama);
+      const hasil = await validasiSlug(DEFAULT_TENANT_SLUG, nama);
       if (hasil.ok && hasil.jamaah && hasil.tenant) {
         login(hasil.jamaah, hasil.tenant, hasil.keberangkatan ?? null);
         navigate(from, { replace: true });

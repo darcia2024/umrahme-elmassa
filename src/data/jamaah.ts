@@ -77,7 +77,7 @@ const demoTenant: TenantRow = {
   nama_travel: "PT. Al Massa Azka Wisata",
   primary_color: "#dc5c94",
   primary_deep_color: "#c2276d",
-  logo_url: null,
+  logo_url: "/logos/el-massa.png",
   page_title: "El Massa - Pendamping Umrah",
   tanggal_keberangkatan: null,
   tanggal_kepulangan: null,
