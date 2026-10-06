@@ -13,20 +13,20 @@ if (import.meta.env.DEV && !ELMASSA_WEB_URL) {
 }
 
 // Token hanya hidup di state ini (memori), diambil ulang setiap kartu dimuat.
-type Keadaan =
+export type Keadaan =
   | { tahap: 'memuat' }
   | { tahap: 'belum-ditautkan' }
   | { tahap: 'gagal' }
   | { tahap: 'siap'; token: string; status: HasilStatusPendataan | null };
 
 // Urut dari terburuk ke terbaik, sesuai El Massa Web.
-const GAYA_STATUS: Record<string, { badge: string; titik: string }> = {
+export const GAYA_STATUS: Record<string, { badge: string; titik: string }> = {
   'Data Belum Lengkap':    { badge: 'bg-rose-50 text-rose-700 border-rose-200',          titik: 'bg-rose-500' },
   'Dokumen Belum Lengkap': { badge: 'bg-amber-50 text-amber-800 border-amber-200',       titik: 'bg-amber-500' },
   'Siap Diproses':         { badge: 'bg-blue-50 text-blue-700 border-blue-200',          titik: 'bg-blue-500' },
   'Siap Masuk Manifest':   { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', titik: 'bg-emerald-500' },
 };
-const GAYA_NETRAL = { badge: 'bg-stone-100 text-stone-700 border-stone-200', titik: 'bg-stone-400' };
+export const GAYA_NETRAL = { badge: 'bg-stone-100 text-stone-700 border-stone-200', titik: 'bg-stone-400' };
 
 // Cegah muat ganda saat focus dan visibilitychange menyala bersamaan.
 const JEDA_MUAT_MS = 2000;

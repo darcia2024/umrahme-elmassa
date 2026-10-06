@@ -21,8 +21,15 @@ export interface KelengkapanPendataan {
   warnings: string[];
 }
 
+/** Berkas yang sudah masuk. Jalur publik hanya mengabarkan jenis & tanggalnya, isinya tidak bisa diunduh. */
+export interface DokumenTerupload {
+  docType: string;
+  docSubtype: string;
+  uploadedAt: string;
+}
+
 export type HasilStatusPendataan =
-  | { ok: true; kelengkapan: KelengkapanPendataan }
+  | { ok: true; kelengkapan: KelengkapanPendataan; dokumen: DokumenTerupload[] }
   /** link-diganti: 404, token sudah diganti kantor. server: 5xx / jaringan / CORS. lain: status lain. */
   | { ok: false; alasan: 'link-diganti' | 'server' | 'lain' };
 
@@ -48,6 +55,19 @@ export function urlFormPendataan(token: string): string | null {
 
 function daftarTeks(v: unknown): string[] {
   return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
+}
+
+function daftarDokumen(v: unknown): DokumenTerupload[] {
+  if (!Array.isArray(v)) return [];
+  return v.flatMap((d) => {
+    const x = d as Record<string, unknown>;
+    if (typeof x?.docType !== 'string') return [];
+    return [{
+      docType: x.docType,
+      docSubtype: typeof x.docSubtype === 'string' ? x.docSubtype : '',
+      uploadedAt: typeof x.uploadedAt === 'string' ? x.uploadedAt : '',
+    }];
+  });
 }
 
 /**
@@ -77,7 +97,7 @@ export async function ambilStatusPendataan(token: string, signal?: AbortSignal):
   if (!res.ok) return { ok: false, alasan: 'lain' };
 
   try {
-    const body = (await res.json()) as { data?: { completeness?: Record<string, unknown> } };
+    const body = (await res.json()) as { data?: { completeness?: Record<string, unknown>; documents?: unknown } };
     const c = body?.data?.completeness;
     if (!c || typeof c.status !== 'string') return { ok: false, alasan: 'lain' };
     return {
@@ -88,6 +108,7 @@ export async function ambilStatusPendataan(token: string, signal?: AbortSignal):
         missingDocs: daftarTeks(c.missingDocs),
         warnings: daftarTeks(c.warnings),
       },
+      dokumen: daftarDokumen(body.data?.documents),
     };
   } catch {
     return { ok: false, alasan: 'lain' };

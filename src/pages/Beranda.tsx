@@ -5,7 +5,7 @@ import heroBg from '@assets/Temanumrah_BG_1782267839246.png';
 import GlobalSearch from '../components/GlobalSearch';
 import { TravelCompanionFlow } from '../components/dashboard/TravelCompanionFlow';
 import { TransparansiBerkas } from '../components/el-massa/TransparansiBerkas';
-import { UploadBuktiBayar } from '../components/el-massa/UploadBuktiBayar';
+import { KonfirmasiPembayaran } from '../components/el-massa/KonfirmasiPembayaran';
 import { KuitansiInvoiceViewer } from '../components/el-massa/KuitansiInvoiceViewer';
 import { KartuPendataan, usePendataan } from '../components/el-massa/KartuPendataan';
 import { checklistItems } from '../data/checklist';
@@ -680,13 +680,8 @@ export default function Beranda() {
             </div>
           </div>
 
-          {/* Pendataan jamaah (El Massa Web) */}
-          <KartuPendataan pendataan={pendataan} />
-
-          {/* 4. PROMINENT TRANSPARANSI BERKAS SECTION (FULL WIDTH BIG DISPLAY) */}
-          <section className="space-y-4">
-            <TransparansiBerkas />
-          </section>
+          {/* 4. Pendataan & status berkas jamaah (El Massa Web) */}
+          <TransparansiBerkas pendataan={pendataan} />
 
           {/* 5. SEKSI KLAIM SERTIFIKAT & JURNAL UNTUK JAMAAH */}
           <section className="rounded-2xl border border-stone-200/80 bg-white p-6 shadow-xs space-y-4">
@@ -803,7 +798,7 @@ export default function Beranda() {
 
           {/* 6. BOTTOM 2-COLUMN SECTION (Upload Struk & Kuitansi Digital) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            <UploadBuktiBayar />
+            <KonfirmasiPembayaran />
             <KuitansiInvoiceViewer />
           </div>
 
