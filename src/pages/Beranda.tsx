@@ -7,6 +7,7 @@ import { TravelCompanionFlow } from '../components/dashboard/TravelCompanionFlow
 import { TransparansiBerkas } from '../components/el-massa/TransparansiBerkas';
 import { UploadBuktiBayar } from '../components/el-massa/UploadBuktiBayar';
 import { KuitansiInvoiceViewer } from '../components/el-massa/KuitansiInvoiceViewer';
+import { KartuPendataan, usePendataan } from '../components/el-massa/KartuPendataan';
 import { checklistItems } from '../data/checklist';
 import { daftarLokasi } from '../data/lokasi';
 import { fetchAgenda, type AgendaItemRow } from '../lib/supabase';
@@ -382,6 +383,7 @@ function hexToRgba(hex: string, alpha: number): string {
 export default function Beranda() {
   const { jamaah, tenant, keberangkatan } = useAuth();
   const [isSosOpen, setIsSosOpen] = useState(false);
+  const pendataan = usePendataan();
 
   const totalPersiapan = checklistItems.length;
   const [persiapanDone] = useState<number>(() => {
@@ -487,6 +489,9 @@ export default function Beranda() {
           {/* Countdown */}
           {showHitung && <KartuHitung n={hariMenuju!} namaTravel={namaTravel} />}
 
+          {/* Pendataan jamaah (El Massa Web) */}
+          <KartuPendataan pendataan={pendataan} />
+
           {/* Travel companion cards */}
           <TravelCompanionFlow />
 
@@ -588,6 +593,9 @@ export default function Beranda() {
               </p>
             </div>
           </div>
+
+          {/* Pendataan jamaah (El Massa Web) */}
+          <KartuPendataan pendataan={pendataan} />
 
           {/* 4. PROMINENT TRANSPARANSI BERKAS SECTION (FULL WIDTH BIG DISPLAY) */}
           <section className="space-y-4">
