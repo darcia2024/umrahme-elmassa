@@ -40,6 +40,7 @@ function bangunHasil(
   akun: Record<string, any>,
   kb: KeberangkatanRow | null,
   kodeAktivasi: string,
+  accessToken: string | null = null,
 ): HasilValidasi {
   const fase = hitungFaseEfektif(
     akun.fase_override ?? kb?.fase_override ?? null,
@@ -53,7 +54,7 @@ function bangunHasil(
     travel: tenant.nama_travel,
     kodeAktivasi,
     fase,
-    accessToken: akun.access_token ?? undefined,
+    accessToken: accessToken ?? undefined,
     rombongan: akun.rombongan ?? undefined,
     nomorBus: akun.nomor_bus ?? undefined,
     nomorKamar: akun.nomor_kamar ?? undefined,
@@ -116,11 +117,14 @@ export async function validasiKode(kode: string | null | undefined, nama: string
 
     if (!error && Array.isArray(data) && data.length > 0) {
       const row = data[0];
-      const [tenant, kb] = await Promise.all([
+      const [tenant, kb, akses] = await Promise.all([
         supabase.from('tenants').select('*').eq('id', row.tenant_id).maybeSingle(),
         row.keberangkatan_id
           ? supabase.from('keberangkatan').select('*').eq('id', row.keberangkatan_id).maybeSingle()
           : Promise.resolve({ data: null }),
+        // Token akses untuk jurnal dan data per jamaah. Dicocokkan dengan nama + kode yang sama
+        // seperti login. Kalau gagal, login tetap jalan; jurnal hanya tidak tersinkron ke cloud.
+        supabase.rpc('jamaah_access_token', { p_kode: k, p_nama: n }),
       ]);
 
       return bangunHasil(
@@ -128,6 +132,7 @@ export async function validasiKode(kode: string | null | undefined, nama: string
         row,
         (kb.data ?? null) as unknown as KeberangkatanRow | null,
         k,
+        typeof akses.data === 'string' ? akses.data : null,
       );
     }
   } catch (err) {

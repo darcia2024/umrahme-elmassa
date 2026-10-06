@@ -26,7 +26,17 @@ UmrahMe tidak boleh membaca atau menulis `jamaah_profiles` / `jamaah_documents`,
 Dimiliki El Massa Web (`scratch/*.mjs` di repo itu). `supabase-migration.sql` dan `supabase/legacy/` di repo ini
 hanya arsip dari monorepo lama; jangan dijalankan ke project yang sekarang.
 
-## Belum ada di database (kode UmrahMe sudah memanggilnya)
-RPC `jurnal_list` / `jurnal_create` / `jurnal_delete` dan `jamaah_data_get` / `jamaah_data_set`, juga tabel
-`jurnal_entries` dan `jamaah_data`, tidak ada di project sekarang. Halaman Jurnal dan sinkron data per jamaah
-karena itu belum berfungsi. Itu perlu skrip skema di repo El Massa Web sebelum diaktifkan.
+## Jurnal dan data per jamaah
+Jurnal, progres manasik, checklist persiapan, dan counter tawaf/sa'i disimpan per akun lewat RPC
+`jurnal_list` / `jurnal_create` / `jurnal_delete` dan `jamaah_data_get` / `jamaah_data_set`. Tabel
+`jurnal_entries` dan `jamaah_data` tertutup untuk anon; semua akses lewat fungsi itu.
+
+- Setelah login, aplikasi mengambil token akses dengan RPC `jamaah_access_token(p_kode, p_nama)` (pencocokan sama
+  persis dengan `jamaah_login`) dan menyimpannya **hanya di memori** (`setJamaahToken` di `src/lib/supabase.ts`);
+  tidak pernah ke `localStorage`, tidak ditampilkan, tidak dicatat. Tanpa token (akun demo, atau token gagal diambil)
+  jurnal dan data tidak tersinkron ke cloud, tapi aplikasi tetap jalan.
+- Data diikat ke **id akun**, bukan nomor jamaah, jadi dua jamaah bernomor sama tidak pernah berbagi data.
+- Batas: data per kunci 64 KB, 50 kunci per jamaah, jurnal 20.000 karakter per catatan dan 1000 catatan per jamaah.
+- Privasi jurnal setara kuat login (nama + kode tenant yang publik). Memperkuat login memperkuat ini juga.
+
+Dibuat oleh `scratch/umrahme-jurnal-data.mjs` di repo El Massa Web.

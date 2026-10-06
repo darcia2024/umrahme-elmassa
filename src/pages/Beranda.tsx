@@ -724,7 +724,7 @@ export default function Beranda() {
 
                 <div className="pt-4 mt-3 border-t border-stone-100 flex items-center justify-between">
                   <Link
-                    to="/jurnal"
+                    to="/profil/jurnal"
                     className="px-4 py-2 rounded-full bg-primary hover:bg-primary-deep text-white text-xs font-normal shadow-xs transition"
                   >
                     Buka Jurnal Kenangan →
@@ -771,7 +771,7 @@ export default function Beranda() {
                 <div className="pt-4 mt-3 border-t border-stone-100 flex items-center justify-between">
                   {jamaah.fase === 'selesai' ? (
                     <Link
-                      to="/sertifikat"
+                      to="/profil/sertifikat"
                       className="px-4 py-2 rounded-full bg-primary hover:bg-primary-deep text-white text-xs font-normal shadow-xs transition"
                     >
                       Klaim Sertifikat Digital →

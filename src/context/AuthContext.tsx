@@ -1,7 +1,7 @@
 // @refresh reset
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Fase, Jamaah } from '../types';
-import type { TenantRow, KeberangkatanRow } from '../lib/supabase';
+import { setJamaahToken, type TenantRow, type KeberangkatanRow } from '../lib/supabase';
 import { hitungFaseEfektif } from '../data/jamaah';
 
 const STORAGE_KEY = 'umrahme.jamaah';
@@ -92,6 +92,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     applyTenantTheme(tenant);
   }, [tenant]);
+
+  // Token akses jurnal/data jamaah: dipegang di memori saja, mengikuti sesi login.
+  useEffect(() => {
+    setJamaahToken(jamaah?.accessToken ?? null);
+  }, [jamaah?.accessToken]);
 
   // 0-Second Live Sync 2-Arah Engine: Listener Update dari Admin El Massa Web
   useEffect(() => {

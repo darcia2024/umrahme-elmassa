@@ -487,15 +487,17 @@ export async function uploadSertifikatTemplate(file: File): Promise<string> {
 
 // ── Jamaah Data (key-value sinkronisasi per-jamaah) ────────────
 
+// Token akses jamaah (RPC jamaah_access_token, diambil sekali setelah login). Hanya di memori:
+// tidak ditulis ke localStorage, sehingga hilang saat logout atau tab ditutup, dan tidak pernah
+// ditampilkan atau dicatat. Sebelumnya dibaca dari localStorage yang tidak pernah terisi.
+let tokenJamaah: string | null = null;
+
+export function setJamaahToken(token: string | null): void {
+  tokenJamaah = token || null;
+}
+
 function getJamaahToken(): string | null {
-  try {
-    const raw = localStorage.getItem('umrahme.jamaah');
-    if (!raw) return null;
-    const j = JSON.parse(raw) as { accessToken?: string };
-    return j?.accessToken ?? null;
-  } catch {
-    return null;
-  }
+  return tokenJamaah;
 }
 
 export async function getJamaahData<T = unknown>(
