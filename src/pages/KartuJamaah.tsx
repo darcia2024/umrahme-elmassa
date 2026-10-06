@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getOperationalInfo, whatsappLink } from '../data/travelCompanion';
 import { IconDownload, IconPhone } from '../components/icons';
@@ -6,6 +6,7 @@ import { TransparansiBerkas } from '../components/el-massa/TransparansiBerkas';
 import { KonfirmasiPembayaran } from '../components/el-massa/KonfirmasiPembayaran';
 import { KuitansiInvoiceViewer } from '../components/el-massa/KuitansiInvoiceViewer';
 import { usePendataan } from '../components/el-massa/KartuPendataan';
+import { varianPutih } from '../lib/logo';
 
 const LABEL_FASE: Record<string, string> = {
   persiapan: 'Fase Persiapan',
@@ -72,6 +73,101 @@ function Kontak({ nama, peran, nomor }: { nama: string; peran: string; nomor: st
   );
 }
 
+/** Chip EMV ala kartu kredit, murni hiasan. */
+function Chip() {
+  return (
+    <svg viewBox="0 0 48 36" className="h-full w-full" aria-hidden>
+      <defs>
+        <linearGradient id="emas-chip" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f6e3a1" />
+          <stop offset="0.5" stopColor="#d4a24e" />
+          <stop offset="1" stopColor="#b9862f" />
+        </linearGradient>
+      </defs>
+      <rect x="0.5" y="0.5" width="47" height="35" rx="6" fill="url(#emas-chip)" stroke="rgba(0,0,0,0.18)" />
+      <path d="M0.5 12h14M0.5 24h14M33.5 12h14M33.5 24h14M14.5 0.5v35M33.5 0.5v35M14.5 18h19" stroke="rgba(90,60,10,0.45)" strokeWidth="1" fill="none" />
+      <rect x="18" y="8" width="12" height="20" rx="3" fill="none" stroke="rgba(90,60,10,0.45)" />
+    </svg>
+  );
+}
+
+function IconNirsentuh({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" className={className} aria-hidden>
+      <path d="M8.5 7.5a6.5 6.5 0 0 1 0 9" /><path d="M12 5a10 10 0 0 1 0 14" /><path d="M15.5 2.5a13.5 13.5 0 0 1 0 19" />
+    </svg>
+  );
+}
+
+/** Logo travel versi putih; kalau tidak ada, nama travel sebagai teks. */
+function LogoKartu({ logo, nama }: { logo?: string | null; nama: string }) {
+  const putih = logo ? varianPutih(logo) : null;
+  const [gagal, setGagal] = useState(false);
+  if (putih && !gagal) {
+    return <img src={putih} alt={nama} className="h-[11cqw] max-h-12 w-auto object-contain" onError={() => setGagal(true)} />;
+  }
+  return <span className="truncate font-display font-bold tracking-tight" style={{ fontSize: '5cqw' }}>{nama}</span>;
+}
+
+/** Kartu jamaah berbentuk kartu kredit (rasio ID-1, 85,6 × 54 mm). Ukuran teks ikut lebar kartu. */
+function KartuIdentitas({ nama, nomor, kode, fase, namaTravel, logo }: {
+  nama: string; nomor: string; kode: string; fase: string; namaTravel: string; logo?: string | null;
+}) {
+  return (
+    <div id="digital-id-card" className="mx-auto w-full max-w-[440px]" style={{ containerType: 'inline-size' }}>
+      <div
+        className="relative flex aspect-[1.586] w-full flex-col justify-between overflow-hidden rounded-[5cqw] p-[6cqw] text-white"
+        style={{
+          background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%)',
+          boxShadow: '0 18px 40px -12px color-mix(in srgb, var(--color-primary-deep) 55%, transparent), 0 2px 6px rgba(0,0,0,0.12)',
+        }}
+      >
+        {/* Lingkaran besar & kilau diagonal, seperti motif kartu bank */}
+        <div className="pointer-events-none absolute -right-[22%] -top-[45%] aspect-square w-[85%] rounded-full bg-white/[0.09]" />
+        <div className="pointer-events-none absolute -bottom-[60%] -left-[20%] aspect-square w-[80%] rounded-full bg-black/[0.07]" />
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: 'linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.16) 45%, transparent 60%)' }} />
+        <div className="pointer-events-none absolute inset-0 rounded-[5cqw] ring-1 ring-inset ring-white/20" />
+
+        {/* Atas: logo travel + fase */}
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0"><LogoKartu logo={logo} nama={namaTravel} /></div>
+          <div className="flex-none text-right leading-tight">
+            <p className="font-display font-bold italic tracking-tight" style={{ fontSize: '4.2cqw' }}>Kartu Jamaah</p>
+            <p className="text-white/75" style={{ fontSize: '2.9cqw' }}>{fase}</p>
+          </div>
+        </div>
+
+        {/* Tengah: chip, nirsentuh, nomor jamaah */}
+        <div className="relative">
+          <div className="flex items-center gap-[2.5cqw]">
+            <div className="h-[9cqw] w-[12cqw]"><Chip /></div>
+            <IconNirsentuh className="h-[6.5cqw] w-[6.5cqw] text-white/80" />
+          </div>
+          <p className="mt-[3cqw] font-mono font-semibold"
+            style={{ fontSize: '6.4cqw', letterSpacing: '0.12em', textShadow: '0 1px 0 rgba(0,0,0,0.25), 0 -1px 0 rgba(255,255,255,0.15)' }}>
+            {nomor}
+          </p>
+        </div>
+
+        {/* Bawah: pemegang kartu + kode aktivasi */}
+        <div className="relative flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="uppercase tracking-[0.18em] text-white/65" style={{ fontSize: '2.4cqw' }}>Nama Jamaah</p>
+            <p className="truncate font-semibold uppercase tracking-[0.06em]" style={{ fontSize: '4.3cqw', textShadow: '0 1px 0 rgba(0,0,0,0.2)' }}>
+              {nama}
+            </p>
+          </div>
+          <div className="flex-none text-right">
+            <p className="uppercase tracking-[0.18em] text-white/65" style={{ fontSize: '2.4cqw' }}>Kode</p>
+            <p className="font-mono font-semibold" style={{ fontSize: '4cqw' }}>{kode}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function linkPeta(hotel: string, kota: string) {
   return `https://maps.google.com/?q=${encodeURIComponent(`${hotel} ${kota} Saudi Arabia`)}`;
 }
@@ -109,56 +205,19 @@ export default function KartuJamaah() {
           {/* ── Kolom identitas & perjalanan ── */}
           <div className="space-y-3 lg:col-span-5">
 
-            {/* Kartu jamaah digital */}
-            <div id="digital-id-card" className="relative overflow-hidden rounded-3xl p-5 text-white shadow-drop-lifted"
-              style={{ background: 'linear-gradient(140deg, var(--color-primary) 0%, var(--color-primary-deep) 100%)' }}>
-              <div className="pointer-events-none absolute inset-0 opacity-[0.14]"
-                style={{ backgroundImage: 'repeating-linear-gradient(45deg, #fff 0 1px, transparent 0 14px), repeating-linear-gradient(-45deg, #fff 0 1px, transparent 0 14px)' }} />
-              <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full border border-white/20" />
-
-              <div className="relative flex items-center justify-between gap-3">
-                <span className="truncate text-[11px] font-medium text-white/85">Kartu Jamaah Digital</span>
-                <span className="flex-none rounded-full bg-white/20 px-2.5 py-1 text-[10.5px] font-medium ring-1 ring-white/25 backdrop-blur-sm">
-                  {LABEL_FASE[jamaah.fase] ?? jamaah.fase}
-                </span>
-              </div>
-
-              <div className="relative mt-5 flex items-center gap-3.5">
-                <div className="flex h-14 w-14 flex-none items-center justify-center rounded-full bg-white font-display text-2xl font-bold text-primary shadow-lg">
-                  {jamaah.nama.charAt(0).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <h2 className="font-display text-[20px] font-bold leading-tight tracking-tight" style={{ textWrap: 'balance' }}>
-                    {jamaah.nama}
-                  </h2>
-                  <p className="mt-0.5 font-mono text-[12px] text-white/85">{jamaah.nomorJamaah}</p>
-                </div>
-              </div>
-
-              <dl className="relative mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/20 pt-4">
-                <div className="col-span-2 min-w-0">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/65">Rombongan</dt>
-                  <dd className="truncate text-[13px] font-semibold">{info.groupCode}</dd>
-                </div>
-                <div className="min-w-0">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/65">Kode Aktivasi</dt>
-                  <dd className="truncate font-mono text-[13px] font-semibold">{jamaah.kodeAktivasi}</dd>
-                </div>
-                {jamaah.nomorPaspor && (
-                  <div className="min-w-0">
-                    <dt className="text-[10px] uppercase tracking-wider text-white/65">No. Paspor</dt>
-                    <dd className="truncate font-mono text-[13px] font-semibold">{jamaah.nomorPaspor}</dd>
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/65">Travel</dt>
-                  <dd className="truncate text-[13px] font-semibold">{namaTravel}</dd>
-                </div>
-              </dl>
-            </div>
+            <KartuIdentitas
+              nama={jamaah.nama}
+              nomor={jamaah.nomorJamaah}
+              kode={jamaah.kodeAktivasi}
+              fase={LABEL_FASE[jamaah.fase] ?? jamaah.fase}
+              namaTravel={namaTravel}
+              logo={tenant?.logo_url}
+            />
 
             <Kartu judul="Perjalanan & Akomodasi">
               <div className="divide-y divide-hairline">
+                <Baris label="Rombongan">{info.groupCode}</Baris>
+                {jamaah.nomorPaspor && <Baris label="No. Paspor"><span className="font-mono">{jamaah.nomorPaspor}</span></Baris>}
                 <Baris label="Bus">{info.busNumber}</Baris>
                 <Baris label="Kamar">{info.roomNumber}</Baris>
                 <Baris label="Hotel Makkah">

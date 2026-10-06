@@ -8,6 +8,7 @@ import { TransparansiBerkas } from '../components/el-massa/TransparansiBerkas';
 import { KonfirmasiPembayaran } from '../components/el-massa/KonfirmasiPembayaran';
 import { KuitansiInvoiceViewer } from '../components/el-massa/KuitansiInvoiceViewer';
 import { KartuPendataan, usePendataan } from '../components/el-massa/KartuPendataan';
+import { varianPutih } from '../lib/logo';
 import { checklistItems } from '../data/checklist';
 import { daftarLokasi } from '../data/lokasi';
 import { fetchAgenda, type AgendaItemRow } from '../lib/supabase';
@@ -384,13 +385,6 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(h.substring(2, 4), 16);
   const b = parseInt(h.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
-}
-
-// Logo putih: berkas bernama "<logo>-putih.<ext>" di samping logo aslinya (konvensi). Kalau tidak ada,
-// logo asli ditaruh di chip putih supaya aman untuk warna apa pun.
-function varianPutih(logo: string): string | null {
-  const v = logo.replace(/(\.(?:png|webp|svg))(\?.*)?$/i, '-putih$1$2');
-  return v !== logo ? v : null;
 }
 
 function TenantMark({ logo, nama }: { logo?: string | null; nama: string }) {
