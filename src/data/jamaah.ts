@@ -1,5 +1,5 @@
 import type { Jamaah } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchTenantBySlug } from '../lib/supabase';
 import type { TenantRow, KeberangkatanRow } from '../lib/supabase';
 
 export const KODE_DEMO = 'DEMO01';
@@ -199,6 +199,14 @@ export async function validasiSlug(slug: string, nama: string): Promise<HasilVal
   const n = nama.trim();
   if (!n) return { ok: false, error: 'Nama jamaah wajib diisi.' };
 
+  // Slug menentukan travelnya, jadi kode aktivasi diambil dari tenant itu. Tanpa ini
+  // jamaah_login selalu dicocokkan dengan kode demo dan akun asli tidak pernah ketemu.
+  try {
+    const tenant = await fetchTenantBySlug(slug);
+    if (tenant?.activation_code) return validasiKode(tenant.activation_code, n);
+  } catch (err) {
+    console.warn('Tenant untuk slug tidak bisa dimuat, login memakai kode bawaan', err);
+  }
   return validasiKode(null, n);
 }
 
