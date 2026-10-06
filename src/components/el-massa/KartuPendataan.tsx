@@ -4,7 +4,7 @@ import { ELMASSA_WEB_URL } from '../../config/site';
 import {
   ambilStatusPendataan,
   ambilTokenPendataan,
-  urlFormPendataan,
+  bukaFormPendataan,
   type HasilStatusPendataan,
 } from '../../lib/pendataan';
 
@@ -107,7 +107,7 @@ export function usePendataan(): Pendataan {
 
   useEffect(() => {
     muat();
-    // Jamaah biasanya baru kembali dari form pendataan di tab lain: muat ulang statusnya.
+    // Jamaah biasanya baru kembali dari form pendataan: muat ulang statusnya.
     const onFocus = () => { muat(); };
     const onVisible = () => { if (document.visibilityState === 'visible') muat(); };
     window.addEventListener('focus', onFocus);
@@ -128,8 +128,7 @@ export function KartuPendataan({ pendataan }: { pendataan: Pendataan }) {
 
   const bukaForm = () => {
     if (keadaan.tahap !== 'siap') return;
-    const url = urlFormPendataan(keadaan.token);
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    bukaFormPendataan(keadaan.token);
   };
 
   const status = keadaan.tahap === 'siap' ? keadaan.status : null;

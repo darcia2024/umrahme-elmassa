@@ -48,9 +48,20 @@ export async function ambilTokenPendataan(nama: string, kodeAktivasi: string | u
 }
 
 /** URL form pendataan di El Massa Web, atau null kalau base URL belum di-set. */
-export function urlFormPendataan(token: string): string | null {
+export function urlFormPendataan(token: string, kembali?: string): string | null {
   if (!ELMASSA_WEB_URL) return null;
-  return `${ELMASSA_WEB_URL}/pendataan/${encodeURIComponent(token)}`;
+  const url = `${ELMASSA_WEB_URL}/pendataan/${encodeURIComponent(token)}`;
+  return kembali ? `${url}?kembali=${encodeURIComponent(kembali)}` : url;
+}
+
+/**
+ * Buka form pendataan di tab yang sama, dengan halaman ini sebagai tujuan tombol
+ * "Kembali ke Dashboard" di form (El Massa Web hanya menerimanya kalau origin
+ * UmrahMe terdaftar di UMRAHME_ORIGINS). Status dimuat ulang saat jamaah kembali.
+ */
+export function bukaFormPendataan(token: string): void {
+  const url = urlFormPendataan(token, `${window.location.origin}${window.location.pathname}`);
+  if (url) window.location.assign(url);
 }
 
 function daftarTeks(v: unknown): string[] {

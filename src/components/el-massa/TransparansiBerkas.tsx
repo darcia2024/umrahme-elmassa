@@ -1,5 +1,5 @@
 import { GAYA_NETRAL, GAYA_STATUS, type Pendataan } from './KartuPendataan';
-import { urlFormPendataan, type DokumenTerupload } from '../../lib/pendataan';
+import { bukaFormPendataan, type DokumenTerupload } from '../../lib/pendataan';
 
 // Salinan daftar DOC_TYPES El Massa Web (lib/jamaah/rules.ts). Kalau di sana
 // bertambah jenis, tambahkan juga di sini; jenis yang tidak dikenal tetap
@@ -89,8 +89,7 @@ export function TransparansiBerkas({ pendataan }: { pendataan: Pendataan }) {
 
   const bukaForm = () => {
     if (keadaan.tahap !== 'siap') return;
-    const url = urlFormPendataan(keadaan.token);
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+    bukaFormPendataan(keadaan.token);
   };
 
   return (
