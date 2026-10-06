@@ -387,13 +387,17 @@ function hexToRgba(hex: string, alpha: number): string {
 
 function TenantMark({ logo }: { logo?: string | null }) {
   const [gagal, setGagal] = useState(false);
+  if (logo && !gagal) {
+    // Logo travel di atas chip putih: aman untuk logo berwarna apa pun.
+    return (
+      <span className="flex h-12 w-12 flex-none items-center justify-center rounded-2xl bg-white p-1.5 shadow-md shadow-black/15">
+        <img src={logo} alt="" className="h-full w-full object-contain" onError={() => setGagal(true)} />
+      </span>
+    );
+  }
   return (
-    <span className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-md">
-      {logo && !gagal ? (
-        <img src={logo} alt="" className="h-full w-full bg-white object-contain p-1" onError={() => setGagal(true)} />
-      ) : (
-        <IconMasjid className="h-[18px] w-[18px]" />
-      )}
+    <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-md">
+      <IconMasjid className="h-5 w-5" />
     </span>
   );
 }
@@ -426,7 +430,7 @@ export default function Beranda() {
     ? hexToRgba(tenant.primary_deep_color, 0.60)
     : 'rgba(5,10,20,0.55)';
   const heroOverlayBottom = tenant?.primary_color
-    ? hexToRgba(tenant.primary_color, 0.85)
+    ? hexToRgba(tenant.primary_deep_color ?? tenant.primary_color, 0.88)
     : 'rgba(5,10,20,0.92)';
 
   return (
@@ -435,20 +439,29 @@ export default function Beranda() {
       <div className="lg:hidden min-h-screen bg-canvas overflow-x-hidden">
 
         {/* ── HERO HEADER ─────────────────────────────── */}
-        <div className="relative overflow-hidden" style={{ height: 'clamp(264px, 66vw, 350px)' }}>
+        <div
+          className="relative overflow-hidden"
+          style={{
+            height: 'clamp(264px, 66vw, 350px)',
+            // Hero bawaan: gradasi pink tenant (terang di atas, lebih dalam di bawah supaya sapaan terbaca);
+            // gambarnya hanya jadi tekstur. Hero buatan tenant ditampilkan apa adanya.
+            background: tenant?.hero_image_url
+              ? undefined
+              : 'linear-gradient(165deg, color-mix(in srgb, var(--color-primary) 80%, white) 0%, var(--color-primary) 42%, var(--color-primary-deep) 100%)',
+          }}
+        >
           {/* Gambar bawaan memuat logo lama di kiri atas; diperbesar dari pojok kanan bawah
               supaya logo itu keluar bingkai dan tidak bertabrakan dengan header. */}
           <img src={tenant?.hero_image_url || heroBg} alt="" aria-hidden
             className="absolute inset-0 h-full w-full object-cover"
             style={tenant?.hero_image_url
               ? { objectPosition: 'center 38%' }
-              : { objectPosition: 'center 38%', transform: 'scale(1.8)', transformOrigin: '100% 100%' }} />
+              : { objectPosition: 'center 38%', transform: 'scale(1.8)', transformOrigin: '100% 100%', mixBlendMode: 'soft-light', opacity: 0.55 }} />
 
-          {/* Warna tenant meresap ke gambar (soft-light), lalu gradasi bawah untuk keterbacaan sapaan */}
           <div className="pointer-events-none absolute inset-0"
-            style={{ background: 'var(--color-primary)', mixBlendMode: 'soft-light', opacity: 0.7 }} />
-          <div className="pointer-events-none absolute inset-0"
-            style={{ background: `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(0,0,0,0.04) 52%, transparent 80%), linear-gradient(to bottom, rgba(0,0,0,0.16) 0%, transparent 30%)` }} />
+            style={{ background: tenant?.hero_image_url
+              ? `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(0,0,0,0.04) 52%, transparent 80%), linear-gradient(to bottom, rgba(0,0,0,0.16) 0%, transparent 30%)`
+              : 'linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, transparent 28%)' }} />
 
           {/* Header: identitas travel + SOS */}
           <div className="absolute inset-x-5 top-4 z-20 flex items-center justify-between gap-3">

@@ -4,6 +4,8 @@ export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Pink terang untuk permukaan (bg-primary), versi dalamnya untuk teks supaya terbaca di atas putih.
+      textColor: { primary: 'var(--color-primary-deep)' },
       colors: {
         primary: 'var(--color-primary)',
         'primary-deep': 'var(--color-primary-deep)',
