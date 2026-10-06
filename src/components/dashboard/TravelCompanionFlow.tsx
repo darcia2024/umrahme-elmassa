@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWaktuSaudi } from '../../lib/waktu';
+import { getWaktuSaudi, pisahBintangHotel } from '../../lib/waktu';
+import { tintPrimary as tint } from '../../lib/colorUtils';
 import {
   getLatestAnnouncement,
   getOperationalInfo,
@@ -11,7 +12,7 @@ import {
 import { fetchAgenda, type AgendaItemRow } from '../../lib/supabase';
 import { SkeletonLine } from '../Skeleton';
 import type { Fase } from '../../types';
-import { IconChevron } from '../icons';
+import { IconChevron, IconCheck, IconStar } from '../icons';
 
 // ── Ikon ──────────────────────────────────────────────────────
 
@@ -45,6 +46,22 @@ function IconClipboard({ className = '' }: { className?: string }) {
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
       <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
     </svg>
+  );
+}
+
+function HotelNama({ hotel }: { hotel: string }) {
+  const { nama, bintang } = pisahBintangHotel(hotel);
+  return (
+    <div>
+      <p className="text-[11px] font-semibold leading-tight text-ink">{nama}</p>
+      {bintang && (
+        <p className="mt-1 inline-flex items-center gap-0.5 text-primary" aria-label={`Hotel bintang ${bintang}`}>
+          {Array.from({ length: bintang }).map((_, i) => (
+            <IconStar key={i} className="h-2.5 w-2.5" strokeWidth={1.8} />
+          ))}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -83,7 +100,7 @@ export function TripIdentityCard() {
           </div>
           <Link to="/profil/kartu"
             className="flex-none rounded-xl bg-surface-bone px-3 py-2 text-[10px] font-bold text-charcoal active:scale-[0.96] transition-all hover:bg-primary/10 hover:text-primary whitespace-nowrap">
-            Kartu →
+            Kartu <IconChevron className="ml-0.5 inline h-3 w-3" />
           </Link>
         </div>
 
@@ -123,7 +140,7 @@ export function TripIdentityCard() {
                     <path d="M7 17L17 7M17 7H7M17 7V17" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <p className="text-[11px] font-semibold leading-tight text-ink">{hotel}</p>
+                <HotelNama hotel={hotel} />
               </a>
             ) : (
               <div key={city} className="rounded-xl bg-surface-bone px-2.5 py-2">
@@ -189,10 +206,10 @@ export function TripProgressCard() {
                   style={{
                     background: done || active ? 'var(--color-primary)' : 'rgba(0,0,0,0.06)',
                     color: done || active ? '#fff' : '#9ca3af',
-                    boxShadow: active ? '0 0 0 3px rgba(14,165,233,0.18)' : 'none',
+                    boxShadow: active ? `0 0 0 3px ${tint(20)}` : 'none',
                   }}
                 >
-                  {done ? '✓' : i + 1}
+                  {done ? <IconCheck className="h-3 w-3" strokeWidth={2.5} /> : i + 1}
                 </div>
                 <div className={`flex-1 h-0.5 rounded-full ${isLast ? 'invisible' : ''}`}
                   style={{ background: done ? 'var(--color-primary)' : 'rgba(0,0,0,0.07)' }} />
@@ -271,8 +288,8 @@ export function TodayInstructionCard() {
     <div className="overflow-hidden rounded-2xl border border-hairline bg-white shadow-drop-card">
       <div className="flex items-center gap-2.5 px-4 pt-3.5 pb-3">
         <div className="flex h-8 w-8 flex-none items-center justify-center rounded-xl"
-          style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid rgba(34,197,94,0.16)' }}>
-          <IconClipboard className="h-3.5 w-3.5 text-emerald-500" />
+          style={{ background: tint(10), border: `1px solid ${tint(18)}` }}>
+          <IconClipboard className="h-3.5 w-3.5 text-primary" />
         </div>
         <div>
           <p className="font-mono text-[8px] uppercase tracking-[0.22em] text-mute">Arahan Hari Ini</p>
@@ -331,7 +348,7 @@ export function TodayInstructionCard() {
       </div>
       <div className="px-4 pb-3">
         <Link to="/profil/agenda"
-          className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 hover:text-emerald-700 transition-colors">
+          className="text-[11px] font-semibold text-primary flex items-center gap-1 hover:text-primary-deep transition-colors">
           Lihat Semua Agenda
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
             <polyline points="9 18 15 12 9 6"/>
@@ -358,20 +375,20 @@ export function PinnedAnnouncementCard() {
     <div
       className="overflow-hidden rounded-2xl"
       style={{
-        background: announcement.important ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)' : '#ffffff',
-        border: `1.5px solid ${announcement.important ? 'rgba(212,162,78,0.28)' : 'rgba(0,0,0,0.07)'}`,
+        background: announcement.important ? tint(7) : '#ffffff',
+        border: `1px solid ${announcement.important ? tint(28) : 'rgba(0,0,0,0.07)'}`,
       }}
     >
       <div className="flex items-center gap-2 px-4 pt-3.5 pb-2">
         <div className="flex h-8 w-8 flex-none items-center justify-center rounded-xl"
-          style={{ background: 'rgba(212,162,78,0.14)', border: '1px solid rgba(212,162,78,0.20)' }}>
-          <IconBell className="h-3.5 w-3.5 text-[#a07828]" />
+          style={{ background: tint(12), border: `1px solid ${tint(20)}` }}>
+          <IconBell className="h-3.5 w-3.5 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
             {announcement.important && (
               <span className="rounded-full px-2 py-0.5 font-mono text-[7px] font-bold uppercase tracking-[0.15em]"
-                style={{ background: 'rgba(212,162,78,0.20)', color: '#a07828' }}>
+                style={{ background: tint(16), color: 'var(--color-primary-deep)' }}>
                 Penting
               </span>
             )}
@@ -387,7 +404,7 @@ export function PinnedAnnouncementCard() {
       </div>
       <div className="h-px mx-4" style={{ background: 'rgba(0,0,0,0.05)' }} />
       <Link to="/pengumuman"
-        className="flex items-center justify-end gap-1 px-4 py-2.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-[#a07828] active:opacity-70 transition-opacity">
+        className="flex items-center justify-end gap-1 px-4 py-2.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-primary active:opacity-70 transition-opacity">
         Lihat Semua Pengumuman <IconChevron className="h-3 w-3" />
       </Link>
     </div>
@@ -419,7 +436,7 @@ export function EmergencyGuideCard() {
       {/* Muthowwif */}
       <div className="px-4 py-3 flex items-center gap-3">
         <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl"
-          style={{ background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '1px solid rgba(14,165,233,0.14)' }}>
+          style={{ background: tint(10), border: `1px solid ${tint(16)}` }}>
           <IconPhone className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
@@ -444,8 +461,8 @@ export function EmergencyGuideCard() {
       {/* Tour Leader */}
       <div className="px-4 py-3 flex items-center gap-3">
         <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl"
-          style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid rgba(34,197,94,0.14)' }}>
-          <IconPhone className="h-4 w-4 text-emerald-500" />
+          style={{ background: tint(10), border: `1px solid ${tint(16)}` }}>
+          <IconPhone className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-bold text-ink leading-tight">{tourLeader}</p>

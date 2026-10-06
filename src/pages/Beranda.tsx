@@ -11,7 +11,8 @@ import { KartuPendataan, usePendataan } from '../components/el-massa/KartuPendat
 import { checklistItems } from '../data/checklist';
 import { daftarLokasi } from '../data/lokasi';
 import { fetchAgenda, type AgendaItemRow } from '../lib/supabase';
-import { getWaktuSaudi } from '../lib/waktu';
+import { getWaktuSaudi, formatTanggalHeader } from '../lib/waktu';
+import { tintPrimary as tint } from '../lib/colorUtils';
 import { SosModal } from '../components/SosModal';
 import type { Fase } from '../types';
 import {
@@ -25,6 +26,12 @@ import {
   IconPeta,
   IconCheck,
   IconChevron,
+  IconSiren,
+  IconMasjid,
+  IconSparkles,
+  IconLock,
+  IconKalender,
+  IconKoper,
 } from '../components/icons';
 
 function IconJurnal({ className = '' }: { className?: string }) {
@@ -39,14 +46,6 @@ function IconNavigator({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="12" cy="12" r="9" /><path d="M16.24 7.76 L14.12 14.12 L7.76 16.24 L9.88 9.88 Z" />
-    </svg>
-  );
-}
-
-function IconKalender({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2 v4 M8 2 v4 M3 10 h18" />
     </svg>
   );
 }
@@ -190,7 +189,7 @@ function KartuHitung({ n, namaTravel }: { n: number; namaTravel: string }) {
     <div className="relative overflow-hidden rounded-2xl px-5 py-4"
       style={{ background: 'linear-gradient(135deg, var(--color-primary-deep) 0%, var(--color-primary-deep) 60%, var(--color-primary) 100%)' }}>
       <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/[0.06]" />
-      <div className="pointer-events-none absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-sky-300/[0.05]" />
+      <div className="pointer-events-none absolute -bottom-6 -right-6 h-32 w-32 rounded-full bg-white/[0.05]" />
       <div className="relative flex items-center gap-5">
         <div className="flex-none">
           <p className="font-mono text-[8.5px] uppercase tracking-[0.22em] text-white/45 mb-0.5">Keberangkatan</p>
@@ -221,7 +220,7 @@ function KartuAgendaHariIni({ items, total }: { items: AgendaItemRow[]; total: n
           <p className="font-mono text-[8px] uppercase tracking-[0.22em] text-mute">Agenda Hari Ini</p>
           <p className="text-[13px] font-bold text-ink mt-0.5">{hariIni}</p>
         </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: 'rgba(14,165,233,0.08)' }}>
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl" style={{ background: tint(10) }}>
           <IconKalender className="h-3.5 w-3.5 text-primary" />
         </div>
       </div>
@@ -317,7 +316,7 @@ function KartuItinerary({ keberangkatanId }: { keberangkatanId: string }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 flex-none items-center justify-center rounded-xl"
-              style={{ background: 'rgba(14,165,233,0.08)' }}>
+              style={{ background: tint(10) }}>
               <IconKalender className="h-3.5 w-3.5 text-primary" />
             </div>
             <p className="font-mono text-[8px] uppercase tracking-[0.22em] text-mute">Itinerary Perjalanan</p>
@@ -341,10 +340,10 @@ function KartuItinerary({ keberangkatanId }: { keberangkatanId: string }) {
         <div className="px-4 pb-3.5 pt-2.5 border-t border-hairline mt-2">
           {semuaSelesaiHariIni ? (
             <div className="flex items-center gap-2">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 flex-none">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 flex-none text-primary">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              <p className="text-[12px] font-semibold text-emerald-600">Semua agenda hari ini selesai</p>
+              <p className="text-[12px] font-semibold text-primary">Semua agenda hari ini selesai</p>
             </div>
           ) : itemBerikutnya ? (
             <div>
@@ -367,10 +366,16 @@ function KartuItinerary({ keberangkatanId }: { keberangkatanId: string }) {
 const faseBadge: Record<string, string> = {
   persiapan:    'Fase Persiapan',
   perjalanan:   'Dalam Perjalanan',
-  'tanah-suci': '🕌 Di Tanah Suci',
+  'tanah-suci': 'Di Tanah Suci',
   kepulangan:   'Dalam Kepulangan',
-  selesai:      '✨ Ibadah Selesai',
+  selesai:      'Ibadah Selesai',
 };
+
+function FaseIcon({ fase, className = '' }: { fase: string; className?: string }) {
+  if (fase === 'tanah-suci') return <IconMasjid className={className} />;
+  if (fase === 'selesai') return <IconSparkles className={className} />;
+  return <IconKoper className={className} />;
+}
 
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace('#', '');
@@ -378,6 +383,19 @@ function hexToRgba(hex: string, alpha: number): string {
   const g = parseInt(h.substring(2, 4), 16);
   const b = parseInt(h.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function TenantMark({ logo }: { logo?: string | null }) {
+  const [gagal, setGagal] = useState(false);
+  return (
+    <span className="flex h-9 w-9 flex-none items-center justify-center overflow-hidden rounded-full bg-white/15 text-white ring-1 ring-white/30 backdrop-blur-md">
+      {logo && !gagal ? (
+        <img src={logo} alt="" className="h-full w-full bg-white object-contain p-1" onError={() => setGagal(true)} />
+      ) : (
+        <IconMasjid className="h-[18px] w-[18px]" />
+      )}
+    </span>
+  );
 }
 
 export default function Beranda() {
@@ -402,6 +420,7 @@ export default function Beranda() {
   const hariMenuju  = tanggalBerangkat ? hitungHariMenuju(tanggalBerangkat) : null;
   const showHitung  = hariMenuju !== null && hariMenuju >= 1 && hariMenuju <= 30;
   const phaseActions = getPhaseActions(jamaah.fase);
+  const tanggal = formatTanggalHeader();
 
   const heroOverlayTop = tenant?.primary_deep_color
     ? hexToRgba(tenant.primary_deep_color, 0.60)
@@ -416,32 +435,44 @@ export default function Beranda() {
       <div className="lg:hidden min-h-screen bg-canvas overflow-x-hidden">
 
         {/* ── HERO HEADER ─────────────────────────────── */}
-        <div className="relative overflow-hidden" style={{ height: 'clamp(240px, 58vw, 340px)' }}>
+        <div className="relative overflow-hidden" style={{ height: 'clamp(264px, 66vw, 350px)' }}>
+          {/* Gambar bawaan memuat logo lama di kiri atas; diperbesar dari pojok kanan bawah
+              supaya logo itu keluar bingkai dan tidak bertabrakan dengan header. */}
           <img src={tenant?.hero_image_url || heroBg} alt="" aria-hidden
             className="absolute inset-0 h-full w-full object-cover"
-            style={{ objectPosition: 'center 38%' }} />
+            style={tenant?.hero_image_url
+              ? { objectPosition: 'center 38%' }
+              : { objectPosition: 'center 38%', transform: 'scale(1.8)', transformOrigin: '100% 100%' }} />
 
+          {/* Warna tenant meresap ke gambar (soft-light), lalu gradasi bawah untuk keterbacaan sapaan */}
           <div className="pointer-events-none absolute inset-0"
-            style={{ background: `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(5,10,20,0.20) 40%, transparent 70%)` }} />
+            style={{ background: 'var(--color-primary)', mixBlendMode: 'soft-light', opacity: 0.7 }} />
+          <div className="pointer-events-none absolute inset-0"
+            style={{ background: `linear-gradient(to top, ${heroOverlayBottom} 0%, rgba(0,0,0,0.04) 52%, transparent 80%), linear-gradient(to bottom, rgba(0,0,0,0.16) 0%, transparent 30%)` }} />
 
-          {/* Top Brand & SOS Pill Header */}
-          <div className="absolute top-4 left-5 right-5 z-20 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 bg-black/40 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-white/20 shadow-md">
-              <span className="font-extrabold text-xs text-white tracking-wide font-display">
-                UmrahMe <span className="text-[10px] text-pink-400 font-bold">× {tenant?.nama_travel || 'El Massa'}</span>
-              </span>
+          {/* Header: identitas travel + SOS */}
+          <div className="absolute inset-x-5 top-4 z-20 flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <TenantMark logo={tenant?.logo_url} />
+              <div className="min-w-0 leading-tight">
+                <p className="font-mono text-[8.5px] uppercase tracking-[0.26em] text-white/60">UmrahMe</p>
+                <p className="truncate text-[12.5px] font-semibold text-white">{namaTravel}</p>
+              </div>
             </div>
-            
+
             <button
               type="button"
               onClick={() => setIsSosOpen(true)}
-              className="flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white px-3 py-1.5 rounded-full border border-rose-300 shadow-lg transition font-bold text-[11px] animate-pulse"
+              aria-label="Buka SOS darurat"
+              className="inline-flex flex-none items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-[11px] font-bold tracking-wide shadow-lg shadow-black/20 transition-transform active:scale-95"
+              style={{ color: 'var(--color-primary-deep)' }}
             >
-              <span>🚨 SOS DARURAT 1-TAP</span>
+              <IconSiren className="h-4 w-4" />
+              SOS
             </button>
           </div>
 
-          {/* Greeting */}
+          {/* Sapaan */}
           <div className="absolute inset-x-0 bottom-0 px-5 pb-14">
             {(() => {
               const htc = tenant?.hero_text_color ?? '#ffffff';
@@ -451,28 +482,25 @@ export default function Beranda() {
               };
               return (
                 <>
-                  <p className="font-mono text-[9.5px] uppercase tracking-[0.30em] mb-0.5" style={{ color: htcRgba(0.4) }}>
+                  <p className="text-[12px] font-medium tracking-wide" style={{ color: htcRgba(0.72) }}>
                     Assalamu'alaikum
                   </p>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="font-display font-bold" style={{ fontSize: 'clamp(28px,8vw,40px)', letterSpacing: '-1px', lineHeight: 1.05, color: htc }}>
-                      Welcome back, {firstName}
-                    </h1>
-                    <div className="inline-flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 shadow-md">
-                      <span className="font-mono text-[10px] sm:text-[11px] font-bold text-white">Sat, Aug 1st 2026</span>
-                      <span className="text-white/40 text-[10px]">•</span>
-                      <span className="font-mono text-[10px] sm:text-[11px] font-bold text-pink-300">17 Safar 1448H</span>
-                    </div>
+                  <h1 className="font-display font-bold" style={{ fontSize: 'clamp(26px,7.4vw,36px)', letterSpacing: '-0.03em', lineHeight: 1.08, color: htc, textWrap: 'balance' }}>
+                    Selamat datang, {firstName}
+                  </h1>
+                  <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-full bg-black/25 px-3 py-1.5 text-[11px] font-medium text-white ring-1 ring-white/15 backdrop-blur-md">
+                    <IconKalender className="h-3.5 w-3.5 flex-none text-white/70" />
+                    <span className="truncate">{tanggal.masehi}</span>
+                    {tanggal.hijri && (
+                      <>
+                        <span className="h-1 w-1 flex-none rounded-full bg-white/40" />
+                        <span className="truncate text-white/80">{tanggal.hijri}</span>
+                      </>
+                    )}
                   </div>
-                  <div className="mt-2 flex items-center gap-2">
-                    <p className="text-[11px]" style={{ color: htcRgba(0.5) }}>{namaTravel}</p>
-                    <span className="h-3 w-px" style={{ background: htcRgba(0.2) }} />
-                    <div className="inline-flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-sky-300 animate-pulse" />
-                      <span className="font-mono text-[9px] uppercase tracking-[0.18em]" style={{ color: htcRgba(0.65) }}>
-                        {faseBadge[jamaah.fase] ?? jamaah.fase}
-                      </span>
-                    </div>
+                  <div className="mt-2.5 flex items-center gap-2 text-[11px]" style={{ color: htcRgba(0.78) }}>
+                    <FaseIcon fase={jamaah.fase} className="h-3.5 w-3.5 flex-none" />
+                    <span className="font-medium">{faseBadge[jamaah.fase] ?? jamaah.fase}</span>
                   </div>
                 </>
               );
@@ -505,8 +533,8 @@ export default function Beranda() {
                 <div className="flex items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl"
-                      style={{ background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', border: '1px solid rgba(16,185,129,0.16)' }}>
-                      <IconCheck className="h-4 w-4 text-emerald-500" />
+                      style={{ background: tint(10), border: `1px solid ${tint(18)}` }}>
+                      <IconCheck className="h-4 w-4 text-primary" />
                     </div>
                     <div>
                       <p className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-mute">Checklist Persiapan</p>
@@ -520,7 +548,7 @@ export default function Beranda() {
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-surface-bone">
                   <div className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${persiapanPersen}%`, background: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' }} />
+                    style={{ width: `${persiapanPersen}%`, background: 'linear-gradient(90deg, var(--color-primary-deep) 0%, var(--color-primary) 100%)' }} />
                 </div>
               </div>
             </Link>
@@ -557,10 +585,10 @@ export default function Beranda() {
             <div className="space-y-1">
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 font-display">
-                  Welcome back, {firstName}
+                  Selamat datang, {firstName}
                 </h1>
                 <span className="bg-stone-100 border border-stone-200 px-4 py-1.5 rounded-full text-xs font-normal text-stone-700 shadow-2xs">
-                  Sat, Aug 1st 2026 • 18 Muharram 1448H
+                  {tanggal.masehi}{tanggal.hijri ? ` • ${tanggal.hijri}` : ''}
                 </span>
               </div>
               <p className="text-sm text-stone-600 font-medium">
@@ -569,8 +597,8 @@ export default function Beranda() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-1.5 text-xs font-normal flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="rounded-full border border-primary/25 bg-primary/10 text-primary-deep px-4 py-1.5 text-xs font-medium flex items-center gap-2">
+                <FaseIcon fase={jamaah.fase} className="h-3.5 w-3.5" />
                 Jamaah Aktif • {faseBadge[jamaah.fase] ?? jamaah.fase}
               </span>
             </div>
@@ -585,7 +613,7 @@ export default function Beranda() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-stone-950/75 via-stone-950/20 to-transparent" />
             <div className="absolute bottom-5 left-7 text-white space-y-1 font-sans">
-              <span className="text-xs font-extrabold tracking-widest text-amber-300 uppercase font-display block">
+              <span className="text-xs font-extrabold tracking-widest text-white/85 uppercase font-display block">
                 {namaTravel} • Program Umrah 1448H
               </span>
               <p className="text-lg sm:text-xl font-black tracking-tight font-display">
@@ -615,25 +643,25 @@ export default function Beranda() {
               </div>
               <span className={`px-3.5 py-1 rounded-full text-xs font-normal border ${
                 jamaah.fase === 'selesai'
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'border-primary/25 bg-primary/10 text-primary-deep'
                   : 'bg-stone-100 text-stone-700 border-stone-200'
               }`}>
-                {jamaah.fase === 'selesai' ? '✓ Ibadah Selesai — Sertifikat Unlocked' : 'Ibadah Berlangsung'}
+                {jamaah.fase === 'selesai' ? 'Ibadah selesai · sertifikat terbuka' : 'Ibadah berlangsung'}
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Card 1: Jurnal & Galeri Kenangan (ALWAYS UNLOCKED) */}
-              <div className="relative flex flex-col justify-between rounded-2xl border border-stone-200 bg-white hover:border-pink-300 shadow-xs hover:shadow-md transition-all p-5">
+              <div className="relative flex flex-col justify-between rounded-2xl border border-stone-200 bg-white hover:border-primary/40 shadow-xs hover:shadow-md transition-all p-5">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="h-11 w-11 rounded-xl bg-pink-50 border border-pink-200 flex items-center justify-center text-pink-600">
+                    <div className="h-11 w-11 rounded-xl border border-primary/20 bg-primary/10 flex items-center justify-center text-primary">
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                         <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
-                    <span className="px-3 py-0.5 rounded-full text-xs font-normal border bg-emerald-50 text-emerald-700 border-emerald-200">
-                      ✓ Akses Terbuka
+                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium border border-primary/25 bg-primary/10 text-primary-deep">
+                      <IconCheck className="h-3 w-3" /> Akses terbuka
                     </span>
                   </div>
 
@@ -650,7 +678,7 @@ export default function Beranda() {
                 <div className="pt-4 mt-3 border-t border-stone-100 flex items-center justify-between">
                   <Link
                     to="/jurnal"
-                    className="px-4 py-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white text-xs font-normal shadow-xs transition"
+                    className="px-4 py-2 rounded-full bg-primary hover:bg-primary-deep text-white text-xs font-normal shadow-xs transition"
                   >
                     Buka Jurnal Kenangan →
                   </Link>
@@ -661,23 +689,25 @@ export default function Beranda() {
               <div
                 className={`relative flex flex-col justify-between rounded-2xl border p-5 transition-all ${
                   jamaah.fase === 'selesai'
-                    ? 'border-stone-200 bg-white hover:border-pink-300 shadow-xs hover:shadow-md cursor-pointer'
+                    ? 'border-stone-200 bg-white hover:border-primary/40 shadow-xs hover:shadow-md cursor-pointer'
                     : 'border-stone-200/60 bg-stone-50/70 opacity-75 cursor-not-allowed'
                 }`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="h-11 w-11 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                    <div className="h-11 w-11 rounded-xl border border-primary/20 bg-primary/10 flex items-center justify-center text-primary">
                       <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
                         <path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                       </svg>
                     </div>
-                    <span className={`px-3 py-0.5 rounded-full text-xs font-normal border ${
+                    <span className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-medium border ${
                       jamaah.fase === 'selesai'
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        ? 'border-primary/25 bg-primary/10 text-primary-deep'
                         : 'bg-stone-100 text-stone-500 border-stone-200'
                     }`}>
-                      {jamaah.fase === 'selesai' ? '✓ Siap Klaim' : '🔒 Terkunci'}
+                      {jamaah.fase === 'selesai'
+                        ? <><IconCheck className="h-3 w-3" /> Siap klaim</>
+                        : <><IconLock className="h-3 w-3" /> Terkunci</>}
                     </span>
                   </div>
 
@@ -695,7 +725,7 @@ export default function Beranda() {
                   {jamaah.fase === 'selesai' ? (
                     <Link
                       to="/sertifikat"
-                      className="px-4 py-2 rounded-full bg-pink-600 hover:bg-pink-700 text-white text-xs font-normal shadow-xs transition"
+                      className="px-4 py-2 rounded-full bg-primary hover:bg-primary-deep text-white text-xs font-normal shadow-xs transition"
                     >
                       Klaim Sertifikat Digital →
                     </Link>
@@ -703,9 +733,9 @@ export default function Beranda() {
                     <button
                       type="button"
                       disabled
-                      className="px-4 py-2 rounded-full bg-stone-200 text-stone-500 text-xs font-normal cursor-not-allowed"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-stone-200 text-stone-500 text-xs font-medium cursor-not-allowed"
                     >
-                      🔒 Terkunci (Selesaikan Ibadah)
+                      <IconLock className="h-3.5 w-3.5" /> Terkunci, selesaikan ibadah dulu
                     </button>
                   )}
                 </div>

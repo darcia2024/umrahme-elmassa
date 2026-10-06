@@ -40,3 +40,33 @@ export function getWaktuSaudi(base: Date = new Date()): WaktuSaudi {
 
   return { jam, menit, detik, hari, tanggal, bulan, tahun, totalMenit: jam * 60 + menit };
 }
+
+/**
+ * Tanggal untuk header: Masehi dan Hijriah dari kalender bawaan browser
+ * (Umm al-Qura), supaya selalu mengikuti hari ini dan tidak perlu diketik.
+ */
+export function formatTanggalHeader(d: Date = new Date()): { masehi: string; hijri: string } {
+  const masehi = new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'short', year: 'numeric',
+  }).format(d);
+  let hijri = '';
+  try {
+    hijri = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }).format(d);
+  } catch {
+    // Browser tanpa kalender Hijriah: tampilkan Masehi saja.
+  }
+  return { masehi, hijri };
+}
+
+/**
+ * Nama hotel di data kadang membawa emoji bintang ("Pullman Zamzam ⭐5").
+ * Dipisah supaya tampilan memakai ikon outline, bukan emoji.
+ */
+export function pisahBintangHotel(nama: string): { nama: string; bintang: number | null } {
+  const m = nama.match(/\s*[⭐★☆✭]\s*(\d)?\s*$/u) ?? nama.match(/\s*(\d)\s*[⭐★]\s*$/u);
+  if (!m) return { nama: nama.trim(), bintang: null };
+  const bintang = m[1] ? Number(m[1]) : null;
+  return { nama: nama.slice(0, m.index).trim(), bintang: bintang && bintang >= 1 && bintang <= 5 ? bintang : null };
+}

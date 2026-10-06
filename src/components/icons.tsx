@@ -261,3 +261,108 @@ export function IconManasikInteraktif(p: P) {
     </svg>
   );
 }
+
+// ── Status & aksen (pengganti emoji) ─────────────────────────
+
+// Sirene darurat: kubah lampu + sinar + alas
+export function IconSiren(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M7 18v-5a5 5 0 0 1 10 0v5" />
+      <path d="M5 18h14v3H5z" />
+      <path d="M12 3v2" />
+      <path d="M4.9 6l1.4 1.4" />
+      <path d="M19.1 6l-1.4 1.4" />
+      <path d="M2.5 12H4.5" />
+      <path d="M19.5 12h2" />
+    </svg>
+  );
+}
+
+export function IconStar(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
+    </svg>
+  );
+}
+
+// Masjid: kubah + dua menara + pintu lengkung
+export function IconMasjid(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M6.5 21v-6.5a5.5 5.5 0 0 1 11 0V21" />
+      <path d="M12 9V6" />
+      <path d="M3 21h18" />
+      <path d="M3.5 21v-8" />
+      <path d="M20.5 21v-8" />
+      <path d="M10 21v-3a2 2 0 0 1 4 0v3" />
+    </svg>
+  );
+}
+
+export function IconSparkles(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M11 3l1.9 5 5.1 1.9-5.1 1.9L11 17l-1.9-5.2L4 9.9 9.1 8z" />
+      <path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z" />
+    </svg>
+  );
+}
+
+export function IconLock(p: P) {
+  return (
+    <svg {...base(p)}>
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  );
+}
+
+export function IconPin(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M12 21s-7-5.6-7-11a7 7 0 0 1 14 0c0 5.4-7 11-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+export function IconPhone(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.78.62 2.63a2 2 0 0 1-.45 2.11L8 9.74a16 16 0 0 0 6.26 6.26l1.28-1.28a2 2 0 0 1 2.11-.45c.85.29 1.73.5 2.63.62A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+export function IconKalender(p: P) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3" y="4.5" width="18" height="17" rx="2.5" />
+      <path d="M16 2.5v4M8 2.5v4M3 10h18" />
+    </svg>
+  );
+}
+
+export function IconDokumen(p: P) {
+  return (
+    <svg {...base(p)}>
+      <path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2.5V8h5" />
+      <path d="M9 13h6M9 17h4" />
+    </svg>
+  );
+}
+
+// Koper: persiapan keberangkatan
+export function IconKoper(p: P) {
+  return (
+    <svg {...base(p)}>
+      <rect x="3.5" y="7.5" width="17" height="12.5" rx="2.5" />
+      <path d="M9 7.5V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v1.5" />
+      <path d="M3.5 13h17" />
+      <path d="M10.5 13v1.5h3V13" />
+    </svg>
+  );
+}

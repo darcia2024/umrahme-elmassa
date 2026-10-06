@@ -13,3 +13,6 @@ export function generateActivationCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
+
+/** Warna aksen tenant dengan transparansi, mengikuti --color-primary (pink El Massa untuk travel ini). */
+export const tintPrimary = (pct: number) => `color-mix(in srgb, var(--color-primary) ${pct}%, transparent)`;

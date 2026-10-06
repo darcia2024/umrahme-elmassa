@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getOperationalInfo, whatsappLink } from '../data/travelCompanion';
+import { IconSiren, IconPin, IconPhone, IconCheck } from './icons';
 
 interface SosModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ export function SosModal({ isOpen, onClose }: SosModalProps) {
     `Mohon Bantuan Segera Tour Leader / Muthowwif El Massa!\n` +
     `👤 *Nama Jamaah*: ${jamaah.nama}\n` +
     `💳 *ID Jamaah*: ${jamaah.nomorJamaah}\n` +
-    `📱 *No. Paspor*: ${jamaah.nomorPaspor || 'C9824101'}\n` +
+    (jamaah.nomorPaspor ? `📱 *No. Paspor*: ${jamaah.nomorPaspor}\n` : '') +
     `📍 *Lokasi GPS Live*: ${mapLink}\n\n` +
     `Status: Terpisah dari Rombongan. Mohon dipandu kembali ke titik kumpul.`;
 
@@ -56,10 +57,11 @@ export function SosModal({ isOpen, onClose }: SosModalProps) {
         
         {/* Header Warning */}
         <div className="text-center space-y-2">
-          <div className="h-16 w-16 rounded-full bg-rose-100 border-2 border-rose-400 text-rose-600 flex items-center justify-center mx-auto shadow-lg animate-pulse">
-            <span className="text-3xl">🚨</span>
+          <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary">
+            <span className="absolute inset-0 rounded-full border border-primary/30 animate-ping" aria-hidden />
+            <IconSiren className="h-8 w-8" strokeWidth={1.5} />
           </div>
-          <h3 className="font-display font-black text-2xl text-stone-900 tracking-tight leading-tight">
+          <h3 className="font-display font-bold text-2xl text-stone-900 tracking-tight leading-tight">
             SOS Darurat Jamaah Terpisah
           </h3>
           <p className="text-xs text-stone-500 font-normal">
@@ -68,26 +70,26 @@ export function SosModal({ isOpen, onClose }: SosModalProps) {
         </div>
 
         {/* Info Box */}
-        <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 space-y-3 text-xs">
-          <div className="flex justify-between items-center border-b border-rose-200/60 pb-2">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3 text-xs">
+          <div className="flex justify-between items-center border-b border-primary/15 pb-2">
             <span className="text-stone-600 font-medium">Jamaah:</span>
             <strong className="text-stone-900 font-extrabold">{jamaah.nama}</strong>
           </div>
-          <div className="flex justify-between items-center border-b border-rose-200/60 pb-2">
+          <div className="flex justify-between items-center border-b border-primary/15 pb-2">
             <span className="text-stone-600 font-medium">No. Paspor:</span>
-            <strong className="text-stone-900 font-mono font-bold">{jamaah.nomorPaspor || 'C9824101'}</strong>
+            <strong className="text-stone-900 font-mono font-bold">{jamaah.nomorPaspor || 'Belum diisi'}</strong>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-stone-600 font-medium">Status GPS Live:</span>
             {coords ? (
-              <span className="font-mono text-emerald-700 font-bold">✓ Koordinat Terdeteksi</span>
+              <span className="inline-flex items-center gap-1 font-mono font-bold text-primary-deep"><IconCheck className="h-3.5 w-3.5" strokeWidth={2} /> Koordinat terdeteksi</span>
             ) : (
               <button
                 type="button"
                 onClick={handleGetLocation}
-                className="text-rose-600 underline font-bold"
+                className="inline-flex items-center gap-1 font-bold text-primary underline underline-offset-2"
               >
-                {gpsLoading ? "Mendeteksi..." : "📍 Ambil Lokasi GPS Saya"}
+                {gpsLoading ? "Mendeteksi..." : <><IconPin className="h-3.5 w-3.5" /> Ambil lokasi GPS saya</>}
               </button>
             )}
           </div>
@@ -99,16 +101,16 @@ export function SosModal({ isOpen, onClose }: SosModalProps) {
             href={whatsappLink(pembimbingWa, sosMessage)}
             target="_blank"
             rel="noreferrer"
-            className="w-full h-12 rounded-2xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white text-xs font-black flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98]"
+            className="w-full h-12 rounded-2xl text-white text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition active:scale-[0.98]" style={{ background: "linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-deep) 100%)" }}
           >
-            <span>🚨 KIRIM LOKASI GPS & PANGGIL SOS VIA WA</span>
+            <IconSiren className="h-4 w-4" /><span>Kirim lokasi &amp; panggil SOS via WhatsApp</span>
           </a>
 
           <a
             href={`tel:${pembimbingWa}`}
             className="w-full h-11 rounded-2xl bg-stone-100 border border-stone-200 text-stone-800 hover:bg-stone-200 text-xs font-bold flex items-center justify-center gap-2 transition"
           >
-            <span>📞 PANGGIL TELEPON MUTHOWWIF LANGSUNG</span>
+            <IconPhone className="h-4 w-4" /><span>Telepon muthowwif langsung</span>
           </a>
 
           <button

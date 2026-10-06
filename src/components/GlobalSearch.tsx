@@ -123,7 +123,7 @@ export default function GlobalSearch() {
           type="search"
           inputMode="search"
           value={query}
-          placeholder="Cari doa, panduan, lokasi, checklist…"
+          placeholder="Cari doa, panduan, lokasi"
           className="min-w-0 flex-1 bg-transparent text-[14px] text-ink placeholder:text-ash focus:outline-none"
           onFocus={() => setOpen(true)}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
