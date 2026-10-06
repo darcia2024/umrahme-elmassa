@@ -487,9 +487,9 @@ export async function uploadSertifikatTemplate(file: File): Promise<string> {
 
 // ── Jamaah Data (key-value sinkronisasi per-jamaah) ────────────
 
-// Token akses jamaah (RPC jamaah_access_token, diambil sekali setelah login). Hanya di memori:
-// tidak ditulis ke localStorage, sehingga hilang saat logout atau tab ditutup, dan tidak pernah
-// ditampilkan atau dicatat. Sebelumnya dibaca dari localStorage yang tidak pernah terisi.
+// Token akses jamaah (RPC jamaah_access_token, diambil saat login). Dipegang di memori dan ikut
+// tersimpan bersama sesi login (AuthContext, localStorage "umrahme.jamaah") supaya jamaah tidak
+// perlu masuk lagi setelah memuat ulang; hilang saat Keluar. Tidak pernah ditampilkan atau dicatat.
 let tokenJamaah: string | null = null;
 
 export function setJamaahToken(token: string | null): void {

@@ -32,9 +32,20 @@ Jurnal, progres manasik, checklist persiapan, dan counter tawaf/sa'i disimpan pe
 `jurnal_entries` dan `jamaah_data` tertutup untuk anon; semua akses lewat fungsi itu.
 
 - Setelah login, aplikasi mengambil token akses dengan RPC `jamaah_access_token(p_kode, p_nama)` (pencocokan sama
-  persis dengan `jamaah_login`) dan menyimpannya **hanya di memori** (`setJamaahToken` di `src/lib/supabase.ts`);
-  tidak pernah ke `localStorage`, tidak ditampilkan, tidak dicatat. Tanpa token (akun demo, atau token gagal diambil)
-  jurnal dan data tidak tersinkron ke cloud, tapi aplikasi tetap jalan.
+  persis dengan `jamaah_login`) dan memegangnya di memori (`setJamaahToken` di `src/lib/supabase.ts`); tidak
+  ditampilkan dan tidak dicatat. Tanpa token (akun demo, atau token gagal diambil) jurnal dan data tidak
+  tersinkron ke cloud, tapi aplikasi tetap jalan.
+
+## Sesi login
+Sesi disimpan di perangkat (`localStorage`: `umrahme.jamaah`, `umrahme.tenant`, `umrahme.keberangkatan`) dan
+**tidak punya masa berlaku**: jamaah tetap masuk setelah halaman dimuat ulang atau aplikasi ditutup, sampai ia
+menekan Keluar. Keluar menghapus ketiganya dan berlaku juga di tab lain. Token akses jurnal ikut tersimpan
+bersama sesi; token pendataan (form data diri) **tidak pernah** disimpan dan diambil ulang setiap kali.
+
+Saat dibuka dan saat kembali ke layar (paling sering sekali per 5 menit), data akun disegarkan diam-diam dari
+`jamaah_login` agar kamar, bus, tanggal batch, dan tema ikut perubahan staf. Kalau gagal (tidak ada sinyal, server
+bermasalah) atau akunnya tidak ditemukan lagi, sesi dibiarkan: jamaah tidak pernah dikeluarkan otomatis. Akun
+demo (nama yang tidak terdaftar) tidak disegarkan.
 - Data diikat ke **id akun**, bukan nomor jamaah, jadi dua jamaah bernomor sama tidak pernah berbagi data.
 - Batas: data per kunci 64 KB, 50 kunci per jamaah, jurnal 20.000 karakter per catatan dan 1000 catatan per jamaah.
 - Privasi jurnal setara kuat login (nama + kode tenant yang publik). Memperkuat login memperkuat ini juga.

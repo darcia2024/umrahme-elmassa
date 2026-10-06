@@ -99,6 +99,52 @@ const demoTenant: TenantRow = {
 };
 
 /**
+ * Mencari akun asli di database lewat jamaah_login(), bukan query tabel: anon key ada di dalam
+ * bundle browser, jadi akses langsung ke tabel berarti siapa pun bisa menarik seluruh daftar
+ * jamaah satu travel. Fungsi itu hanya mengembalikan baris yang kode aktivasi DAN namanya
+ * benar-benar cocok. Mengembalikan null kalau tidak ditemukan; melempar error kalau database
+ * tidak terjangkau.
+ */
+async function cariAkunDiDatabase(k: string, n: string): Promise<HasilValidasi | null> {
+  const { data, error } = await supabase.rpc('jamaah_login', { p_kode: k, p_nama: n });
+  if (error) throw new Error(error.message);
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  const row = data[0];
+  const [tenant, kb, akses] = await Promise.all([
+    supabase.from('tenants').select('*').eq('id', row.tenant_id).maybeSingle(),
+    row.keberangkatan_id
+      ? supabase.from('keberangkatan').select('*').eq('id', row.keberangkatan_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    // Token akses untuk jurnal dan data per jamaah. Dicocokkan dengan nama + kode yang sama
+    // seperti login. Kalau gagal, login tetap jalan; jurnal hanya tidak tersinkron ke cloud.
+    supabase.rpc('jamaah_access_token', { p_kode: k, p_nama: n }),
+  ]);
+
+  return bangunHasil(
+    (tenant.data ?? demoTenant) as unknown as TenantRow,
+    row,
+    (kb.data ?? null) as unknown as KeberangkatanRow | null,
+    k,
+    typeof akses.data === 'string' ? akses.data : null,
+  );
+}
+
+/**
+ * Menyegarkan akun dari sesi yang tersimpan (kamar, bus, tanggal batch, tema, dan seterusnya).
+ * Mengembalikan null kalau tidak bisa memastikan -- tidak ada sinyal, server bermasalah, atau
+ * akunnya sudah tidak ditemukan. Pemanggil TIDAK boleh mengeluarkan jamaah karena null:
+ * di Tanah Suci sinyal sering hilang, dan sesi hanya berakhir saat jamaah menekan Keluar.
+ */
+export async function segarkanSesi(kode: string, nama: string): Promise<HasilValidasi | null> {
+  try {
+    return await cariAkunDiDatabase(kode.trim().toUpperCase(), nama.trim());
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Validasi Login Jamaah STRICTLY: HANYA NAMA YANG TERDAFTAR DI SISTEM YANG BISA LOGIN!
  */
 export async function validasiKode(kode: string | null | undefined, nama: string): Promise<HasilValidasi> {
@@ -109,32 +155,8 @@ export async function validasiKode(kode: string | null | undefined, nama: string
 
   // 1. Coba Query ke Database Supabase
   try {
-    // Lewat fungsi jamaah_login(), bukan query tabel: anon key ada di dalam
-    // bundle browser, jadi akses langsung ke tabel berarti siapa pun bisa
-    // menarik seluruh daftar jamaah satu travel. Fungsi ini hanya
-    // mengembalikan baris yang kode aktivasi DAN namanya benar-benar cocok.
-    const { data, error } = await supabase.rpc('jamaah_login', { p_kode: k, p_nama: n });
-
-    if (!error && Array.isArray(data) && data.length > 0) {
-      const row = data[0];
-      const [tenant, kb, akses] = await Promise.all([
-        supabase.from('tenants').select('*').eq('id', row.tenant_id).maybeSingle(),
-        row.keberangkatan_id
-          ? supabase.from('keberangkatan').select('*').eq('id', row.keberangkatan_id).maybeSingle()
-          : Promise.resolve({ data: null }),
-        // Token akses untuk jurnal dan data per jamaah. Dicocokkan dengan nama + kode yang sama
-        // seperti login. Kalau gagal, login tetap jalan; jurnal hanya tidak tersinkron ke cloud.
-        supabase.rpc('jamaah_access_token', { p_kode: k, p_nama: n }),
-      ]);
-
-      return bangunHasil(
-        (tenant.data ?? demoTenant) as unknown as TenantRow,
-        row,
-        (kb.data ?? null) as unknown as KeberangkatanRow | null,
-        k,
-        typeof akses.data === 'string' ? akses.data : null,
-      );
-    }
+    const hasil = await cariAkunDiDatabase(k, n);
+    if (hasil) return hasil;
   } catch (err) {
     console.warn("Supabase query check unavailable, checking registered list", err);
   }
