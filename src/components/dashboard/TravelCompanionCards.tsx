@@ -173,9 +173,9 @@ export function DashboardTravelCompanionDesktopRow() {
 
   if (!jamaah) return null;
 
-  const info = getOperationalInfo(keberangkatan ?? null);
+  const info = getOperationalInfo(keberangkatan ?? null, jamaah);
 
-  const rombongan = jamaah.rombongan ?? info.groupCode;
+  const rombongan = info.groupCode;
   const bus = jamaah.nomorBus ?? info.busNumber;
   const kamar = jamaah.nomorKamar ?? info.roomNumber;
   const pembimbing = jamaah.pembimbingNama ?? info.guideName;

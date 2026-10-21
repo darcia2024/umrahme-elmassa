@@ -38,7 +38,7 @@ export type DailyInstruction = {
 };
 
 const DEFAULT_OPERATIONAL_INFO: TravelOperationalInfo = {
-  groupCode: 'Rombongan Al-Fajr 2026',
+  groupCode: 'Paket Umrah',
   busNumber: 'Bus 2',
   roomNumber: '714',
   hotelMakkah: 'Al Marwa Rayhaan by Rotana, Makkah',
@@ -65,16 +65,22 @@ export function getOperationalInfo(
   keberangkatan: KeberangkatanRow | null,
   jamaah?: JamaahOperationalFields,
 ): TravelOperationalInfo {
+  const rombonganClean =
+    jamaah?.rombongan && !jamaah.rombongan.toLowerCase().startsWith('rombongan 01')
+      ? jamaah.rombongan
+      : null;
+  const groupCode = keberangkatan?.nama_batch || rombonganClean || jamaah?.rombongan || DEFAULT_OPERATIONAL_INFO.groupCode;
+
   if (!keberangkatan) {
     return {
       ...DEFAULT_OPERATIONAL_INFO,
-      groupCode: jamaah?.rombongan ?? DEFAULT_OPERATIONAL_INFO.groupCode,
+      groupCode,
       busNumber: jamaah?.nomorBus ?? DEFAULT_OPERATIONAL_INFO.busNumber,
       roomNumber: jamaah?.nomorKamar ?? DEFAULT_OPERATIONAL_INFO.roomNumber,
     };
   }
   return {
-    groupCode: jamaah?.rombongan ?? DEFAULT_OPERATIONAL_INFO.groupCode,
+    groupCode,
     busNumber: jamaah?.nomorBus ?? DEFAULT_OPERATIONAL_INFO.busNumber,
     roomNumber: jamaah?.nomorKamar ?? DEFAULT_OPERATIONAL_INFO.roomNumber,
     hotelMakkah: keberangkatan.hotel_makkah ?? DEFAULT_OPERATIONAL_INFO.hotelMakkah,
