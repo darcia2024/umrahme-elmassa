@@ -27,6 +27,9 @@ export interface Jamaah {
   hotelMadinah?: string;
   pembimbingNama?: string;
   pembimbingWhatsapp?: string;
+  statusPembayaran?: 'Lunas' | 'Sudah 50%' | 'DP' | 'Belum Bayar';
+  nominalTagihan?: number;
+  nominalTerbayar?: number;
 }
 
 /** Kategori doa pada Kumpulan Doa (9 tahapan ibadah umrah). */
