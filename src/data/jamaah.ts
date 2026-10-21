@@ -1,6 +1,7 @@
 import type { Jamaah } from '../types';
 import { supabase, fetchTenantBySlug } from '../lib/supabase';
 import type { TenantRow, KeberangkatanRow } from '../lib/supabase';
+import { formatNamaNormal, isGenericRombongan } from '../lib/formatName';
 
 export const KODE_DEMO = 'DEMO01';
 
@@ -173,12 +174,14 @@ export async function validasiKode(kode: string | null | undefined, nama: string
         return {
           ok: true,
           jamaah: {
-            nama: matchedLocal.nama,
+            nama: formatNamaNormal(matchedLocal.nama),
             nomorJamaah: matchedLocal.nomorJamaah || `JM-${new Date().getFullYear()}08-563`,
             travel: demoTenant.nama_travel,
             kodeAktivasi: k,
             fase: "persiapan",
-            rombongan: matchedLocal.rombongan || matchedLocal.batch || "Paket Umrah",
+            rombongan: !isGenericRombongan(matchedLocal.rombongan)
+              ? matchedLocal.rombongan
+              : (!isGenericRombongan(matchedLocal.batch) ? matchedLocal.batch : 'UMRAH REGULER 04 NOVEMBER 2026'),
             nomorBus: matchedLocal.bus || "Bus 01",
             nomorKamar: matchedLocal.kamar || "Kamar Quad #408",
             nomorPaspor: matchedLocal.paspor || "C9824101",
@@ -198,12 +201,12 @@ export async function validasiKode(kode: string | null | undefined, nama: string
     return {
       ok: true,
       jamaah: {
-        nama: n,
+        nama: formatNamaNormal(n),
         nomorJamaah: `JM-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, "0")}-${Math.floor(100 + Math.random() * 900)}`,
         travel: demoTenant.nama_travel,
         kodeAktivasi: k,
         fase: "persiapan",
-        rombongan: "Paket Umrah",
+        rombongan: "UMRAH REGULER 04 NOVEMBER 2026",
         nomorBus: "Bus 01",
         nomorKamar: "Kamar Quad #408",
         nomorPaspor: "C" + Math.floor(1000000 + Math.random() * 9000000),

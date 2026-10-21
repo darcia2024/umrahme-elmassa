@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getOperationalInfo, whatsappLink } from '../data/travelCompanion';
+import { formatNamaNormal } from '../lib/formatName';
 import { IconDownload, IconPhone } from '../components/icons';
 import { TransparansiBerkas } from '../components/el-massa/TransparansiBerkas';
 import { KonfirmasiPembayaran } from '../components/el-massa/KonfirmasiPembayaran';
@@ -154,8 +155,8 @@ function KartuIdentitas({ nama, nomor, kode, fase, namaTravel, logo }: {
         <div className="relative flex items-end justify-between gap-4">
           <div className="min-w-0">
             <p className="uppercase tracking-[0.18em] text-white/65" style={{ fontSize: '2.4cqw' }}>Nama Jamaah</p>
-            <p className="truncate font-semibold uppercase tracking-[0.06em]" style={{ fontSize: '4.3cqw', textShadow: '0 1px 0 rgba(0,0,0,0.2)' }}>
-              {nama}
+            <p className="truncate font-semibold tracking-[0.04em]" style={{ fontSize: '4.3cqw', textShadow: '0 1px 0 rgba(0,0,0,0.2)' }}>
+              {formatNamaNormal(nama)}
             </p>
           </div>
           <div className="flex-none text-right">
@@ -206,7 +207,7 @@ export default function KartuJamaah() {
           <div className="space-y-3 lg:col-span-5">
 
             <KartuIdentitas
-              nama={jamaah.nama}
+              nama={formatNamaNormal(jamaah.nama)}
               nomor={jamaah.nomorJamaah}
               kode={jamaah.kodeAktivasi}
               fase={LABEL_FASE[jamaah.fase] ?? jamaah.fase}

@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { formatNamaNormal } from '../lib/formatName';
 import { useAuth } from '../context/AuthContext';
 import heroBg from '@assets/Temanumrah_BG_1782267839246.png';
 import GlobalSearch from '../components/GlobalSearch';
@@ -493,7 +494,7 @@ export default function Beranda() {
 
   if (!jamaah) return null;
 
-  const firstName   = jamaah.nama.split(' ')[0];
+  const firstName   = formatNamaNormal(jamaah.nama).split(' ')[0];
   const namaTravel  = tenant?.nama_travel ?? jamaah.travel;
   const tanggalBerangkat = keberangkatan?.tanggal_keberangkatan ?? tenant?.tanggal_keberangkatan;
   const hariMenuju  = tanggalBerangkat ? hitungHariMenuju(tanggalBerangkat) : null;

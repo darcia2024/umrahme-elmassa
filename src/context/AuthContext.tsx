@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Fase, Jamaah } from '../types';
 import { setJamaahToken, type TenantRow, type KeberangkatanRow } from '../lib/supabase';
 import { hitungFaseEfektif, segarkanSesi } from '../data/jamaah';
+import { formatNamaNormal, isGenericRombongan } from '../lib/formatName';
 
 const STORAGE_KEY = 'umrahme.jamaah';
 // Id tenant cadangan (akun demo) di data/jamaah.ts; sesi demo tidak disegarkan dari database.
@@ -28,10 +29,20 @@ interface AuthValue {
 
 const AuthContext = createContext<AuthValue | undefined>(undefined);
 
+function sanitasiJamaah(j: Jamaah | null): Jamaah | null {
+  if (!j) return null;
+  return {
+    ...j,
+    nama: formatNamaNormal(j.nama),
+    rombongan: isGenericRombongan(j.rombongan) ? 'UMRAH REGULER 04 NOVEMBER 2026' : j.rombongan,
+  };
+}
+
 function bacaStorage(): Jamaah | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Jamaah) : null;
+    if (!raw) return null;
+    return sanitasiJamaah(JSON.parse(raw) as Jamaah);
   } catch {
     return null;
   }
@@ -177,7 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               nomorKamar: payload.kamar || current.nomorKamar,
               rombongan: payload.rombongan || current.rombongan,
             };
-            return updated;
+            return sanitasiJamaah(updated);
           }
           return current;
         });
@@ -207,7 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     tenant,
     keberangkatan,
     isLoggedIn: !!jamaah,
-    login: (j, t, kb) => { setJamaah(j); setTenant(t); setKeberangkatan(kb); },
+    login: (j, t, kb) => { setJamaah(sanitasiJamaah(j)); setTenant(t); setKeberangkatan(kb); },
     logout: () => { setJamaah(null); setTenant(null); setKeberangkatan(null); },
     setFase: (f) => setJamaah((prev) => (prev ? { ...prev, fase: f } : prev)),
   };

@@ -1,5 +1,6 @@
 import { fetchAnnouncements, type KeberangkatanRow, type TravelAnnouncementRow } from '../lib/supabase';
 import type { Fase } from '../types';
+import { isGenericRombongan } from '../lib/formatName';
 
 export type TravelAnnouncement = {
   id: string;
@@ -38,7 +39,7 @@ export type DailyInstruction = {
 };
 
 const DEFAULT_OPERATIONAL_INFO: TravelOperationalInfo = {
-  groupCode: 'Paket Umrah',
+  groupCode: 'UMRAH REGULER 04 NOVEMBER 2026',
   busNumber: 'Bus 2',
   roomNumber: '714',
   hotelMakkah: 'Al Marwa Rayhaan by Rotana, Makkah',
@@ -65,11 +66,27 @@ export function getOperationalInfo(
   keberangkatan: KeberangkatanRow | null,
   jamaah?: JamaahOperationalFields,
 ): TravelOperationalInfo {
-  const rombonganClean =
-    jamaah?.rombongan && !jamaah.rombongan.toLowerCase().startsWith('rombongan 01')
-      ? jamaah.rombongan
-      : null;
-  const groupCode = keberangkatan?.nama_batch || rombonganClean || jamaah?.rombongan || DEFAULT_OPERATIONAL_INFO.groupCode;
+  let groupCode = '';
+  if (keberangkatan?.nama_batch && !isGenericRombongan(keberangkatan.nama_batch)) {
+    groupCode = keberangkatan.nama_batch;
+  } else if (jamaah?.rombongan && !isGenericRombongan(jamaah.rombongan)) {
+    groupCode = jamaah.rombongan;
+  } else {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('el_massa_issued_accounts') : null;
+      if (raw) {
+        const accounts = JSON.parse(raw);
+        if (Array.isArray(accounts) && accounts.length > 0) {
+          const found = accounts.find((a: any) => a.batch && !isGenericRombongan(a.batch)) ||
+                        accounts.find((a: any) => a.rombongan && !isGenericRombongan(a.rombongan));
+          if (found) groupCode = found.batch || found.rombongan;
+        }
+      }
+    } catch {}
+    if (!groupCode) {
+      groupCode = DEFAULT_OPERATIONAL_INFO.groupCode;
+    }
+  }
 
   if (!keberangkatan) {
     return {
